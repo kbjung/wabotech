@@ -6,10 +6,16 @@
   - code : [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD1%5D%5B%ED%86%B5%EA%B3%84%5D%5Bitem2%5D4%EB%93%B1%EA%B8%89%EC%B0%A8_%EC%84%B8%EB%B6%84%EB%A5%98.ipynb)
 - ⏳ item3 : 운행제한 규제지역 설정에 유용한 데이터 발굴
   - code : 
+
+
 ### [과제3] "무공해차 전환 가속화 및 내연기관차 퇴출시나리오 도출" 분석과제 개발
-- item 1 : 
-- item 2 : 
-- item 3 : 
+- item 1 : 내연기관차 감축추이 및 감소량 예측 분석
+  - code : 
+- item 2 : 무공해차 전환 및 저공해조치 우선차량 선별
+  - code : 
+- item 3 : 내연기관차 운행제한 현황 분석
+  - code : 
+
 
 ### 데이터 전처리
 + 추출
