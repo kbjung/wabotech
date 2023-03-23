@@ -1,7 +1,6 @@
 ## [한국환경공단] 자동차 환경 빅데이터 구축 2차
 - 기간 : 2022.11.18 ~ 2023.07.17(총 8개월)
-+ 활용라이브러리
-  - pandas, numpy, os, glob, re, datetime, tqdm
++ 활용 라이브러리 : pandas, numpy, os, glob, re, datetime, tqdm
  
 ### 데이터 전처리
 + 추출
