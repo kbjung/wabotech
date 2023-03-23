@@ -4,8 +4,7 @@
 ## [한국환경공단]
 ### ⏳ 자동차 환경 빅데이터 구축 2차 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/car_big_data_2)
 - 기간 : 2022.11.18 ~ 2023.07.17(총 8개월)
-+ 활용라이브러리
-  - pandas, numpy, os, glob, re, datetime, tqdm
++ 활용 라이브러리 : pandas, numpy, os, glob, re, datetime, tqdm
  
 #### 과제1 "4등급차 조기폐차 및 운행제한 확대 대비 정책자료 생성"
 - item 1 : 배출가스 인증번호 및 등급오류 검증
@@ -18,4 +17,4 @@
 
 ### 저공해차 보급촉진을 위한 제도운영 지원 및 개선방안 마련 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/low_gas_vehicle)
 - 기간 : 2022.11.04 ~ stop
-+ 활용라이브러리 : pandas, numpy, os, tqdm
++ 활용 라이브러리 : pandas, numpy, os, tqdm
