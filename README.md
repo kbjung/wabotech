@@ -17,4 +17,5 @@
 - item 3 : 내연기관차 운행제한 현황 분석
 
 ### 저공해차 보급촉진을 위한 제도운영 지원 및 개선방안 마련 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/low_gas_vehicle)
-- 2022.11.04 ~
+- 기간 : 2022.11.04 ~ stop
++ 활용라이브러리 : pandas, numpy, os, tqdm
