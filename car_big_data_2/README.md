@@ -11,6 +11,7 @@
   - 정기, 정밀 검사 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5B%EC%B6%94%EC%B6%9C%5D%EC%A0%95%EA%B8%B0%26%EC%A0%95%EB%B0%80%EA%B2%80%EC%82%AC.ipynb)
 + 병합
   - 등록&제원정보 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5B%EB%B3%91%ED%95%A9%5D%EB%93%B1%EB%A1%9D%EC%A0%95%EB%B3%B4%26%EC%A0%9C%EC%9B%90%EC%A0%95%EB%B3%B4.ipynb)
+  - 정기&정밀 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5B%EB%B3%91%ED%95%A9%5D%EC%A0%95%EA%B8%B0%26%EC%A0%95%EB%B0%80%EA%B2%80%EC%82%AC.ipynb)
 + 확인 요청 파일 result 현행화
   - 배출가스인증번호 업데이트1(제작사 확인) [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5B%EC%9A%94%EC%B2%AD0%5D%5B%ED%86%B5%EA%B3%84%5D%5BG4%5D%EB%B0%B0%EC%9D%B8%EC%97%85%EB%8E%8301.ipynb)
   - 배출가스인증번호 업데이트2(확인된 파일과 교차 검증) [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5B%EC%9A%94%EC%B2%AD0%5D%5B%ED%86%B5%EA%B3%84%5D%5BG4%5D%EB%B0%B0%EC%9D%B8%EC%97%85%EB%8E%8302.ipynb)
