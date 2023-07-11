@@ -984,6 +984,8 @@ df3 = df2[[
     'Grade', 
     '법정동코드_mod',
     ]]
+# RH법정동코드 문자형으로 변환
+df3['법정동코드_mod'] = df3['법정동코드_mod'].astype('str')
 ch_col_dict = {
                 '테이블생성일자':'LOAD_DT',
                 '차대번호':'VIN', 
@@ -4488,6 +4490,8 @@ df3 = df2[[
 today_date = datetime.today().strftime("%Y%m%d")
 
 df3['테이블생성일자'] = today_date
+# RH법정동코드 문자열타입으로 변경
+df3['법정동코드_mod'] = df3['법정동코드_mod'].astype('str')
 df4 = df3[[
     '테이블생성일자', 
     '차대번호',
