@@ -452,12 +452,35 @@ rs = rs.drop_duplicates('차대번호').reset_index(drop=True)
 rdf1 = rdf.merge(rs, on='차대번호', how='left')
 df = rdf1.copy()
 
+## 연료 컬럼 추가
+df.loc[df['연료'] == '경유', 'fuel'] = '경유'
+df.loc[(df['연료'] == '휘발유') | (df['연료'] == 'LPG(액화석유가스)'), 'fuel'] = '휘발유_가스'
+# 분석
+## EG 분류
+grade_list = []
+for f, y, cy, e in tqdm(df[['fuel', '제작일자', '차량연식', 'DPF유무_수정']].values):
+    if (f == '휘발유_가스') and ( (19980101 <= y <= 20001231) or (1998 <= cy <= 2000) ):
+        grade_list.append('A')
+    elif (f == '휘발유_가스') and ( (y <= 19971231) or (cy <= 1997) ):
+        grade_list.append('B')
+    elif (f == '경유') and ( (y >= 20080101) or (cy >= 2008) ) and (e == '유'):
+        grade_list.append('A')
+    elif (f == '경유') and ( (y <= 20071231) or (cy <= 2007) )and (e == '유'):
+        grade_list.append('B')
+    elif (f == '경유') and ( (y >= 20080101) or (cy >= 2008) ) and (e == '무'):
+        grade_list.append('C')
+    elif (f == '경유') and ( (y <= 20071231) or (cy <= 2007) ) and (e == '무'):
+        grade_list.append('D')
+    else:
+        grade_list.append('X')
+df['Grade'] = grade_list
+
 # STD_BD_GRD4_CAR_CURSTT
 ## 4등급차만 추출
 # 2.8s
 df1 = df[df['배출가스등급'] == '4'].reset_index(drop=True)
 
-### 기준연월 정보 추가
+### 테이블생성일자 컬럼 추가
 today_date = datetime.today().strftime("%Y%m%d")
 df1['테이블생성일자'] = today_date
 STD_BD_GRD4_CAR_CURSTT = df1[[
@@ -484,6 +507,7 @@ STD_BD_GRD4_CAR_CURSTT = df1[[
     '무부하매연측정치2', 
     '무부하매연측정치3', 
     '법정동코드_mod', 
+    'Grade', 
     ]]
 ch_col_dict = {
                 '테이블생성일자':'LOAD_DT',
@@ -509,6 +533,7 @@ ch_col_dict = {
                 '무부하매연측정치2':'NOLOD_SMO_MEVLU2', 
                 '무부하매연측정치3':'NOLOD_SMO_MEVLU3', 
                 '법정동코드_mod':'STDG_CD_MOD',
+                'Grade':'GRD4_MLSFC',
 
                 '제작일자':'FBCTN_YMD', 
                 '차종분류':'VHCTY_CL_CD',
