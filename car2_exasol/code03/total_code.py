@@ -535,6 +535,7 @@ STD_BD_GRD4_CAR_CURSTT = df1[[
     '시군구',
     '차명', 
     '제작사명', 
+    '배출가스인증번호', 
     '배출가스등급', 
     'DPF유무_수정',
     '검사방법', 
@@ -561,6 +562,7 @@ ch_col_dict = {
                 '시군구':'SGG_NM', 
                 '차명':'VHCNM', 
                 '제작사명':'MNFCTR_NM', 
+                '배출가스인증번호':'EXHST_GAS_CERT_NO_MOD', 
                 '배출가스등급':'EXHST_GAS_GRD_CD_MOD',
                 'DPF유무_수정':'DPF_MNTNG_YN', 
                 '검사방법':'INSP_MTHD', 
@@ -873,7 +875,6 @@ today_date = datetime.today().strftime("%Y%m%d")
 df2['테이블생성일자'] = today_date
 df3 = df2[[
     '테이블생성일자', 
-    '기준연월', 
     '차대번호', 
     '법정동코드', 
     '차종', 
@@ -1159,7 +1160,6 @@ today_date = datetime.today().strftime("%Y%m%d")
 base3['테이블생성일자'] = today_date
 base4 = base3[[
     '테이블생성일자', 
-    '기준연월',
     '연도',
     '월', 
     '연료', 
@@ -4665,6 +4665,7 @@ car_ch_col = {
 carr = car.rename(columns=car_ch_col)
 
 ## 중복 차대번호 제거
+carr['최초등록일자'] = pd.to_numeric(carr['최초등록일자'], errors='coerce')
 carr = carr.sort_values('최초등록일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
 ## 배출가스등급 코드 변환
@@ -5780,6 +5781,7 @@ car_ch_col = {
 carr = car.rename(columns=car_ch_col)
 
 ## 중복 차대번호 제거
+carr['최초등록일자'] = pd.to_numeric(carr['최초등록일자'], errors='coerce')
 carr = carr.sort_values('최초등록일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
 ## 차종 코드 변환
@@ -6246,6 +6248,7 @@ car_ch_col = {
 carr = car.rename(columns=car_ch_col)
 
 ## 중복 차대번호 제거
+carr['최초등록일자'] = pd.to_numeric(carr['최초등록일자'], errors='coerce')
 carr = carr.sort_values('최초등록일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
 ## 배출가스등급 코드 변환
@@ -6321,11 +6324,11 @@ df = rdf1.drop('DPF유무_수정', axis=1)
 
 # 전처리
 ## 일일평균주행거리 계산
-df['최초등록일자'] = pd.to_datetime(df['최초등록일자'], format="%Y%m%d")
-df['검사일자'] = pd.to_datetime(df['검사일자'], format="%Y%m%d")
+df['최초등록일자'] = pd.to_datetime(df['최초등록일자'], format="%Y%m%d", errors='coerce')
+df['검사일자'] = pd.to_datetime(df['검사일자'], format="%Y%m%d", errors='coerce')
 today_date = datetime.today().strftime("%Y-%d-%m")
 df['현재날짜'] = today_date
-df['현재날짜'] = pd.to_datetime(df['현재날짜'], format='%Y-%m-%d')
+df['현재날짜'] = pd.to_datetime(df['현재날짜'], format='%Y-%m-%d', errors='coerce')
 df['최근검사경과일'] = df['현재날짜'] - df['검사일자']
 df['최근검사경과일'] = df['최근검사경과일'].astype('str')
 df['최근검사경과일'] = df['최근검사경과일'].str.split(' ').str[0]
