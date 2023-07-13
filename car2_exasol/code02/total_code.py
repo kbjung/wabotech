@@ -15,7 +15,7 @@ we = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C47
 # we = pyexasol.connect(dsn='dev.openankus.org:8563', user='sys', password='djslzja', compression=True, schema='vsyse')
 # wbt = pyexasol.connect(dsn='dev.openankus.org:8563', user='sys', password='djslzja', compression=True, schema='wbt')
 
-
+start = time.time()
 
 # Load ###################################################################################################################
 ## 등록정보(STD_CEG_CAR_MIG) 4등급만
@@ -40,6 +40,8 @@ car_ch_col = {
 }
 carr = car.rename(columns=car_ch_col)
 
+print('load complete : STD_CEG_CAR_MIG')
+
 ## 제원정보(STD_CEG_CAR_SRC_MIG)
 # 3.8s
 src = wd.export_to_pandas("SELECT MANP_MNG_NO, FUEL_CD, VHCTY_TY_CD2, MNFCTR_NM, VHCNM, VHCL_FRM, EGIN_TY, VHCTY_CL_CD, TOTL_WGHT, CRYNG_WGHT, DSPLVL, EGIN_OTPT FROM STD_CEG_CAR_SRC_MIG;")
@@ -59,9 +61,10 @@ src_ch_col = {
 }
 srcr = src.rename(columns=src_ch_col)
 
+print('load complete : STD_CEG_CAR_SRC_MIG')
+
 ## 정기검사(STD_TB_JGT_HIS)
 # 3m 34.9s
-# jgt = wb.export_to_pandas("SELECT VIN, FDRM_INSP_INSP_MTHD_CD, FDRM_INSP_KND_CD, FDRM_INSP_JGMT, FDRM_NLOD_SMO_MSTVL1, FDRM_NLOD_SMO_MSTVL2, FDRM_NLOD_SMO_MSTVL3, FDRM_NLOD_SMO_JT_YN1, FDRM_INSP_YMD, FDRM_DRVNG_DSTNC, FDRM_NLOD_SMO_PRMVL1 FROM STD_TB_JGT_HIS WHERE ROWNUM <= 10000;") # 테스트용
 jgt = wd.export_to_pandas("SELECT VIN, FDRM_INSP_INSP_MTHD_CD, FDRM_INSP_KND_CD, FDRM_INSP_JGMT, FDRM_NLOD_SMO_MSTVL1, FDRM_NLOD_SMO_MSTVL2, FDRM_NLOD_SMO_MSTVL3, FDRM_NLOD_SMO_JT_YN1, FDRM_INSP_YMD, FDRM_DRVNG_DSTNC, FDRM_NLOD_SMO_PRMVL1 FROM STD_TB_JGT_HIS;")
 jgt_ch_col = {
     'VIN':'차대번호', 
@@ -77,6 +80,8 @@ jgt_ch_col = {
     'FDRM_NLOD_SMO_PRMVL1':'무부하매연허용치1', 
 }
 jgtr = jgt.rename(columns=jgt_ch_col)
+
+print('load complete : STD_TB_JGT_HIS')
 
 ## 정밀검사(STD_TB_EET_HIS_ME)
 # 6m 36.1s
@@ -96,6 +101,8 @@ eet_ch_col = {
 }
 eetr = eet.rename(columns=eet_ch_col)
 
+print('load complete : STD_TB_EET_HIS_ME')
+
 ## 법정동코드(STD_BJCD_INFO)
 # 1.3s
 code = wd.export_to_pandas("SELECT STDG_CD, STDG_CTPV_NM, STDG_SGG_NM, STDG_CTPV_CD, STDG_SGG_CD FROM STD_BJCD_INFO;")
@@ -108,6 +115,8 @@ code_ch_col = {
 }
 coder = code.rename(columns=code_ch_col)
 
+print('load complete : STD_BJCD_INFO')
+
 ## 노후차 조기폐차 관리정보(수도권)(STD_DLM_TB_ERP_EARLY_ERASE_AEA)
 # 2.4s
 aea = wd.export_to_pandas("SELECT VIN, ELPDSRC_STTS_CD, ELPDSRC_LST_APRV_YN, ERSR_YMD FROM STD_DLM_TB_ERP_EARLY_ERASE_AEA;")
@@ -118,6 +127,8 @@ aea_ch_col = {
     'ERSR_YMD':'말소일자', 
 }
 aear = aea.rename(columns=aea_ch_col)
+
+print('load complete : STD_DLM_TB_ERP_EARLY_ERASE_AEA')
 
 ## 노후차 조기폐차 관리정보(수도권외)(STD_DLM_TB_ERP_EARLY_ERASE_LGV)
 # 1.8s
@@ -130,6 +141,7 @@ lgv_ch_col = {
 }
 lgvr = lgv.rename(columns=lgv_ch_col)
 
+print('load complete : STD_DLM_TB_ERP_EARLY_ERASE_LGV')
 
 ## 저감장치 부착이력(STD_DLM_TB_ERP_ATT_HIS)
 # 3.0s
@@ -139,6 +151,8 @@ att_ch_col = {
     'RDCDVC_SE_CD':'저감장치구분', 
 }
 attr = att.rename(columns=att_ch_col)
+
+print('load complete : STD_DLM_TB_ERP_ATT_HIS')
 
 ## 등록이력(CEG_CAR_HISTORY_MIG)
 # 1.8s
@@ -160,6 +174,8 @@ his_ch_col = {
 }
 hisr = his.rename(columns=his_ch_col)
 
+print('load complete : CEG_CAR_HISTORY_MIG')
+
 ## 비상시 및 계절제 단속발령(N_IS_ISSUE_DISCLOSURE)
 # 1.8s
 sql = "select REGLT_NO, GNFD_NO, VIN, REG_SIDO_CD, REG_SIGNGU_CD, REGLT_AREA_CD from vsysd.n_is_issue_disclosure"
@@ -177,6 +193,8 @@ isdis_ch_col = {
 }
 isdisr = isdis.rename(columns=isdis_ch_col)
 
+print('load complete : N_IS_ISSUE_DISCLOSURE')
+
 ## 운행제한 발령정보(N_IS_ISSUE)
 sql = "select GNFD_NO, TY_STDR_ID, DNSTY_STDR_ID from vsysd.n_is_issue"
 cur.execute(sql)
@@ -190,6 +208,8 @@ isis_ch_col = {
 }
 isisr = isis.rename(columns=isis_ch_col)
 
+print('load complete : N_IS_ISSUE')
+
 ## N_IS_PENALTY
 sql = "select REGLT_NO, REGLT_DE from vsysd.n_is_penalty"
 cur.execute(sql)
@@ -200,6 +220,8 @@ ispe_ch_col = {
     'REGLT_DE':'단속일', 
 }
 isper = ispe.rename(columns=ispe_ch_col)
+
+print('load complete : N_IS_PENALTY')
 
 ## 운행제한 단속정보(N_US_DISCLOSURE)
 sql = 'select "NO", VIN, DISCL_TY, REGLT_AREA_CD, REG_SIDO_CD, REG_SIGNGU_CD from vsysd.n_us_disclosure'
@@ -216,6 +238,8 @@ usdis_ch_dict = {
 }
 usdisr = usdis.rename(columns=usdis_ch_dict)
 
+print('load complete : N_US_DISCLOSURE')
+
 ## N_US_PENALTY
 sql = 'select "NO", REGLT_CNT, REGLT_YM FROM from vsysd.n_us_penalty'
 cur.execute(sql)
@@ -230,6 +254,8 @@ uspe_ch_dict = {
 }
 usper = uspe.rename(columns=uspe_ch_dict)
 
+print('load complete : N_US_PENALTY')
+
 ## RH에서 제공한 법정동코드
 rh = we.export_to_pandas("SELECT DONG_CODE, CTPRVN_NM, SIGNGU_NM FROM TB_MAPDATA;")
 rh = rh.rename(columns={
@@ -238,9 +264,13 @@ rh = rh.rename(columns={
     'SIGNGU_NM':'시군구'
     })
 
+print('load complete : TB_MAPDATA')
+
 ## 4등급 result(for DPF유무)
 # 20s
 rs = we.export_to_pandas("SELECT 차대번호, DPF유무_수정 FROM GRD4_RESULT;")
+
+print('load complete : GRD4_RESULT')
 
 ## STD_KOSIS
 kosis = we.export_to_pandas("SELECT CTPV, SGG, VHCTY_CD, DY_AVRG_DRVNG_DSTNC FROM STD_KOSIS;")
@@ -251,6 +281,8 @@ kosis_ch_col = {
     'DY_AVRG_DRVNG_DSTNC':'일일평균주행거리', 
 }
 kosisr = kosis.rename(columns=kosis_ch_col)
+
+print('load complete : STD_KOSIS')
 
 ## 운행제한 건수 데이터
 # 3.0s
@@ -6639,3 +6671,5 @@ we.execute(sql)
 we.import_from_pandas(expdf, table_nm)
 
 ################################################################### 3-3 code end
+
+print(start - time.time())
