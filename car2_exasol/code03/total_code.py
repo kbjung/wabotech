@@ -112,7 +112,7 @@ code_ch_col = {
     'STDG_CTPV_NM':'시도', 
     'STDG_SGG_NM':'시군구', 
     'STDG_CTPV_CD':'시도코드',
-    'STDG_SGG_CD':'시군구코드', 
+    'STDG_SGG_CD':'시군구코드', # 오타 수정 요청 : SSG -> SGG(2023.07.13 어니컴 VSYSD에서 발견)
 }
 coder = code.rename(columns=code_ch_col)
 
@@ -290,7 +290,7 @@ print('data load : STD_KOSIS')
 # lmt = we.export_to_pandas("SELECT * FROM GRD5_LMT_NOCS;")
 # lmt['운행제한건수'] = lmt[['계절제_1차', '계절제_2차', '계절제_3차', '계절제_4차', '비상시', '상시']].sum(axis=1)
 
-print('data load.')
+# print('data load.')
 
 # 전처리 #############################################################################################
 
@@ -435,7 +435,6 @@ mth_dict = {
 insm['검사방법'] = insm['검사방법'].replace(mth_dict)
 
 ## 저감장치구분 코드 변환
-attr['저감장치구분'].unique()
 rdcdvc_dict = {
     'A1001':'1종', 
     'A1002':'2종', 
@@ -446,11 +445,9 @@ rdcdvc_dict = {
     'A1007':'삼원촉매',
 }
 attr['저감장치구분'] = attr['저감장치구분'].replace(rdcdvc_dict)
-attr['저감장치구분'].unique()
 
 ## 저감장치 부착 유무
 attr.loc[(attr['저감장치구분'] == '1종') | (attr['저감장치구분'] == '1종+SCR'), 'DPF_YN'] = '유'
-attr['DPF_YN'].value_counts(dropna=False)
 
 ## 등록&제원&정기&정밀 병합
 # 2m 0.5s
@@ -517,6 +514,7 @@ df1 = df[df['배출가스등급'] == '4'].reset_index(drop=True)
 
 ### 테이블생성일자 컬럼 추가
 today_date = datetime.today().strftime("%Y%m%d")
+# 기준연월 추가 고민
 df1['테이블생성일자'] = today_date
 # RH제공 법정동코드 타입 문자열로 수정
 df1['법정동코드_mod'] = df1['법정동코드_mod'].astype('str')
@@ -4453,11 +4451,14 @@ check_E_col = ['E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2
 
 ## 시도/시군구별 배출량 합계
 grp1 = df2.groupby(['시도', '시군구_수정'], as_index=False).agg({'E_CO_total':'sum', 'E_HC_total':'sum', 'E_NOx_total':'sum', 'E_PM10_total':'sum', 'E_PM2_5_total':'sum'})
-grp1['연도'] = '2022'
+# today_date = datetime.today().strftime("%Y")
+# grp1['연도'] = today_date
+grp1['연도'] = '2022' # 하드코딩
 grp1 = grp1[['연도', '시도', '시군구_수정', 'E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2_5_total']]
 
 today_date = datetime.today().strftime("%Y%m%d")
 grp1['테이블생성일자'] = today_date
+# 기준연월 추가 고민
 chc_dict = {
     '테이블생성일자':'LOAD_DT', 
     '연도':'YR', 
@@ -4537,6 +4538,7 @@ today_date = datetime.today().strftime("%Y%m%d")
 df3['테이블생성일자'] = today_date
 # RH법정동코드 문자열타입으로 변경
 df3['법정동코드_mod'] = df3['법정동코드_mod'].astype('str')
+# 기준연월 추가 고민
 df4 = df3[[
     '테이블생성일자', 
     '차대번호',
