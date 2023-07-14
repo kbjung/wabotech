@@ -1110,9 +1110,10 @@ num_car_by_local = dfm.groupby(['연료', '시도', '시군구_수정', '최초�
 num_car_by_local = num_car_by_local.rename(columns={'차대번호':'등록차량대수', '최초등록일자_년':'연도', '최초등록일자_월':'월'})
 
 ### 연료 지역별 차량대수
-num_car_by_local2 = dfm.loc[dfm['최초등록일자'] < '20220601'].groupby(['연료', '시도', '시군구_수정'], dropna=False)['차대번호'].count().reset_index()
+num_car_by_local2 = dfm.loc[dfm['최초등록일자'] < dfm['최초등록일자'].max()].groupby(['연료', '시도', '시군구_수정'], dropna=False)['차대번호'].count().reset_index()
 num_car_by_local2 = num_car_by_local2.rename(columns={'차대번호':'차량대수'})
-num_car_by_local2[['연도', '월']] = ['2022', '06']
+
+num_car_by_local2[['연도', '월']] = [dfm['최초등록일자_년'].max(), dfm['최초등록일자_월'].max()]
 
 ### 연료 지역별 말소 대수
 errc['변경일자'] = errc['변경일자'].astype('str')
@@ -1123,7 +1124,7 @@ errc['변경일자_일'] = errc['변경일자'].str[6:8]
 ### 시군구명 앞쪽 지역명만 남기기(errc)
 # 시군구명 앞쪽 지역명만 남기기(errc)
 errc['시군구_수정'] = errc['시군구'].str.split(' ').str[0]
-grp_erase = errc.loc[errc['변경일자_년'] == '2022'].groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], as_index=False)['차대번호'].count()
+grp_erase = errc.loc[errc['변경일자_년'] == dfm['최초등록일자_년'].max()].groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], as_index=False)['차대번호'].count()
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도', '변경일자_월':'월'})
 grp_erase = grp_erase.sort_values(['시도', '시군구_수정'])
 
@@ -1208,9 +1209,9 @@ print(f'data export : {table_nm}')
 # 분석3
 ## 연도 시도 차종별 차량 대수
 ### 현재 차량 대수
-num_car_by_local1 = dfm.loc[dfm['최초등록일자'] < '20220601'].groupby(['연료', '시도', '차종'], dropna=False)['차대번호'].count().reset_index()
+num_car_by_local1 = dfm.loc[dfm['최초등록일자'] < dfm['최초등록일자'].max()].groupby(['연료', '시도', '차종'], dropna=False)['차대번호'].count().reset_index()
 num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수'})
-num_car_by_local1['연도'] = '2022'
+num_car_by_local1['연도'] = dfm['최초등록일자_년'].max()
 
 ### 등록 차량 대수
 num_car_by_local2 = dfm.groupby(['연료', '시도', '차종', '최초등록일자_년'], as_index=False)['차대번호'].count()
