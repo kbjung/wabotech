@@ -5,6 +5,7 @@ from tqdm import tqdm
 from datetime import datetime
 import pyexasol
 import psycopg2
+import scipy.interpolate as intp
 
 # server
 # insider db
@@ -1149,7 +1150,7 @@ base2 = base1.merge(num_car_by_local, on=['연도', '월', '연료', '시도', '
 base3 = base2.merge(grp_erase, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
 base3[['차량대수', '등록차량대수', '말소차량대수']] = base3[['차량대수', '등록차량대수', '말소차량대수']].fillna(0)
 
-n = 5
+n = len(base3['월'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소차량대수'] - base3.loc[(i+1)*n - (j-1), '등록차량대수']
@@ -1239,7 +1240,7 @@ base2 = base1.merge(num_car_by_local2, on=['연도', '연료', '시도', '차종
 base3 = base2.merge(grp_erase, on=['연도', '연료', '시도', '차종'], how='left')
 base3[['차량대수', '등록차량대수', '말소차량대수']] = base3[['차량대수', '등록차량대수', '말소차량대수']].fillna(0)
 
-n = 4
+n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소차량대수'] - base3.loc[(i+1)*n - (j-1), '등록차량대수']
@@ -4809,13 +4810,15 @@ dfm2 = dfm.loc[(dfm['fuel'] == '경유') | (dfm['fuel'] == '휘발유') | (dfm['
 errc2 = errc.loc[(errc['fuel'] == '경유') | (errc['fuel'] == '휘발유') | (errc['fuel'] == 'LPG') | (errc['fuel'] == '전기') | (errc['fuel'] == '수소')].reset_index(drop=True)
 
 ## 등급, 지역별 차량현황
+# 데이터 연도 설정
+year = 2022
 # 2022년 차량 대수
 grp1 = dfm2.groupby(['지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
-grp1['연도'] = '2022'
+grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', '지역', '시도', '배출가스등급', '차량대수']]
 
-# 4년간 차량 통계 기본 데이터셋
+# 차량 통계 기본 데이터셋
 yr_list = []
 rgn_list = []
 ctpv_list = []
@@ -4826,8 +4829,8 @@ for ctpv in grp1['시도'].unique():
     else:
         rgn = '비수도권'
         for grd in ['1', '2', '3', '4', '5', 'X']:
-            for yr in ['2019', '2020', '2021', '2022']:
-                yr_list.append(yr)
+            for yr in range(2019, year + 1):
+                yr_list.append(str(yr))
                 rgn_list.append(rgn)
                 ctpv_list.append(ctpv)
                 grd_list.append(grd)
@@ -4845,7 +4848,7 @@ base2 = base1.merge(grp2, on=['연도', '지역', '시도', '배출가스등급'
 base3 = base2.merge(grp3, on=['연도', '지역', '시도', '배출가스등급'], how='left')
 base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
 
-n = 4
+n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
@@ -4895,17 +4898,17 @@ print(f'data export : {table_nm}')
 # 2022년 차량 대수
 grp1 = dfm2.groupby(['fuel', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
-grp1['연도'] = '2022'
+grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', 'fuel', '배출가스등급', '차량대수']]
 
-# 4년간 차량 통계 기본 데이터셋
+# 차량 통계 기본 데이터셋
 yr_list = []
 fuel_list = []
 grd_list = []
 for fuel in grp1['fuel'].unique():
     for grd in ['1', '2', '3', '4', '5', 'X']:
-        for yr in ['2019', '2020', '2021', '2022']:
-            yr_list.append(yr)
+        for yr in range(2019, year + 1):
+            yr_list.append(str(yr))
             fuel_list.append(fuel)
             grd_list.append(grd)
 base = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list})
@@ -4922,7 +4925,7 @@ base2 = base1.merge(grp2, on=['연도', 'fuel', '배출가스등급'], how='left
 base3 = base2.merge(grp3, on=['연도', 'fuel', '배출가스등급'], how='left')
 base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
 
-n = 4
+n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
@@ -5028,17 +5031,17 @@ print(f'data export : {table_nm}')
 # 2022년 차량 대수
 grp1 = dfm2.groupby(['fuel', '시도'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
-grp1['연도'] = '2022'
+grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', 'fuel', '시도', '차량대수']]
 
-# 4년간 차량 통계 기본 데이터셋
+# 차량 통계 기본 데이터셋
 yr_list = []
 fuel_list = []
 ctpv_list = []
 for fuel in grp1['fuel'].unique():
     for ctpv in grp1['시도'].unique():
-        for yr in ['2019', '2020', '2021', '2022']:
-            yr_list.append(yr)
+        for yr in range(2019, year + 1):
+            yr_list.append(str(yr))
             fuel_list.append(fuel)
             ctpv_list.append(ctpv)
 base = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '시도':ctpv_list})
@@ -5056,7 +5059,7 @@ base3 = base2.merge(grp3, on=['연도', 'fuel', '시도'], how='left')
 base3[['차량대수', '등록대수', '말소대수']].isnull().sum()
 base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
 
-n = 4
+n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
@@ -5106,48 +5109,50 @@ print(f'data export : {table_nm}')
 
 ## 내연차 연료, 연도별 차량 현황 예측
 # - 경유, 휘발유, LPG
-dfm2dgl = dfm2.loc[(dfm2['fuel'] == '경유') | (dfm2['fuel'] == '휘발유') | (dfm2['fuel'] == 'LPG')].reset_index(drop=True)
-errc2dgl = errc2.loc[(errc2['fuel'] == '경유') | (errc2['fuel'] == '휘발유') | (errc2['fuel'] == 'LPG')].reset_index(drop=True)
+dfm2dgl = dfm2.loc[(dfm2['연료'] == '경유') | (dfm2['연료'] == '휘발유') | (dfm2['연료'] == 'LPG(액화석유가스)')].reset_index(drop=True)
+errc2dgl = errc2.loc[(errc2['연료'] == '경유') | (errc2['연료'] == '휘발유') | (errc2['연료'] == 'LPG(액화석유가스)')].reset_index(drop=True)
 
 # 2022년 차량 대수
-grp1 = dfm2dgl.groupby('fuel', as_index=False)['차대번호'].count()
+grp1 = dfm2dgl.groupby('연료', as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
-grp1['연도'] = '2022'
-grp1 = grp1[['연도', 'fuel', '차량대수']]
+grp1['연도'] = f'{year}'
+grp1 = grp1[['연도', '연료', '차량대수']]
 
-# 4년간 차량 통계 기본 데이터셋
+# 차량 통계 기본 데이터셋
 yr_list = []
 fuel_list = []
-for fuel in grp1['fuel'].unique():
-    for yr in ['2019', '2020', '2021', '2022']:
-        yr_list.append(yr)
+for fuel in grp1['연료'].unique():
+    for yr in range(2019, year + 1):
+        yr_list.append(str(yr))
         fuel_list.append(fuel)
-base = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list})
+base = pd.DataFrame({'연도':yr_list, '연료':fuel_list})
 
 # 연도별 등록대수
-grp2 = dfm2dgl.groupby(['최초등록일자_년', 'fuel'], as_index=False)['차대번호'].count()
+grp2 = dfm2dgl.groupby(['최초등록일자_년', '연료'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc2dgl.groupby(['변경일자_년', 'fuel'], as_index=False)['차대번호'].count()
+grp3 = errc2dgl.groupby(['변경일자_년', '연료'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
-base1 = base.merge(grp1, on=['연도', 'fuel'], how='left')
-base2 = base1.merge(grp2, on=['연도', 'fuel'], how='left')
-base3 = base2.merge(grp3, on=['연도', 'fuel'], how='left')
+base1 = base.merge(grp1, on=['연도', '연료'], how='left')
+base2 = base1.merge(grp2, on=['연도', '연료'], how='left')
+base3 = base2.merge(grp3, on=['연도', '연료'], how='left')
 base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
 
-n = 4
+n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
 
-die = base3.loc[base3['fuel'] == '경유', ['연도', 'fuel', '차량대수']].reset_index(drop=True)
-gas = base3.loc[base3['fuel'] == '휘발유', ['연도', 'fuel', '차량대수']].reset_index(drop=True)
-lpg = base3.loc[base3['fuel'] == 'LPG', ['연도', 'fuel', '차량대수']].reset_index(drop=True)
+die = base3.loc[base3['연료'] == '경유', ['연도', '연료', '차량대수']].reset_index(drop=True)
+gas = base3.loc[base3['연료'] == '휘발유', ['연도', '연료', '차량대수']].reset_index(drop=True)
+lpg = base3.loc[base3['연료'] == 'LPG(액화석유가스)', ['연도', 'fuel', '차량대수']].reset_index(drop=True)
 
 die['연도'] = die['연도'].astype('int')
 gas['연도'] = gas['연도'].astype('int')
 lpg['연도'] = lpg['연도'].astype('int')
+
+# 선형 예측
 fit1 = np.polyfit(die['연도'], die['차량대수'], 1)
 fit2 = np.polyfit(gas['연도'], gas['차량대수'], 1)
 fit3 = np.polyfit(lpg['연도'], lpg['차량대수'], 1)
@@ -5155,36 +5160,60 @@ a1, b1 = fit1
 a2, b2 = fit2
 a3, b3 = fit3
 
+# BSpline 예측
+spl1 = intp.BSpline(die['연도'], die['차량대수'], 1, extrapolate=True)
+spl2 = intp.BSpline(gas['연도'], gas['차량대수'], 1, extrapolate=True)
+spl3 = intp.BSpline(lpg['연도'], lpg['차량대수'], 1, extrapolate=True)
+spl1pred = spl1(range(year + 1, 2036))
+spl2pred = spl2(range(year + 1, 2036))
+spl3pred = spl3(range(year + 1, 2036))
+
+# akima 예측
+aki1 = intp.Akima1DInterpolator(die['연도'], die['차량대수'])
+aki2 = intp.Akima1DInterpolator(gas['연도'], gas['차량대수'])
+aki3 = intp.Akima1DInterpolator(lpg['연도'], lpg['차량대수'])
+aki1pred = aki1([x for x in range(year + 1, 2036)], extrapolate=True)
+aki2pred = aki2([x for x in range(year + 1, 2036)], extrapolate=True)
+aki3pred = aki3([x for x in range(year + 1, 2036)], extrapolate=True)
+
 yr_list = []
 fuel_list = []
 pred_list = []
 fuel = '경유'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = a1 * yr + b1
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
-die_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '경유_예측':pred_list})
+die_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, '경유_예측':pred_list})
+die_pred['경유_예측_BSpline'] = spl1pred
+die_pred['경유_예측_Akima'] = aki1pred
+
 yr_list = []
 fuel_list = []
 pred_list = []
 fuel = '휘발유'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = a2 * yr + b2
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
-gas_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '휘발유_예측':pred_list})
+gas_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, '휘발유_예측':pred_list})
+gas_pred['휘발유_예측_BSpline'] = spl2pred
+gas_pred['휘발유_예측_Akima'] = aki2pred
+
 yr_list = []
 fuel_list = []
 pred_list = []
 fuel = 'LPG'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = a3 * yr + b3
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
-lpg_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, 'LPG_예측':pred_list})
+lpg_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, 'LPG_예측':pred_list})
+lpg_pred['LPG_예측_BSpline'] = spl3pred
+lpg_pred['LPG_예측_Akima'] = aki3pred
 
 die_t = pd.concat([die, die_pred], ignore_index=True)
 gas_t = pd.concat([gas, gas_pred], ignore_index=True)
@@ -5193,27 +5222,54 @@ die_t = die_t.rename(columns={'차량대수':'경유_대수'})
 gas_t = gas_t.rename(columns={'차량대수':'휘발유_대수'})
 lpg_t = lpg_t.rename(columns={'차량대수':'LPG_대수'})
 
-df5 = pd.concat([die_t[['연도', '경유_대수', '경유_예측']], gas_t[['휘발유_대수', '휘발유_예측']], lpg_t[['LPG_대수', 'LPG_예측']]], axis=1)
+df5 = pd.concat([die_t[['연도', '경유_대수', '경유_예측', '경유_예측_BSpline', '경유_예측_Akima']], gas_t[['휘발유_대수', '휘발유_예측', '휘발유_예측_BSpline', '휘발유_예측_Akima']], lpg_t[['LPG_대수', 'LPG_예측', 'LPG_예측_BSpline', 'LPG_예측_Akima']]], axis=1)
+
+# 음수 0으로 처리
+df5.loc[df5['경유_예측'] < 0, '경유_예측'] = 0
+df5.loc[df5['경유_예측_BSpline'] < 0, '경유_예측_BSpline'] = 0
+df5.loc[df5['경유_예측_Akima'] < 0, '경유_예측_Akima'] = 0
+df5.loc[df5['휘발유_예측'] < 0, '휘발유_예측'] = 0
+df5.loc[df5['휘발유_예측_BSpline'] < 0, '휘발유_예측_BSpline'] = 0
+df5.loc[df5['휘발유_예측_Akima'] < 0, '휘발유_예측_Akima'] = 0
+df5.loc[df5['LPG_예측'] < 0, 'LPG_예측'] = 0
+df5.loc[df5['LPG_예측_BSpline'] < 0, 'LPG_예측_BSpline'] = 0
+df5.loc[df5['LPG_예측_Akima'] < 0, 'LPG_예측_Akima'] = 0
+
+# 첫째자리까지 반올림
+df5[['경유_대수', '휘발유_대수', 'LPG_대수', '경유_예측', '경유_예측_BSpline','경유_예측_Akima', '휘발유_예측', '휘발유_예측_BSpline', '휘발유_예측_Akima', 'LPG_예측', 'LPG_예측_BSpline', 'LPG_예측_Akima']] = df5[['경유_대수', '휘발유_대수', 'LPG_대수', '경유_예측', '경유_예측_BSpline','경유_예측_Akima', '휘발유_예측', '휘발유_예측_BSpline', '휘발유_예측_Akima', 'LPG_예측', 'LPG_예측_BSpline', 'LPG_예측_Akima']].round(0)
+
 df5['테이블생성일자'] = today_date
 df5 = df5[[
-    '테이블생성일자', 
-    '연도', 
-    '휘발유_대수', 
-    '경유_대수', 
-    'LPG_대수', 
-    '휘발유_예측', 
-    '경유_예측', 
-    'LPG_예측'
+   '테이블생성일자',
+   '연도',
+   '경유_대수',
+   '휘발유_대수',
+   'LPG_대수',
+   '경유_예측',
+   '경유_예측_BSpline',
+   '경유_예측_Akima',
+   '휘발유_예측',
+   '휘발유_예측_BSpline',
+   '휘발유_예측_Akima',
+   'LPG_예측',
+   'LPG_예측_BSpline',
+   'LPG_예측_Akima',
     ]]
 cdict = {
     '테이블생성일자':'LOAD_DT', 
     '연도':'YR', 
-    '휘발유_대수':'GSL', 
     '경유_대수':'DSL', 
+    '휘발유_대수':'GSL', 
     'LPG_대수':'LPG', 
-    '휘발유_예측':'GSL_PRET', 
     '경유_예측':'DSL_PRET', 
+    '경유_예측_BSpline':'DSL_PRET_BSPLN', 
+    '경유_예측_Akima':'DSL_PRET_AKM', 
+    '휘발유_예측':'GSL_PRET', 
+    '휘발유_예측_BSpline':'GSL_PRET_BSPLN', 
+    '휘발유_예측_Akima':'GSL_PRET_AKM', 
     'LPG_예측':'LPG_PRET',
+    'LPG_예측_BSpline':'LPG_PRET_BSPLN',
+    'LPG_예측_Akima':'LPG_PRET_AKM',
 }
 STD_BD_CAR_PRET = df5.rename(columns=cdict)
 
@@ -5244,22 +5300,171 @@ we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
 
+## 하이브리드 연료, 연도별 차량 현황 예측
+# - 경유 하이브리드, 휘발유 하이브리드, LPG 하이브리드
+dfm2h = dfm2.loc[(dfm2['연료'] == '경유 하이브리드') | (dfm2['연료'] == '휘발유 하이브리드') | (dfm2['연료'] == 'LPG 하이브리드')].reset_index(drop=True)
+errc2h = errc2.loc[(errc2['연료'] == '경유 하이브리드') | (errc2['연료'] == '휘발유 하이브리드') | (errc2['연료'] == 'LPG 하이브리드')].reset_index(drop=True)
+
+# 2022년 차량 대수
+grp1 = dfm2h.groupby('연료', as_index=False)['차대번호'].count()
+grp1 = grp1.rename(columns={'차대번호':'차량대수'})
+grp1['연도'] = f'{year}'
+grp1 = grp1[['연도', '연료', '차량대수']]
+
+# 차량 통계 기본 데이터셋
+yr_list = []
+fuel_list = []
+for fuel in grp1['연료'].unique():
+    for yr in range(2019, year + 1):
+        yr_list.append(str(yr))
+        fuel_list.append(fuel)
+base = pd.DataFrame({'연도':yr_list, '연료':fuel_list})
+
+# 연도별 등록대수
+grp2 = dfm2h.groupby(['최초등록일자_년', '연료'], as_index=False)['차대번호'].count()
+grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
+
+# 연도별 말소대수
+grp3 = errc2h.groupby(['변경일자_년', '연료'], as_index=False)['차대번호'].count()
+grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
+base1 = base.merge(grp1, on=['연도', '연료'], how='left')
+base2 = base1.merge(grp2, on=['연도', '연료'], how='left')
+base3 = base2.merge(grp3, on=['연도', '연료'], how='left')
+base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
+
+n = len(base3['연도'].unique())
+for i in range(base3.shape[0] // n):
+    for j in range(2, n+1):
+        base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
+
+die = base3.loc[base3['연료'] == '경유 하이브리드', ['연도', '연료', '차량대수']].reset_index(drop=True)
+gas = base3.loc[base3['연료'] == '휘발유 하이브리드', ['연도', '연료', '차량대수']].reset_index(drop=True)
+lpg = base3.loc[base3['연료'] == 'LPG 하이브리드', ['연도', '연료', '차량대수']].reset_index(drop=True)
+die['연도'] = die['연도'].astype('int')
+gas['연도'] = gas['연도'].astype('int')
+lpg['연도'] = lpg['연도'].astype('int')
+
+# 선형예측
+fit1 = np.polyfit(die['연도'], die['차량대수'], 1)
+fit2 = np.polyfit(gas['연도'], gas['차량대수'], 1)
+fit3 = np.polyfit(lpg['연도'], lpg['차량대수'], 1)
+a1, b1 = fit1
+a2, b2 = fit2
+a3, b3 = fit3
+
+yr_list = []
+fuel_list = []
+pred_list = []
+fuel = '경유 하이브리드'
+for yr in range(year + 1, 2036):
+    pred = a1 * yr + b1
+    yr_list.append(yr)
+    fuel_list.append(fuel)
+    pred_list.append(pred)
+die_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, '경유_하이브리드_예측':pred_list})
+
+yr_list = []
+fuel_list = []
+pred_list = []
+fuel = '휘발유 하이브리드'
+for yr in range(year + 1, 2036):
+    pred = a2 * yr + b2
+    yr_list.append(yr)
+    fuel_list.append(fuel)
+    pred_list.append(pred)
+gas_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, '휘발유_하이브리드_예측':pred_list})
+
+yr_list = []
+fuel_list = []
+pred_list = []
+fuel = 'LPG 하이브리드'
+for yr in range(year + 1, 2036):
+    pred = a3 * yr + b3
+    yr_list.append(yr)
+    fuel_list.append(fuel)
+    pred_list.append(pred)
+lpg_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, 'LPG_하이브리드_예측':pred_list})
+
+die_t = pd.concat([die, die_pred], ignore_index=True)
+gas_t = pd.concat([gas, gas_pred], ignore_index=True)
+lpg_t = pd.concat([lpg, lpg_pred], ignore_index=True)
+die_t = die_t.rename(columns={'차량대수':'경유_하이브리드_대수'})
+gas_t = gas_t.rename(columns={'차량대수':'휘발유_하이브리드_대수'})
+lpg_t = lpg_t.rename(columns={'차량대수':'LPG_하이브리드_대수'})
+
+df5 = pd.concat([die_t[['연도', '경유_하이브리드_대수', '경유_하이브리드_예측']], gas_t[['휘발유_하이브리드_대수', '휘발유_하이브리드_예측']], lpg_t[['LPG_하이브리드_대수', 'LPG_하이브리드_예측']]], axis=1)
+
+# 첫째자리까지 반올림
+df5[['경유_하이브리드_대수', '경유_하이브리드_예측', '휘발유_하이브리드_대수', '휘발유_하이브리드_예측', 'LPG_하이브리드_대수', 'LPG_하이브리드_예측']] = df5[['경유_하이브리드_대수', '경유_하이브리드_예측', '휘발유_하이브리드_대수', '휘발유_하이브리드_예측', 'LPG_하이브리드_대수', 'LPG_하이브리드_예측']].round(0)
+
+today_date = datetime.today().strftime("%Y%m%d")
+df5['테이블생성일자'] = today_date
+
+df5 = df5[[
+    '테이블생성일자', 
+    '연도', 
+    '휘발유_하이브리드_대수', 
+    '경유_하이브리드_대수', 
+    'LPG_하이브리드_대수', 
+    '휘발유_하이브리드_예측', 
+    '경유_하이브리드_예측', 
+    'LPG_하이브리드_예측'
+    ]]
+cdict = {
+    '테이블생성일자':'LOAD_DT', 
+    '연도':'YR', 
+    '휘발유_하이브리드_대수':'GSLH', 
+    '경유_하이브리드_대수':'DSLH', 
+    'LPG_하이브리드_대수':'LPGH', 
+    '휘발유_하이브리드_예측':'GSLH_PRET', 
+    '경유_하이브리드_예측':'DSLH_PRET', 
+    'LPG_하이브리드_예측':'LPGH_PRET',
+}
+STD_BD_HYBRD_CAR_PRET = df5.rename(columns=cdict)
+
+### [출력] STD_BD_HYBRD_CAR_PRET
+expdf = STD_BD_HYBRD_CAR_PRET
+table_nm = 'STD_BD_HYBRD_CAR_PRET'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 7s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
 ## 내연차 연료, 등급, 연도별 차량 현황 예측
 # - 경유, 휘발유, LPG
 # 2022년 차량 대수
 grp1 = dfm2dgl.groupby(['fuel', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
-grp1['연도'] = '2022'
+grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', 'fuel', '배출가스등급', '차량대수']]
 
-# 4년간 차량 통계 기본 데이터셋
+# 차량 통계 기본 데이터셋
 yr_list = []
 fuel_list = []
 grd_list = []
 for fuel in grp1['fuel'].unique():
     for grd in grp1['배출가스등급'].unique():
-        for yr in ['2019', '2020', '2021', '2022']:
-            yr_list.append(yr)
+        for yr in range(2019, year + 1):
+            yr_list.append(str(yr))
             fuel_list.append(fuel)
             grd_list.append(grd)
 base = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list})
@@ -5276,7 +5481,7 @@ base2 = base1.merge(grp2, on=['연도', 'fuel', '배출가스등급'], how='left
 base3 = base2.merge(grp3, on=['연도', 'fuel', '배출가스등급'], how='left')
 base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
 
-n = 4
+n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
@@ -5343,7 +5548,7 @@ grd_list = []
 pred_list = []
 fuel = '경유'
 grd = '1'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ad1 * yr + bd1
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5357,7 +5562,7 @@ grd_list = []
 pred_list = []
 fuel = '경유'
 grd = '2'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ad2 * yr + bd2
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5371,7 +5576,7 @@ grd_list = []
 pred_list = []
 fuel = '경유'
 grd = '3'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ad3 * yr + bd3
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5385,7 +5590,7 @@ grd_list = []
 pred_list = []
 fuel = '경유'
 grd = '4'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ad4 * yr + bd4
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5399,7 +5604,7 @@ grd_list = []
 pred_list = []
 fuel = '경유'
 grd = '5'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ad5 * yr + bd5
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5413,7 +5618,7 @@ grd_list = []
 pred_list = []
 fuel = '휘발유'
 grd = '1'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ag1 * yr + bg1
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5427,7 +5632,7 @@ grd_list = []
 pred_list = []
 fuel = '휘발유'
 grd = '2'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ag2 * yr + bg2
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5441,7 +5646,7 @@ grd_list = []
 pred_list = []
 fuel = '휘발유'
 grd = '3'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ag3 * yr + bg3
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5455,7 +5660,7 @@ grd_list = []
 pred_list = []
 fuel = '휘발유'
 grd = '4'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ag4 * yr + bg4
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5469,7 +5674,7 @@ grd_list = []
 pred_list = []
 fuel = '휘발유'
 grd = '5'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = ag5 * yr + bg5
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5483,7 +5688,7 @@ grd_list = []
 pred_list = []
 fuel = 'LPG'
 grd = '1'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = al1 * yr + bl1
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5497,7 +5702,7 @@ grd_list = []
 pred_list = []
 fuel = 'LPG'
 grd = '2'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = al2 * yr + bl2
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5511,7 +5716,7 @@ grd_list = []
 pred_list = []
 fuel = 'LPG'
 grd = '3'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = al3 * yr + bl3
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5525,7 +5730,7 @@ grd_list = []
 pred_list = []
 fuel = 'LPG'
 grd = '4'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = al4 * yr + bl4
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5539,7 +5744,7 @@ grd_list = []
 pred_list = []
 fuel = 'LPG'
 grd = '5'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = al5 * yr + bl5
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5555,7 +5760,12 @@ gas_t = gas_t.rename(columns={'휘발유_예측':'차량예측'})
 lpg_t = lpg_t.rename(columns={'LPG_예측':'차량예측'})
 
 df6 = pd.concat([die_t, gas_t, lpg_t], ignore_index=True)
+
+# 음수 차량 대수 수정
 df6.loc[df6['차량예측'] < 0, '차량예측'] = 0
+
+# 첫째자리까지 반올림
+df6[['차량대수', '차량예측']] = df6[['차량대수', '차량예측']].round(0)
 
 df6['테이블생성일자'] = today_date
 cdict = {
@@ -5603,15 +5813,15 @@ errc2bh = errc2.loc[(errc2['fuel'] == '전기') | (errc2['fuel'] == '수소')].r
 # 2022년 차량 대수
 grp1 = dfm2bh.groupby('fuel', as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
-grp1['연도'] = '2022'
+grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', 'fuel', '차량대수']]
 
-# 4년간 차량 통계 기본 데이터셋
+# 차량 통계 기본 데이터셋
 yr_list = []
 fuel_list = []
 for fuel in grp1['fuel'].unique():
-    for yr in ['2019', '2020', '2021', '2022']:
-        yr_list.append(yr)
+    for yr in range(2019, year + 1):
+        yr_list.append(str(yr))
         fuel_list.append(fuel)
 base = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list})
 
@@ -5626,7 +5836,8 @@ base1 = base.merge(grp1, on=['연도', 'fuel'], how='left')
 base2 = base1.merge(grp2, on=['연도', 'fuel'], how='left')
 base3 = base2.merge(grp3, on=['연도', 'fuel'], how='left')
 base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
-n = 4
+
+n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
@@ -5635,6 +5846,8 @@ bt = base3.loc[base3['fuel'] == '전기', ['연도', 'fuel', '차량대수']].re
 hy = base3.loc[base3['fuel'] == '수소', ['연도', 'fuel', '차량대수']].reset_index(drop=True)
 bt['연도'] = bt['연도'].astype('int')
 hy['연도'] = hy['연도'].astype('int')
+
+# 선형예측
 fit1 = np.polyfit(bt['연도'], bt['차량대수'], 1)
 fit2 = np.polyfit(hy['연도'], hy['차량대수'], 1)
 a1, b1 = fit1
@@ -5644,17 +5857,18 @@ yr_list = []
 fuel_list = []
 pred_list = []
 fuel = '전기'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = a1 * yr + b1
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
 bt_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '전기_예측':pred_list})
+
 yr_list = []
 fuel_list = []
 pred_list = []
 fuel = '수소'
-for yr in range(2023, 2036):
+for yr in range(year + 1, 2036):
     pred = a2 * yr + b2
     yr_list.append(yr)
     fuel_list.append(fuel)
@@ -5665,6 +5879,9 @@ hy_t = pd.concat([hy, hy_pred], ignore_index=True)
 bt_t = bt_t.rename(columns={'차량대수':'전기_대수'})
 hy_t = hy_t.rename(columns={'차량대수':'수소_대수'})
 df7 = pd.concat([ bt_t[['연도', '전기_대수', '전기_예측']], hy_t[['수소_대수', '수소_예측']] ], axis=1)
+
+# 첫째자리까지 반올림
+df7[['전기_대수', '전기_예측', '수소_대수', '수소_예측']] = df7[['전기_대수', '전기_예측', '수소_대수', '수소_예측']].round(0)
 
 df7['테이블생성일자'] = today_date
 df7 = df7[[
@@ -5911,15 +6128,15 @@ errc['변경일자_일'] = errc['변경일자'].str[6:8]
 # 2022년 차량 대수
 grp1 = dfm.groupby(['시도'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
-grp1['연도'] = '2022'
+grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', '시도', '차량대수']]
 
-# 4년간 차량 통계 기본 데이터셋
+# 차량 통계 기본 데이터셋
 yr_list = []
 ctpv_list = []
 for ctpv in grp1['시도'].unique():
-    for yr in ['2019', '2020', '2021', '2022']:
-        yr_list.append(yr)
+    for yr in range(2019, year + 1):
+        yr_list.append(str(yr))
         ctpv_list.append(ctpv)
 base = pd.DataFrame({'연도':yr_list, '시도':ctpv_list})
 
@@ -5935,7 +6152,7 @@ base2 = base1.merge(grp2, on=['연도', '시도'], how='left')
 base3 = base2.merge(grp3, on=['연도', '시도'], how='left')
 base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
 
-n = 4
+n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
