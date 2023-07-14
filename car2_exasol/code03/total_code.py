@@ -379,9 +379,6 @@ srcr['차종유형'] = srcr['차종유형'].replace(ty_dict)
 cs = carm.merge(srcr, on='제원관리번호', how='left')
 
 ## 정기&정밀 병합
-jgtr['정기정밀'] = '정기'
-eetr['정기정밀'] = '정밀'
-
 # 3m 1.9s
 ins = pd.concat([jgtr, eetr], ignore_index=True)
 
