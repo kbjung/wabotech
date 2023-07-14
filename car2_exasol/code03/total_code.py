@@ -6115,64 +6115,64 @@ no_dpf = we.export_to_pandas("SELECT * FROM GRD5_LEM_N;")
 
 # 분석
 ## 5등급 지역별 조기폐차 현황
-dfm = df.copy()
-dfm['최초등록일자'] = dfm['최초등록일자'].astype('str')
-dfm['최초등록일자_년'] = dfm['최초등록일자'].str[:4]
-dfm['최초등록일자_월'] = dfm['최초등록일자'].str[4:6]
-dfm['최초등록일자_일'] = dfm['최초등록일자'].str[6:8]
-errc['변경일자'] = errc['변경일자'].astype('str')
-errc['변경일자_년'] = errc['변경일자'].str[:4]
-errc['변경일자_월'] = errc['변경일자'].str[4:6]
-errc['변경일자_일'] = errc['변경일자'].str[6:8]
+# dfm = df.copy()
+# dfm['최초등록일자'] = dfm['최초등록일자'].astype('str')
+# dfm['최초등록일자_년'] = dfm['최초등록일자'].str[:4]
+# dfm['최초등록일자_월'] = dfm['최초등록일자'].str[4:6]
+# dfm['최초등록일자_일'] = dfm['최초등록일자'].str[6:8]
+# errc['변경일자'] = errc['변경일자'].astype('str')
+# errc['변경일자_년'] = errc['변경일자'].str[:4]
+# errc['변경일자_월'] = errc['변경일자'].str[4:6]
+# errc['변경일자_일'] = errc['변경일자'].str[6:8]
 
-## 시도, 연도별 차량 현황 분석
-# 2022년 차량 대수
-grp1 = dfm.groupby(['시도'], as_index=False)['차대번호'].count()
-grp1 = grp1.rename(columns={'차대번호':'차량대수'})
-grp1['연도'] = f'{year}'
-grp1 = grp1[['연도', '시도', '차량대수']]
+# ## 시도, 연도별 차량 현황 분석
+# # 2022년 차량 대수
+# grp1 = dfm.groupby(['시도'], as_index=False)['차대번호'].count()
+# grp1 = grp1.rename(columns={'차대번호':'차량대수'})
+# grp1['연도'] = f'{year}'
+# grp1 = grp1[['연도', '시도', '차량대수']]
 
-# 차량 통계 기본 데이터셋
-yr_list = []
-ctpv_list = []
-for ctpv in grp1['시도'].unique():
-    for yr in range(2019, year + 1):
-        yr_list.append(str(yr))
-        ctpv_list.append(ctpv)
-base = pd.DataFrame({'연도':yr_list, '시도':ctpv_list})
+# # 차량 통계 기본 데이터셋
+# yr_list = []
+# ctpv_list = []
+# for ctpv in grp1['시도'].unique():
+#     for yr in range(2019, year + 1):
+#         yr_list.append(str(yr))
+#         ctpv_list.append(ctpv)
+# base = pd.DataFrame({'연도':yr_list, '시도':ctpv_list})
 
-# 연도별 등록대수
-grp2 = dfm.groupby(['최초등록일자_년', '시도'], as_index=False)['차대번호'].count()
-grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
+# # 연도별 등록대수
+# grp2 = dfm.groupby(['최초등록일자_년', '시도'], as_index=False)['차대번호'].count()
+# grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
-# 연도별 말소대수
-grp3 = errc.groupby(['변경일자_년', '시도'], as_index=False)['차대번호'].count()
-grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
-base1 = base.merge(grp1, on=['연도', '시도'], how='left')
-base2 = base1.merge(grp2, on=['연도', '시도'], how='left')
-base3 = base2.merge(grp3, on=['연도', '시도'], how='left')
-base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
+# # 연도별 말소대수
+# grp3 = errc.groupby(['변경일자_년', '시도'], as_index=False)['차대번호'].count()
+# grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
+# base1 = base.merge(grp1, on=['연도', '시도'], how='left')
+# base2 = base1.merge(grp2, on=['연도', '시도'], how='left')
+# base3 = base2.merge(grp3, on=['연도', '시도'], how='left')
+# base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
 
-n = len(base3['연도'].unique())
-for i in range(base3.shape[0] // n):
-    for j in range(2, n+1):
-        base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
+# n = len(base3['연도'].unique())
+# for i in range(base3.shape[0] // n):
+#     for j in range(2, n+1):
+#         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
 
-dfm['말소일자'] = dfm['말소일자'].astype('str')
-dfm['말소일자_년'] = dfm['말소일자'].str[:4]
-dfm['말소일자_월'] = dfm['말소일자'].str[4:6]
-dfm['말소일자_일'] = dfm['말소일자'].str[6:8]
-grp4 = dfm.loc[dfm['조기폐차최종승인YN'] == 'Y'].groupby(['말소일자_년'], as_index=False)['차대번호'].count()
-grp4 = grp4.rename(columns={'말소일자_년':'연도', '차대번호':'조기폐차대수'})
-base4 = base3.merge(grp4, on='연도', how='left')
-base4['조기폐차대수'] = base4['조기폐차대수'].fillna(0)
-base4 = base4.drop(['등록대수', '말소대수'], axis=1)
+# dfm['말소일자'] = dfm['말소일자'].astype('str')
+# dfm['말소일자_년'] = dfm['말소일자'].str[:4]
+# dfm['말소일자_월'] = dfm['말소일자'].str[4:6]
+# dfm['말소일자_일'] = dfm['말소일자'].str[6:8]
+# grp4 = dfm.loc[dfm['조기폐차최종승인YN'] == 'Y'].groupby(['말소일자_년'], as_index=False)['차대번호'].count()
+# grp4 = grp4.rename(columns={'말소일자_년':'연도', '차대번호':'조기폐차대수'})
+# base4 = base3.merge(grp4, on='연도', how='left')
+# base4['조기폐차대수'] = base4['조기폐차대수'].fillna(0)
+# base4 = base4.drop(['등록대수', '말소대수'], axis=1)
 
-n = len(base4['연도'].unique())
-for i in range(base4.shape[0] // n):
-    for j in range(n-1):
-        base4.loc[i*4 + j+1, '감소대수'] = base4.loc[i*4 + j, '차량대수'] - base4.loc[i*4 + j+1, '차량대수']
-base4['자연감소대수'] = base4['감소대수'] - base4['조기폐차대수']
+# n = len(base4['연도'].unique())
+# for i in range(base4.shape[0] // n):
+#     for j in range(n-1):
+#         base4.loc[i*4 + j+1, '감소대수'] = base4.loc[i*4 + j, '차량대수'] - base4.loc[i*4 + j+1, '차량대수']
+# base4['자연감소대수'] = base4['감소대수'] - base4['조기폐차대수']
 
 today_date = datetime.today().strftime("%Y%m%d")
 df1['LOAD_DT'] = today_date
