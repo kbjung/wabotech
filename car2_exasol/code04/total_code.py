@@ -599,12 +599,11 @@ we.execute(sql)
 # 데이터 추가
 # 9s
 we.import_from_pandas(expdf, table_nm)
-df2 = df1.copy()
 
 print(f'data export : {table_nm}')
 
 ## 경유차만 추출
-df2 = df2[df2['연료'] == '경유'].reset_index(drop=True)
+df2 = df1[df1['연료'] == '경유'].reset_index(drop=True)
 
 ## 차대번호 10자리 연식
 df2['vin10'] = df2['차대번호'].str[9]
@@ -675,10 +674,9 @@ sidf['차령'] = current_yr - sidf['차량연식']
 sidf['SI'] = sidf['무부하매연측정치1'] / sidf['무부하매연허용치1']
 
 ### 경유만 추출
-sidf1 = sidf[sidf['연료'] == '경유'].reset_index(drop=True)
 today_date = datetime.today().strftime("%Y%m%d")
-sidf1['테이블생성일자'] = today_date
-sidf1 = sidf1[[
+sidf['테이블생성일자'] = today_date
+sidf1 = sidf[[
     '테이블생성일자',
     '차대번호', 
     '제원관리번호', 
@@ -772,7 +770,7 @@ for one in sample01['배출가스인증번호'].unique(): # 통계에서 100대 
 quantile_df1 = quantile_df.drop_duplicates(['배출가스인증번호', '제원관리번호', '검사방법', '검사종류'])
 today_date = datetime.today().strftime("%Y%m%d")
 quantile_df1['테이블생성일자'] = today_date
-quantile_df2 = quantile_df1[[
+STD_BD_GRD4_CAR_CURSTT_TOT = quantile_df1[[
     '테이블생성일자',
     '차명',
     '제작사명', 
@@ -810,7 +808,7 @@ chc_dict = {
 # '시도명':'CTPV_NM', 
 # '시군구명':'SGG_NM', 
 # '차종분류':'VHCTY_CL_CD', 
-STD_BD_GRD4_CAR_CURSTT_TOT = quantile_df2.rename(columns=chc_dict)
+STD_BD_GRD4_CAR_CURSTT_TOT = STD_BD_GRD4_CAR_CURSTT_TOT.rename(columns=chc_dict)
 
 ### [출력] 제번별 4분위 값 df(STD_BD_GRD4_CAR_CURSTT_TOT)
 expdf = STD_BD_GRD4_CAR_CURSTT_TOT
@@ -4367,6 +4365,7 @@ df2.loc[df2['차량연식'] >= 1991, 'e_RWARM'] = 0.1 * (0.1 * np.exp(-5.967 + 0
 ### ❓ 확인 중
 # - 수정 사항(2023.04.20, 최)
     # - 찾는 중
+    # - p:w = 0.2:0.8(2023.06.29, 최)
 p = 0.2 # 가열 엔진 상태로 끝나는 trip의 비율
 w = 0.8 # 미가열 엔진 상태로 끝나는 trip의 비율
 df2['R'] = df2['VKT'] * (p * df2['e_RHOT'] + w * df2['e_RWARM'])
