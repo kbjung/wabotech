@@ -969,12 +969,10 @@ df1 = df.copy()
 df1.loc[df1['연료'] == '경유', 'fuel'] = '경유'
 df1.loc[(df1['연료'] == '휘발유') | (df1['연료'] == 'LPG(액화석유가스)'), 'fuel'] = '휘발유_가스'
 
-df2 = df1[(df1['fuel'] == '경유') | (df1['fuel'] == '휘발유_가스')].reset_index(drop=True)
-
 # 분석
 ## EG 분류
 grade_list = []
-for f, y, cy, e in tqdm(df2[['fuel', '제작일자', '차량연식', 'DPF_YN']].values):
+for f, y, cy, e in tqdm(df1[['fuel', '제작일자', '차량연식', 'DPF_YN']].values):
     if (f == '휘발유_가스') and ( (19980101 <= y <= 20001231) or (1998 <= cy <= 2000) ):
         grade_list.append('A')
     elif (f == '휘발유_가스') and ( (y <= 19971231) or (cy <= 1997) ):
@@ -989,8 +987,8 @@ for f, y, cy, e in tqdm(df2[['fuel', '제작일자', '차량연식', 'DPF_YN']].
         grade_list.append('D')
     else:
         grade_list.append('X')
-df2['Grade'] = grade_list
-STD_BD_GRD4_MLSFC_RSLT = df2[[
+df1['Grade'] = grade_list
+STD_BD_GRD4_MLSFC_RSLT = df1[[
     '차대번호', 
     '제원관리번호',
     '차종', 
