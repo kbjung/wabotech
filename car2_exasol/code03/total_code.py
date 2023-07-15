@@ -855,7 +855,7 @@ elpm = elpm[elpm['조기폐차최종승인YN'] == 'Y'].reset_index(drop=True)
 ## 조기폐차 정보 추가
 df = csc.merge(elpm, on='차대번호', how='left')
 df = df[df['연료'] == '경유'].reset_index(drop=True)
-df2 = df[[
+STD_BD_GRD4_ELPDSRC_CURSTT = df[[
     '차대번호', 
     '법정동코드', 
     '차종', 
@@ -868,8 +868,8 @@ df2 = df[[
     '조기폐차최종승인YN',
 ]]
 today_date = datetime.today().strftime("%Y%m%d")
-df2['테이블생성일자'] = today_date
-df3 = df2[[
+STD_BD_GRD4_ELPDSRC_CURSTT['테이블생성일자'] = today_date
+STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT[[
     '테이블생성일자', 
     '차대번호', 
     '법정동코드', 
@@ -896,7 +896,7 @@ chc_dict = {
     '조기폐차상태코드':'ELPDSRC_STTS_CD',
     '조기폐차최종승인YN':'ELPDSRC_LST_APRV_YN', 
 }
-STD_BD_GRD4_ELPDSRC_CURSTT = df3.rename(columns=chc_dict)
+STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT.rename(columns=chc_dict)
 
 ## [출력] STD_BD_GRD4_ELPDSRC_CURSTT
 expdf = STD_BD_GRD4_ELPDSRC_CURSTT
@@ -924,8 +924,6 @@ we.execute(sql)
 we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
-
-################################################################### 1-2 조기폐차 현황 code end
 
 ## 등록&제원&저감이력 병합
 # 1.7s
@@ -990,7 +988,7 @@ for f, y, cy, e in tqdm(df1[['fuel', '제작일자', '차량연식', 'DPF_YN']].
     else:
         grade_list.append('X')
 df1['Grade'] = grade_list
-df2 = df1[[
+STD_BD_GRD4_MLSFC_RSLT = df1[[
     '차대번호', 
     '제원관리번호',
     '차종', 
@@ -1007,8 +1005,8 @@ df2 = df1[[
     ]]
 
 today_date = datetime.today().strftime("%Y%m%d")
-df2['테이블생성일자'] = today_date
-df3 = df2[[
+STD_BD_GRD4_MLSFC_RSLT['테이블생성일자'] = today_date
+STD_BD_GRD4_MLSFC_RSLT = STD_BD_GRD4_MLSFC_RSLT[[
     '테이블생성일자', 
     '차대번호', 
     '제원관리번호', 
@@ -1025,7 +1023,7 @@ df3 = df2[[
     '법정동코드_mod',
     ]]
 # RH법정동코드 문자형으로 변환
-df3['법정동코드_mod'] = df3['법정동코드_mod'].astype('str')
+STD_BD_GRD4_MLSFC_RSLT['법정동코드_mod'] = STD_BD_GRD4_MLSFC_RSLT['법정동코드_mod'].astype('str')
 ch_col_dict = {
                 '테이블생성일자':'LOAD_DT',
                 '차대번호':'VIN', 
@@ -1042,7 +1040,7 @@ ch_col_dict = {
                 'Grade':'GRD4_MLSFC', 
                 '법정동코드_mod':'STDG_CD_MOD'
                 }
-STD_BD_GRD4_MLSFC_RSLT = df3.rename(columns=ch_col_dict)
+STD_BD_GRD4_MLSFC_RSLT = STD_BD_GRD4_MLSFC_RSLT.rename(columns=ch_col_dict)
 
 ## [출력] STD_BD_GRD4_MLSFC_RSLT
 expdf = STD_BD_GRD4_MLSFC_RSLT
@@ -1071,7 +1069,7 @@ we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
 
-# 분석2
+# 4등급 연월, 시도, 시군구별 차량대수
 ## 등록 & 제원 정보 병합(말소 유지)
 csersr = carr.merge(srcr[['제원관리번호', '연료']], on='제원관리번호', how='left')
 
@@ -1099,18 +1097,20 @@ dfm['최초등록일자_월'] = dfm['최초등록일자'].str[4:6]
 dfm['최초등록일자_일'] = dfm['최초등록일자'].str[6:8]
 
 ### 시군구명 앞쪽 지역명만 남기기(dfm)
-# 시군구명 앞쪽 지역명만 남기기(dfm)
 dfm['시군구_수정'] = dfm['시군구'].str.split(' ').str[0]
 
-### 연료 지역별 등록차량대수
-num_car_by_local = dfm.groupby(['연료', '시도', '시군구_수정', '최초등록일자_년', '최초등록일자_월'], as_index=False)['차대번호'].count()
-num_car_by_local = num_car_by_local.rename(columns={'차대번호':'등록차량대수', '최초등록일자_년':'연도', '최초등록일자_월':'월'})
-
 ### 연료 지역별 차량대수
-num_car_by_local2 = dfm.loc[dfm['최초등록일자'] < dfm['최초등록일자'].max()].groupby(['연료', '시도', '시군구_수정'], dropna=False)['차대번호'].count().reset_index()
-num_car_by_local2 = num_car_by_local2.rename(columns={'차대번호':'차량대수'})
+num_car_by_local1 = dfm.groupby(['연료', '시도', '시군구_수정'], dropna=False)['차대번호'].count().reset_index()
+num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수'})
+max_date = dfm['최초등록일자'].max()
+max_year = max_date[:4]
+max_month = max_date[4:6]
+max_year, max_month
+num_car_by_local1[['연도', '월']] = [max_year, max_month]
 
-num_car_by_local2[['연도', '월']] = [dfm['최초등록일자_년'].max(), dfm['최초등록일자_월'].max()]
+### 연료 지역별 등록차량대수
+num_car_by_local2 = dfm.groupby(['연료', '시도', '시군구_수정', '최초등록일자_년', '최초등록일자_월'], as_index=False)['차대번호'].count()
+num_car_by_local2 = num_car_by_local2.rename(columns={'차대번호':'등록차량대수', '최초등록일자_년':'연도', '최초등록일자_월':'월'})
 
 ### 연료 지역별 말소 대수
 errc['변경일자'] = errc['변경일자'].astype('str')
@@ -1119,23 +1119,23 @@ errc['변경일자_월'] = errc['변경일자'].str[4:6]
 errc['변경일자_일'] = errc['변경일자'].str[6:8]
 
 ### 시군구명 앞쪽 지역명만 남기기(errc)
-# 시군구명 앞쪽 지역명만 남기기(errc)
 errc['시군구_수정'] = errc['시군구'].str.split(' ').str[0]
 grp_erase = errc.loc[errc['변경일자_년'] == dfm['최초등록일자_년'].max()].groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], as_index=False)['차대번호'].count()
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도', '변경일자_월':'월'})
 grp_erase = grp_erase.sort_values(['시도', '시군구_수정'])
+
+y_list = list(pd.date_range(end=dfm['최초등록일자'].max(), periods=4, freq="MS").year)
+mth_list = list(pd.date_range(end=dfm['최초등록일자'].max(), periods=4, freq="MS").month)
 
 yr_list = []
 mth_list = []
 fuel_list = []
 ctpv_list = []
 sgg_list = []
-yr = int(num_car_by_local2['연도'].max())
-mth = int(num_car_by_local2['월'].max())
-sl = num_car_by_local2.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
+sl = num_car_by_local1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
 for ctpv, sgg in sl[['시도', '시군구_수정']].values:
     for fuel in sl['연료'].unique():
-        for mth in range(mth - 4, mth + 1):
+        for yr, mth in zip(y_list, y_list):
             mthm = f'{mth:0>2}'
             yr_list.append(str(yr))
             mth_list.append(mthm)
@@ -1143,8 +1143,9 @@ for ctpv, sgg in sl[['시도', '시군구_수정']].values:
             ctpv_list.append(ctpv)
             sgg_list.append(sgg)
 base = pd.DataFrame({'연도':yr_list, '월':mth_list, '연료':fuel_list, '시도':ctpv_list, '시군구_수정':sgg_list})
-base1 = base.merge(num_car_by_local2, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
-base2 = base1.merge(num_car_by_local, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
+
+base1 = base.merge(num_car_by_local1, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
+base2 = base1.merge(num_car_by_local2, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
 base3 = base2.merge(grp_erase, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
 base3[['차량대수', '등록차량대수', '말소차량대수']] = base3[['차량대수', '등록차량대수', '말소차량대수']].fillna(0)
 
@@ -1203,10 +1204,9 @@ we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
 
-# 분석3
-## 연도 시도 차종별 차량 대수
+## 4등급 연도, 시도, 차종별 차량 대수
 ### 현재 차량 대수
-num_car_by_local1 = dfm.loc[dfm['최초등록일자'] < dfm['최초등록일자'].max()].groupby(['연료', '시도', '차종'], dropna=False)['차대번호'].count().reset_index()
+num_car_by_local1 = dfm.groupby(['연료', '시도', '차종'], dropna=False)['차대번호'].count().reset_index()
 num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수'})
 num_car_by_local1['연도'] = dfm['최초등록일자_년'].max()
 
@@ -1219,20 +1219,22 @@ grp_erase = errc.groupby(['변경일자_년', '연료', '시도', '차종'], as_
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도'})
 grp_erase = grp_erase.sort_values(['시도'])
 
+y_list = list(pd.date_range(end=dfm['최초등록일자'].max(), periods=4, freq="YS").year)
+
 yr_list = []
 fuel_list = []
 ctpv_list = []
 cd_list = []
-yr = int(num_car_by_local2['연도'].max())
 for ctpv in num_car_by_local1['시도'].unique():
     for fuel in sl['연료'].unique():
         for cd in ['승용', '승합', '화물', '특수']:
-            for yrm in range(yr - 3, yr + 1):
+            for yrm in y_list:
                 yr_list.append(str(yrm))
                 fuel_list.append(fuel)
                 ctpv_list.append(ctpv)
                 cd_list.append(cd)
 base = pd.DataFrame({'연도':yr_list, '연료':fuel_list, '시도':ctpv_list, '차종':cd_list})
+
 base1 = base.merge(num_car_by_local1, on=['연도', '연료', '시도', '차종'], how='left')
 base2 = base1.merge(num_car_by_local2, on=['연도', '연료', '시도', '차종'], how='left')
 base3 = base2.merge(grp_erase, on=['연도', '연료', '시도', '차종'], how='left')
@@ -1288,7 +1290,7 @@ we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
 
-################################################################### 1-2 세분류 code end
+################################################################### 1-2 4등급 통계 code end
 
 ## 지역정보 병합
 df = csi.merge(coder, on='법정동코드', how='left')
