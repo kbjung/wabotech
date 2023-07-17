@@ -20,9 +20,10 @@ we = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C47
 
 # Load ###################################################################################################################
 ## 등록정보(STD_CEG_CAR_MIG) 4등급만
-# 8.6s
-car = wd.export_to_pandas("SELECT VIN, BSPL_STDG_CD, EXHST_GAS_GRD_CD, EXHST_GAS_CERT_NO, VHCL_ERSR_YN, MANP_MNG_NO, YRIDNW, VHCTY_CD, PURPS_CD2, FRST_REG_YMD, VHCL_FBCTN_YMD, VHCL_MNG_NO, VHRNO, EXTGAS_INSP_VLD_YMD, VHCL_OWNR_CL_CD FROM STD_CEG_CAR_MIG WHERE EXHST_GAS_GRD_CD = 'A0504' OR EXHST_GAS_GRD_CD = 'A05T4';")
+# 14.2S
+car = wd.export_to_pandas("SELECT VHRNO, VIN, BSPL_STDG_CD, EXHST_GAS_GRD_CD, EXHST_GAS_CERT_NO, VHCL_ERSR_YN, MANP_MNG_NO, YRIDNW, VHCTY_CD, PURPS_CD2, FRST_REG_YMD, VHCL_FBCTN_YMD, VHCL_MNG_NO, EXTGAS_INSP_VLD_YMD, VHCL_OWNR_CL_CD FROM STD_CEG_CAR_MIG WHERE EXHST_GAS_GRD_CD = 'A0504' OR EXHST_GAS_GRD_CD = 'A05T4';")
 car_ch_col = {
+    'VHRNO':'자동차등록번호',
     'VIN':'차대번호', 
     'BSPL_STDG_CD':'법정동코드', 
     'EXHST_GAS_GRD_CD':'배출가스등급', 
@@ -35,7 +36,6 @@ car_ch_col = {
     'FRST_REG_YMD':'최초등록일자',
     'VHCL_FBCTN_YMD':'제작일자', 
     'VHCL_MNG_NO':'차량관리번호', 
-    'VHRNO':'차량번호',
     'EXTGAS_INSP_VLD_YMD':'검사유효일',
     'VHCL_OWNR_CL_CD':'소유자구분',  
 }
@@ -147,10 +147,11 @@ print('data load : STD_DLM_TB_ERP_EARLY_ERASE_LGV')
 
 ## 저감장치 부착이력(STD_DLM_TB_ERP_ATT_HIS)
 # 3.0s
-att = wd.export_to_pandas("SELECT VIN, RDCDVC_SE_CD FROM STD_DLM_TB_ERP_ATT_HIS;")
+att = wd.export_to_pandas("SELECT VIN, RDCDVC_SE_CD, RDCDVC_KND_CD FROM STD_DLM_TB_ERP_ATT_HIS;")
 att_ch_col = {
     'VIN':'차대번호', 
     'RDCDVC_SE_CD':'저감장치구분', 
+    'RDCDVC_KND_CD':'저감장치종류', 
 }
 attr = att.rename(columns=att_ch_col)
 
@@ -444,8 +445,51 @@ rdcdvc_dict = {
 }
 attr['저감장치구분'] = attr['저감장치구분'].replace(rdcdvc_dict)
 
+## 저감장치종류 코드 변환
+rdcdvc_knd_dict = {
+    'A1301':'dPDF',
+    'A1302':'대형',
+    'A1303':'복합대형',
+    'A1304':'복합대형+SCR',
+    'A1305':'복합소형',
+    'A1306':'복합중형',
+    'A1307':'소형',
+    'A1308':'자연대형+SCR',
+    'A1309':'자연중형',
+    'A1310':'중형',
+    'A1311':'DOC',
+    'A1312':'자연소형',
+    'A1313':'자연대형',
+}
+attr['저감장치종류'] = attr['저감장치종류'].replace(rdcdvc_knd_dict)
+
 ## 저감장치 부착 유무
 attr.loc[(attr['저감장치구분'] == '1종') | (attr['저감장치구분'] == '1종+SCR'), 'DPF_YN'] = '유'
+
+## 노후차 조기폐차 
+### 조기폐차상태코드 코드 변환
+erase_dict = {
+    'A32E':'조기폐차상태코드(추가보조금신청대상)',
+    'A32G':'조기폐차상태코드(보조금청구)',
+    'A32I':'조기폐차상태코드(신청등록)',
+    'A32K':'조기폐차상태코드(추가보조금청구승인)',
+    'A32M':'조기폐차상태코드(보조금산정)',
+    'A32N':'조기폐차상태코드(보조금청구반려(제외))',
+    'A32P':'조기폐차상태코드(보조금대상)',
+    'A32T':'조기폐차상태코드(추가보조금청구)',
+    'A32X':'조기폐차상태코드(신청취소(제외))',
+    'A32Y':'조기폐차상태코드(보조금청구승인)',
+    'A32C':'조기폐차상태코드(성능확인검사등록)',
+    'A32D':'조기폐차상태코드(기간초과)',
+    'A32A':'조기폐차상태코드(성능확인검사신청)',
+    'A32B':'조기폐차상태코드(보조금미대상)',
+}
+aear['조기폐차상태코드'] = aear['조기폐차상태코드'].replace(erase_dict)
+lgvr['조기폐차상태코드'] = lgvr['조기폐차상태코드'].replace(erase_dict)
+
+### 조기폐차 신청 정보 추가
+aear['조기폐차신청여부'] = 'Y'
+lgvr['조기폐차신청여부'] = 'Y'
 
 ## 등록&제원&정기&정밀 병합
 # 2m 0.5s
@@ -927,7 +971,7 @@ print(f'data export : {table_nm}')
 
 ## 등록&제원&저감이력 병합
 # 1.7s
-csa = cs.merge(attr[['차대번호', 'DPF_YN']], on='차대번호', how='left')
+csa = cs.merge(attr, on='차대번호', how='left')
 
 ## 지역정보 병합
 df = csa.merge(coder, on='법정동코드', how='left')
@@ -1070,6 +1114,85 @@ we.execute(sql)
 we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
+
+## 4등급차량 상세정보
+cst = carr.merge(srcr, on='제원관리번호', how='left')
+csat = cst.merge(attr, on='차대번호', how='left')
+csact = csat.merge(coder, on='법정동코드', how='left')
+
+# 경기도 양주시
+csact.loc[csact['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+dft = csact.merge(elpm, on='차대번호', how='left')
+
+### 4등급 result 파일 참고하여 DPF유무 수정
+rdf = dft.copy()
+rs = rs.drop_duplicates('차대번호').reset_index(drop=True)
+rdf1 = rdf.merge(rs, on='차대번호', how='left')
+rdf1.loc[(rdf1['DPF_YN'] == '유') | (rdf1['DPF유무_수정'] == '유'), 'DPF_YN'] = '유'
+rdf1.loc[(rdf1['DPF유무_수정'] == '무'), 'DPF_YN'] = '무'
+rdf1.loc[(rdf1['DPF유무_수정'] == '확인불가'), 'DPF_YN'] = '확인불가'
+
+dft = rdf1.drop('DPF유무_수정', axis=1)
+dfte = dft.merge(errc[['차대번호', '변경일자']], on='차대번호', how='left')
+dftem = dfte.merge(df1[['차대번호', 'Grade']], on='차대번호', how='left')
+dftem['테이블생성일자'] = today_date
+STD_BD_GRD4_DTL_INFO = dftem[[
+    '자동차등록번호',
+    '차대번호',
+    'Grade',
+    '차종',
+    '차종유형',
+    '용도',
+    '연료',
+    '시도',
+    '시군구',
+    '차량연식',
+    'DPF_YN',
+    '저감장치종류',
+    '최초등록일자',
+    '조기폐차신청여부',
+    '조기폐차상태코드',
+    '변경일자',
+    '차량말소YN', 
+    '테이블생성일자', 
+    # '법정동코드',
+    # '배출가스등급',
+    # '배출가스인증번호',
+    # '제원관리번호',
+    # '제작일자',
+    # '차량관리번호',
+    # '제작사명',
+    # '차명',
+    # '자동차형식',
+    # '엔진형식',
+    # '저감장치구분',
+    # '조기폐차최종승인YN',
+]]
+
+### [출력] STD_BD_GRD4_DTL_INFO
+expdf = STD_BD_GRD4_DTL_INFO
+table_nm = 'STD_BD_GRD4_DTL_INFO'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 7s
+we.import_from_pandas(expdf, table_nm)
 
 # 4등급 연월, 시도, 시군구별 차량대수
 ## 등록 & 제원 정보 병합(말소 유지)
@@ -4500,7 +4623,7 @@ we.import_from_pandas(expdf, table_nm)
 ## 출력(4등급)
 df3 = df2[[
     '차대번호',
-    '차량번호',
+    '자동차등록번호',
     '제원관리번호',
     '차종', 
     '용도', 
@@ -4543,7 +4666,7 @@ df3['법정동코드_mod'] = df3['법정동코드_mod'].astype('str')
 df4 = df3[[
     '테이블생성일자', 
     '차대번호',
-    '차량번호',
+    '자동차등록번호',
     '제원관리번호',
     '차종', 
     '용도', 
@@ -4581,7 +4704,7 @@ ch_col_dict = {
                 '테이블생성일자':'LOAD_DT', 
                 '기준연월':'CRTR_YM',
                 '차대번호':'VIN', 
-                '차량번호':'VHRNO', 
+                '자동차등록번호':'VHRNO', 
                 '제원관리번호':'MANG_MNG_NO', 
                 '차종':'VHCTY_CD', 
                 '용도':'PURPS_CD2', 
@@ -5772,7 +5895,7 @@ cdict = {
     '테이블생성일자':'LOAD_DT', 
     '연도':'YR', 
     'fuel':'FUEL_CD', 
-    '배출가스등급':'GRD', 
+    '배출가스등급':'EXHST_GAS_GRD_CD', 
     '차량대수':'VHCL_MKCNT', 
     '차량예측':'VHCL_PRET', 
 }
@@ -6462,7 +6585,7 @@ car_ch_col = {
     'PURPS_CD2':'용도', 
     'FRST_REG_YMD':'최초등록일자',
     'VHCL_FBCTN_YMD':'제작일자',
-    'VHRNO':'차량번호',
+    'VHRNO':'자동차등록번호',
 }
 carr = car.rename(columns=car_ch_col)
 
@@ -6586,10 +6709,10 @@ g4 = df.loc[df['배출가스등급'] == '4'].reset_index(drop=True)
 g5 = df.loc[df['배출가스등급'] == '5'].reset_index(drop=True)
 
 ### 코란KJ 연료 휘발유로 수정
-# - 차량번호 : 31고7134
+# - 자동차등록번호(차량번호) : 31고7134
 # - 연식 : 1996
 # - 연료 : 휘발유
-g4.loc[g4['차량번호'] == '31고7134', '연료'] = '휘발유'
+g4.loc[g4['자동차등록번호'] == '31고7134', '연료'] = '휘발유'
 
 # 전처리
 gm4d = g4.loc[g4['연료'] == '경유'].reset_index(drop=True)
@@ -6603,7 +6726,7 @@ gm5r = g5.loc[g5['연료'] != '경유'].reset_index(drop=True)
 gm4d = gm4d.rename(columns={'차량연식':'연식'})
 gm4d = gm4d[[
     '차대번호', 
-    '차량번호', 
+    '자동차등록번호', 
     '법정동코드', 
     '연식', 
     '용도', 
@@ -6615,10 +6738,10 @@ gm4d = gm4d[[
     '운행제한건수', 
     ]]
 
-gm5d = gm5d.rename(columns={'차량등록번호':'차량번호', '본거지법정동코드':'법정동코드', '차량연식':'연식', 'DPF_YN':'저감장치'})
+gm5d = gm5d.rename(columns={'본거지법정동코드':'법정동코드', '차량연식':'연식', 'DPF_YN':'저감장치'})
 gm5d = gm5d[[
     '차대번호', 
-    '차량번호', 
+    '자동차등록번호', 
     '법정동코드', 
     '연식', 
     '용도', 
@@ -6739,7 +6862,7 @@ gm4di['선별포인트'] = np.round(w1 * gm4di['무부하매연측정치1'] + w2
 #### 4등급 경유차 선별포인트 샘플
 export4 = gm4di[[
     '차대번호', 
-    '차량번호', 
+    '자동차등록번호', 
     '법정동코드', 
     '연식', 
     '용도', 
@@ -6755,14 +6878,14 @@ export4 = gm4di[[
 export4 = export4.sort_values(['선별포인트'], ascending=False)
 gm4da['선별포인트'] = np.nan
 gm4db['선별포인트'] = np.nan
-gm4da = gm4da[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
-gm4db = gm4db[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
+gm4da = gm4da[['차대번호', '자동차등록번호', '법정동코드', '연식', '용도', '차종', '차종유형', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
+gm4db = gm4db[['차대번호', '자동차등록번호', '법정동코드', '연식', '용도', '차종', '차종유형', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
 total4d = pd.concat([gm4da, gm4db, export4], ignore_index=True)
 
 chc_col = {
     '테이블생성일자':'LOAD_DT', 
     '차대번호':'VIN', 
-    '차량번호':'VHRNO', # 자동차등록번호
+    '자동차등록번호':'VHRNO', # 자동차등록번호
     '법정동코드':'STDG_CD', 
     '연식':'YRIDNW', 
     '용도':'PURPS_CD2', 
@@ -6867,7 +6990,7 @@ gm5di['선별포인트'] = np.round(w1 * gm5di['무부하매연측정치1'] + w2
 #### 5등급 경유차 선별포인트 샘플
 export5 = gm5di[[
     '차대번호', 
-    '차량번호', 
+    '자동차등록번호', 
     '법정동코드', 
     '연식', 
     '용도', 
@@ -6885,8 +7008,8 @@ export5 = export5.sort_values(['선별포인트'], ascending=False)
 
 gm5da['선별포인트'] = np.nan
 gm5db['선별포인트'] = np.nan
-gm5da = gm5da[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '저감장치', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
-gm5db = gm5db[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '저감장치', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
+gm5da = gm5da[['차대번호', '자동차등록번호', '법정동코드', '연식', '용도', '차종', '차종유형', '저감장치', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
+gm5db = gm5db[['차대번호', '자동차등록번호', '법정동코드', '연식', '용도', '차종', '차종유형', '저감장치', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
 
 total5d = pd.concat([gm5da, gm5db, export5], ignore_index=True)
 total5d['테이블생성일자'] = today_date
@@ -6894,7 +7017,7 @@ total5d['테이블생성일자'] = today_date
 chc_col = {
     '테이블생성일자':'LOAD_DT', 
     '차대번호':'VIN', 
-    '차량번호':'VHRNO', # 자동차등록번호
+    '자동차등록번호':'VHRNO', # 자동차등록번호
     '법정동코드':'STDG_CD', 
     '연식':'YRIDNW', # 연식
     '용도':'PURPS_CD2', 
