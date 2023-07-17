@@ -6233,7 +6233,7 @@ df1 = we.export_to_pandas("SELECT * FROM GRD5_ELPDSRC;")
 
 ## 5등급 저공해 미조치(STD_BD_GRD5_LEM_N_MOD)(한글파일 내용 입력)
 # 8.6s
-no_dpf = we.export_to_pandas("SELECT * FROM GRD5_LEM_N;")
+no_dpf = we.export_to_pandas("SELECT * FROM GRD5_LEM_N_MOD;")
 
 # 분석
 ## 5등급 지역별 조기폐차 현황
@@ -6368,12 +6368,15 @@ print(f'data export : {table_nm}')
 # DNSTY_STDR_ID(농도기준아이디) : 실발령(C011), 모의발령(C012)
 # TY_STDR_ID(유형기준아이디) : 비상시(T001), 계절제(T002)
 is_season = is_total.loc[(is_total['농도기준아이디'] == 'C011') & (is_total['유형기준아이디'] == 'T002')].reset_index(drop=True)
-is_season.loc[(is_season['단속일'] > 20191130) & (is_season['단속일'] < 20200401), '계절제_1차여부'] = 'Y'
-is_season.loc[(is_season['단속일'] > 20201130) & (is_season['단속일'] < 20210401), '계절제_2차여부'] = 'Y'
-is_season.loc[(is_season['단속일'] > 20211130) & (is_season['단속일'] < 20220401), '계절제_3차여부'] = 'Y'
-is_season.loc[(is_season['단속일'] > 20221130) & (is_season['단속일'] < 20230401), '계절제_4차여부'] = 'Y'
-limit_season = is_season.groupby(['차대번호'], as_index=False).agg({'계절제_1차여부':'count', '계절제_2차여부':'count', '계절제_3차여부':'count', '계절제_4차여부':'count'})
-limit_season = limit_season.rename(columns={'계절제_1차여부':'계절제_1차', '계절제_2차여부':'계절제_2차', '계절제_3차여부':'계절제_3차', '계절제_4차여부':'계절제_4차'})
+
+for yr in range(2019, int(today_date[:4])):
+    start_date = f'{yr}1130'
+    end_date = f'{yr+1}0401'
+    is_season.loc[(is_season['단속일'] > int(start_date)) & (is_season['단속일'] < int(end_date)), f'계절제_{yr-2018}차여부'] = 'Y'
+agg_dict = {x:'count' for x in is_season.columns if '계절제' in x}
+limit_season_rename_dict = {x:x.replace('여부','') for x in agg_dict.keys()}
+limit_season = is_season.groupby(['차대번호'], as_index=False).agg(agg_dict)
+limit_season = limit_season.rename(columns=limit_season_rename_dict)
 
 # 11.0s
 # DNSTY_STDR_ID(농도기준아이디) : 실발령(C011), 모의발령(C012)
@@ -6397,32 +6400,19 @@ lmt1['지역'] = lmt1['지역'].fillna('수도권외')
 lmt1['DPF_YN'] = lmt1['DPF_YN'].fillna('무')
 
 lmt1['테이블생성일자'] = today_date
-season = lmt1.loc[ (lmt1['계절제_1차'] > 0) | (lmt1['계절제_2차'] > 0) | (lmt1['계절제_3차'] > 0) | (lmt1['계절제_4차'] > 0),[
-    '테이블생성일자', 
-    '차대번호', 
-    '계절제_1차', 
-    '계절제_2차',
-    '계절제_3차', 
-    '계절제_4차',
-    '지역', 
-    '시도', 
-    'DPF_YN', 
-    '차종', 
-    '차종유형', 
-]]
+season_col = ['테이블생성일자', '차대번호'] + [x for x in limit_season_rename_dict.values()] + ['지역', '시도', 'DPF_YN', '차종', '차종유형']
+season = lmt1[season_col]
 cdict = {
     '테이블생성일자':'LOAD_DT', 
     '차대번호':'VIN', 
-    '계절제_1차':'SEASON_1ODR_CRDN_NOCS', 
-    '계절제_2차':'SEASON_2ODR_CRDN_NOCS',
-    '계절제_3차':'SEASON_3ODR_CRDN_NOCS', 
-    '계절제_4차':'SEASON_4ODR_CRDN_NOCS',
     '지역':'RGN', 
     '시도':'CTPV', 
     'DPF_YN':'DPF_EXTRNS_YN', 
     '차종':'VHCTY_CD', 
     '차종유형':'VHCTY_TY', 
 }
+for one in limit_season_rename_dict.values():
+    cdict[one] = one.replace('계절제', 'SEASON').replace('차', 'ODR_CRDN_NOCS')
 STD_BD_SEASON_CRDN_NOCS_CURSTT = season.rename(columns=cdict)
 
 ### [출력] STD_BD_SEASON_CRDN_NOCS_CURSTT
