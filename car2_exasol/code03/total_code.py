@@ -1013,12 +1013,10 @@ df1 = df.copy()
 df1.loc[df1['연료'] == '경유', 'fuel'] = '경유'
 df1.loc[(df1['연료'] == '휘발유') | (df1['연료'] == 'LPG(액화석유가스)'), 'fuel'] = '휘발유_가스'
 
-df2 = df1[(df1['fuel'] == '경유') | (df1['fuel'] == '휘발유_가스')].reset_index(drop=True)
-
 # 분석
 ## EG 분류
 grade_list = []
-for f, y, cy, e in tqdm(df2[['fuel', '제작일자', '차량연식', 'DPF_YN']].values):
+for f, y, cy, e in tqdm(df1[['fuel', '제작일자', '차량연식', 'DPF_YN']].values):
     if (f == '휘발유_가스') and ( (19980101 <= y <= 20001231) or (1998 <= cy <= 2000) ):
         grade_list.append('A')
     elif (f == '휘발유_가스') and ( (y <= 19971231) or (cy <= 1997) ):
@@ -1033,8 +1031,8 @@ for f, y, cy, e in tqdm(df2[['fuel', '제작일자', '차량연식', 'DPF_YN']].
         grade_list.append('D')
     else:
         grade_list.append('X')
-df2['Grade'] = grade_list
-STD_BD_GRD4_MLSFC_RSLT = df2[[
+df1['Grade'] = grade_list
+STD_BD_GRD4_MLSFC_RSLT = df1[[
     '차대번호', 
     '제원관리번호',
     '차종', 
@@ -1091,6 +1089,75 @@ STD_BD_GRD4_MLSFC_RSLT = STD_BD_GRD4_MLSFC_RSLT.rename(columns=ch_col_dict)
 ## [출력] STD_BD_GRD4_MLSFC_RSLT
 expdf = STD_BD_GRD4_MLSFC_RSLT
 table_nm = 'STD_BD_GRD4_MLSFC_RSLT'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 7s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 4등급 등급세분류
+dat_mlsfc = df1.copy()
+dat_mlsfc['시군구_수정'] = dat_mlsfc['시군구'].str.split(' ').str[0]
+grp1 = dat_mlsfc.groupby(['연료', '시도', '시군구_수정', '차종', '차종유형', '용도', 'Grade'])['차대번호'].count().unstack('Grade').reset_index()
+
+# 연도 설정
+grp1['연도'] = '2022'
+# grp1['연도'] = today_date[:4]
+grp1['테이블생성일자'] = today_date
+
+STD_BD_DAT_GRD4_MLSFC = grp1[[
+    '연도', 
+    '연료', 
+    '시도', 
+    '시군구_수정', 
+    '차종', 
+    '차종유형', 
+    '용도', 
+    'A', 
+    'B', 
+    'C', 
+    'D', 
+    'X',
+    '테이블생성일자',
+]]
+cdict = {
+    '연도':'YR', 
+    '연료':'FUEL_CD', 
+    '시도':'CTPV', 
+    '시군구_수정':'SGG', 
+    '차종':'VHCTY_CD', 
+    '차종유형':'VHCTY_TY', 
+    '용도':'PURPS_CD2', 
+    'A':'A_MKCNT', 
+    'B':'B_MKCNT', 
+    'C':'C_MKCNT', 
+    'D':'D_MKCNT', 
+    'X':'X_MKCNT', 
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_GRD4_MLSFC = grp1.rename(columns=cdict)
+
+## [출력] STD_BD_DAT_GRD4_MLSFC
+expdf = STD_BD_DAT_GRD4_MLSFC
+table_nm = 'STD_BD_DAT_GRD4_MLSFC'.upper()
 
 # 테이블 생성
 sql = 'create or replace table ' + table_nm + '( \n'
@@ -1475,6 +1542,7 @@ STD_BD_DAT_GRD4_CAR_CURSTT = STD_BD_DAT_GRD4_CAR_CURSTT.rename(columns=chc_col)
 expdf = STD_BD_DAT_GRD4_CAR_CURSTT
 table_nm = 'STD_BD_DAT_GRD4_CAR_CURSTT'.upper()
 
+
 # 테이블 생성
 sql = 'create or replace table ' + table_nm + '( \n'
 
@@ -1495,6 +1563,8 @@ we.execute(sql)
 # 데이터 추가
 # 5s
 we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
 
 ################################################################### 1-2 4등급 통계 code end
 
