@@ -557,12 +557,14 @@ df1 = df[df['배출가스등급'] == '4'].reset_index(drop=True)
 ### 테이블생성일자 컬럼 추가
 today_date = datetime.today().strftime("%Y%m%d")
 # 기준연월 추가 고민
+df1['기준연월'] = '2022.12'
 df1['테이블생성일자'] = today_date
 # RH제공 법정동코드 타입 문자열로 수정
 df1['법정동코드_mod'] = df1['법정동코드_mod'].astype('str')
 df1['법정동코드_mod'].head()
 STD_BD_GRD4_CAR_CURSTT = df1[[
     '테이블생성일자', 
+    '기준연월', 
     '차대번호', 
     '제원관리번호', 
     '차종', 
