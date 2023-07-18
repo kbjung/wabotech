@@ -1413,6 +1413,89 @@ we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
 
+## 4등급 차량현황(그룹)
+# - 연도, 월, 시도, 시군구, 연료, 차종, 차종유형, 용도
+### 현재 차량 대수
+num_car_by_local1 = dfm.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False, as_index=False).agg({'차대번호':'count', 'DPF_YN':'count', '조기폐차최종승인YN':'count'})
+num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수', 'DPF_YN':'저감장치부착대수', '조기폐차최종승인YN':'조기폐차대수'})
+num_car_by_local1['저감장치미부착대수'] = num_car_by_local1['차량대수'] - num_car_by_local1['저감장치부착대수']
+
+max_date = dfm['최초등록일자'].max()
+max_year = max_date[:4]
+max_month = max_date[4:6]
+num_car_by_local1[['연도', '월']] = [max_year, max_month]
+
+if len(num_car_by_local1['월'].unique()) != 1:
+    # 오름차순 정렬
+    num_car_by_local1 = num_car_by_local1.sort_values(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '연도', '월']).reset_index(drop=True)
+    num_car_by_local1['차량대수_전월'] = num_car_by_local1['차량대수'].shift(1)
+    num_car_by_local1['감소율'] = (num_car_by_local1['차량대수_전월'] - num_car_by_local1['차량대수']) / num_car_by_local1['차량대수_전월']
+    for n in range(num_car_by_local1.shape[0] // len(num_car_by_local1['월'].unique())):
+        num_car_by_local1.loc[n*3, '감소율'] = np.nan
+else:
+    num_car_by_local1['감소율'] = np.nan
+
+num_car_by_local1['테이블생성일자'] = today_date
+
+STD_BD_DAT_GRD4_CAR_CURSTT = num_car_by_local1[[
+    '연도',
+    '월',
+    '시도',
+    '시군구_수정',
+    '연료',
+    '차종',
+    '차종유형', 
+    '용도',
+    '차량대수',
+    '감소율',
+    '저감장치부착대수',
+    '저감장치미부착대수',
+    '조기폐차대수',
+    '테이블생성일자',
+]]
+chc_col = {
+    '연도':'YR',
+    '월':'MM',
+    '시도':'CTPV',
+    '시군구_수정':'SGG',
+    '연료':'FUEL_CD',
+    '차종':'VHCTY_CD',
+    '차종유형':'VHCTY_TY', 
+    '용도':'PURPS_CD2',
+    '차량대수':'VHCL_MKCNT',
+    '감소율':'DEC_RT',
+    '저감장치부착대수':'RDCDVC_EXTRNS_MKCNT',
+    '저감장치미부착대수':'RDCDVC_UNAT_MKCNT',
+    '조기폐차대수':'ELPDSRC_MKCNT',
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_GRD4_CAR_CURSTT = STD_BD_DAT_GRD4_CAR_CURSTT.rename(columns=chc_col)
+
+## [출력] STD_BD_DAT_GRD4_CAR_CURSTT
+expdf = STD_BD_DAT_GRD4_CAR_CURSTT
+table_nm = 'STD_BD_DAT_GRD4_CAR_CURSTT'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 5s
+we.import_from_pandas(expdf, table_nm)
+
 ################################################################### 1-2 4등급 통계 code end
 
 ## 지역정보 병합
@@ -6399,9 +6482,19 @@ lmt1.loc[(lmt1['시도'] == '서울특별시') | (lmt1['시도'] == '경기도')
 lmt1['지역'] = lmt1['지역'].fillna('수도권외')
 lmt1['DPF_YN'] = lmt1['DPF_YN'].fillna('무')
 
+season_start_date = datetime(2020, 12, 1)
+season_end_date = datetime(2021, 3, 31)
+days = (season_end_date - season_start_date).days
+
+for one in [x for x in limit_season_rename_dict.values()]:
+    lmt1[one + '_일평균'] = lmt1[one] / days
+
 lmt1['테이블생성일자'] = today_date
-season_col = ['테이블생성일자', '차대번호'] + [x for x in limit_season_rename_dict.values()] + ['지역', '시도', 'DPF_YN', '차종', '차종유형']
+season_col = ['테이블생성일자', '차대번호'] + ['지역', '시도', 'DPF_YN', '차종', '차종유형'] + [x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()] 
 season = lmt1[season_col]
+
+season[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]] = season[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]].fillna(0)
+
 cdict = {
     '테이블생성일자':'LOAD_DT', 
     '차대번호':'VIN', 
@@ -6413,6 +6506,9 @@ cdict = {
 }
 for one in limit_season_rename_dict.values():
     cdict[one] = one.replace('계절제', 'SEASON').replace('차', 'ODR_CRDN_NOCS')
+for one in limit_season_rename_dict.values():
+    cdict[one + '_일평균'] = one.replace('계절제', 'SEASON').replace('차', 'ODR_CRDN_NOCS') + '_DY_AVRG'
+
 STD_BD_SEASON_CRDN_NOCS_CURSTT = season.rename(columns=cdict)
 
 ### [출력] STD_BD_SEASON_CRDN_NOCS_CURSTT
