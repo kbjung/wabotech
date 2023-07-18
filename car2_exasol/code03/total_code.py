@@ -1348,8 +1348,10 @@ for i in range(base3.shape[0] // n):
 
 today_date = datetime.today().strftime("%Y%m%d")
 base3['테이블생성일자'] = today_date
+base3['기준연월'] = base3['연도'] + '.' + base3['월']
 base4 = base3[[
     '테이블생성일자', 
+    '기준연월',
     '연도',
     '월', 
     '연료', 
@@ -1446,7 +1448,7 @@ base4 = base3[[
 ]]
 chc_col = {
     '테이블생성일자':'LOAD_DT',
-    '연도':'YR', 
+    '연도':'CRTR_Y', 
     '시도':'CTPV', 
     '차종':'VHCTY_CD', 
     '차량대수':'VHCL_MKCNT', 
@@ -4773,8 +4775,10 @@ we.execute(sql)
 # 7s
 we.import_from_pandas(expdf, table_nm)
 
+print(f'data export : {table_nm}')
+
 ## 출력(4등급)
-df3 = df2[[
+STD_BD_GRD4_EXHST_GAS_MSS = df2[[
     '차대번호',
     '자동차등록번호',
     '제원관리번호',
@@ -4812,11 +4816,11 @@ df3 = df2[[
     ]]
 today_date = datetime.today().strftime("%Y%m%d")
 
-df3['테이블생성일자'] = today_date
+STD_BD_GRD4_EXHST_GAS_MSS['테이블생성일자'] = today_date
 # RH법정동코드 문자열타입으로 변경
-df3['법정동코드_mod'] = df3['법정동코드_mod'].astype('str')
+STD_BD_GRD4_EXHST_GAS_MSS['법정동코드_mod'] = STD_BD_GRD4_EXHST_GAS_MSS['법정동코드_mod'].astype('str')
 # 기준연월 추가 고민
-df4 = df3[[
+STD_BD_GRD4_EXHST_GAS_MSS = STD_BD_GRD4_EXHST_GAS_MSS[[
     '테이블생성일자', 
     '차대번호',
     '자동차등록번호',
@@ -4893,7 +4897,7 @@ ch_col_dict = {
                 '법정동코드_mod':'STDG_CD_MOD',
                 }
                 
-STD_BD_GRD4_EXHST_GAS_MSS = df4.rename(columns=ch_col_dict)
+STD_BD_GRD4_EXHST_GAS_MSS = STD_BD_GRD4_EXHST_GAS_MSS.rename(columns=ch_col_dict)
 
 ### [출력] STD_BD_GRD4_EXHST_GAS_MSS
 expdf = STD_BD_GRD4_EXHST_GAS_MSS
@@ -4918,6 +4922,142 @@ we.execute(sql)
 
 # 데이터 추가
 # 13s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 배출량 현황
+grp2 = df2.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'E_CO_total':'sum', 'E_HC_total':'sum', 'E_NOx_total':'sum', 'E_PM10_total':'sum', 'E_PM2_5_total':'sum'}).reset_index()
+grp2 = grp2.rename(columns={'E_CO_total':'E_CO_total_sum', 'E_HC_total':'E_HC_total_sum', 'E_NOx_total':'E_NOx_total_sum', 'E_PM10_total':'E_PM10_total_sum', 'E_PM2_5_total':'E_PM2_5_total_sum'})
+
+# 연도 설정
+grp2['연도'] = '2022'
+# grp2['연도'] = today_date[:4]
+grp2['테이블생성일자'] = today_date
+
+STD_BD_DAT_GRD4_EXHST_MASS_CURSTT = grp2[[
+    '연도',
+    '시도',
+    '시군구_수정',
+    '연료',
+    '차종',
+    '차종유형',
+    '용도',
+    'E_CO_total_sum',
+    'E_HC_total_sum',
+    'E_NOx_total_sum',
+    'E_PM10_total_sum',
+    'E_PM2_5_total_sum',
+    '테이블생성일자',
+]]
+cdict = {
+    '연도':'YR',
+    '시도':'CTPV',
+    '시군구_수정':'SGG',
+    '연료':'FUEL_CD',
+    '차종':'VHCTY_CD',
+    '차종유형':'VHCTY_TY',
+    '용도':'PURPS_CD2',
+    'E_CO_total_sum':'CO_EXHST_MSS_SM',
+    'E_HC_total_sum':'HC_EXHST_MSS_SM',
+    'E_NOx_total_sum':'NOx_EXHST_MSS_SM',
+    'E_PM10_total_sum':'PM10_EXHST_MSS_SM',
+    'E_PM2_5_total_sum':'PM2_5_EXHST_MSS_SM',
+    '테이블생성일자':'LOAD_DT',
+}
+STD_BD_DAT_GRD4_EXHST_MASS_CURSTT = STD_BD_DAT_GRD4_EXHST_MASS_CURSTT.rename(columns=cdict)
+
+## [출력] STD_BD_DAT_GRD4_EXHST_MASS_CURSTT
+expdf = STD_BD_DAT_GRD4_EXHST_MASS_CURSTT
+table_nm = 'STD_BD_DAT_GRD4_EXHST_MASS_CURSTT'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 30.7s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 측정치 현황
+grp3 = df2.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'E_CO_total':'mean', 'E_HC_total':'mean', 'E_NOx_total':'mean', 'E_PM10_total':'mean', 'E_PM2_5_total':'mean'}).reset_index()
+grp3 = grp3.rename(columns={'E_CO_total':'E_CO_total_mean', 'E_HC_total':'E_HC_total_mean', 'E_NOx_total':'E_NOx_total_mean', 'E_PM10_total':'E_PM10_total_mean', 'E_PM2_5_total':'E_PM2_5_total_mean'})
+
+# 연도 설정
+grp3['연도'] = '2022'
+# grp3['연도'] = today_date[:4]
+grp3['테이블생성일자'] = today_date
+
+STD_BD_DAT_GRD4_EXHST_MEVLU = grp3[[
+    '연도',
+    '시도',
+    '시군구_수정',
+    '연료',
+    '차종',
+    '차종유형',
+    '용도',
+    'E_CO_total_mean',
+    'E_HC_total_mean',
+    'E_NOx_total_mean',
+    'E_PM10_total_mean',
+    'E_PM2_5_total_mean',
+    '테이블생성일자',
+]]
+cdict = {
+    '연도':'YR',
+    '시도':'CTPV',
+    '시군구_수정':'SGG',
+    '연료':'FUEL_CD',
+    '차종':'VHCTY_CD',
+    '차종유형':'VHCTY_TY',
+    '용도':'PURPS_CD2',
+    'E_CO_total_mean':'CO_EXHST_MSS_AVRG',
+    'E_HC_total_mean':'HC_EXHST_MSS_AVRG',
+    'E_NOx_total_mean':'NOx_EXHST_MSS_AVRG',
+    'E_PM10_total_mean':'PM10_EXHST_MSS_AVRG',
+    'E_PM2_5_total_mean':'PM2_5_EXHST_MSS_AVRG',
+    '테이블생성일자':'LOAD_DT',
+}
+STD_BD_DAT_GRD4_EXHST_MEVLU = STD_BD_DAT_GRD4_EXHST_MEVLU.rename(columns=cdict)
+
+## [출력] STD_BD_DAT_GRD4_EXHST_MEVLU
+expdf = STD_BD_DAT_GRD4_EXHST_MEVLU
+table_nm = 'STD_BD_DAT_GRD4_EXHST_MEVLU'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 30.7s
 we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
