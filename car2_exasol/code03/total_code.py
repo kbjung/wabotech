@@ -5005,7 +5005,7 @@ grp3['연도'] = '2022'
 # grp3['연도'] = today_date[:4]
 grp3['테이블생성일자'] = today_date
 
-STD_BD_DAT_GRD4_EXHST_MEVLU = grp3[[
+STD_BD_DAT_GRD4_MEVLU = grp3[[
     '연도',
     '시도',
     '시군구_수정',
@@ -5035,11 +5035,11 @@ cdict = {
     'E_PM2_5_total_mean':'PM2_5_EXHST_MSS_AVRG',
     '테이블생성일자':'LOAD_DT',
 }
-STD_BD_DAT_GRD4_EXHST_MEVLU = STD_BD_DAT_GRD4_EXHST_MEVLU.rename(columns=cdict)
+STD_BD_DAT_GRD4_MEVLU = STD_BD_DAT_GRD4_MEVLU.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD4_EXHST_MEVLU
-expdf = STD_BD_DAT_GRD4_EXHST_MEVLU
-table_nm = 'STD_BD_DAT_GRD4_EXHST_MEVLU'.upper()
+## [출력] STD_BD_DAT_GRD4_MEVLU
+expdf = STD_BD_DAT_GRD4_MEVLU
+table_nm = 'STD_BD_DAT_GRD4_MEVLU'.upper()
 
 # 테이블 생성
 sql = 'create or replace table ' + table_nm + '( \n'
