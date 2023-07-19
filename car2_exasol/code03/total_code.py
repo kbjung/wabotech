@@ -885,6 +885,129 @@ we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
 
+## 인증번호검토
+cert_df1 = quantile_df1[[
+    '테이블생성일자',
+    '차명',
+    '제작사명', 
+    '제원관리번호', 
+    '배출가스인증번호', 
+    '검사방법', 
+    'q1', 
+    'q2', 
+    'q3',
+    '차량대수',
+    ]].reset_index(drop=True)
+
+cert_df1['q2_mean'] = cert_df1.groupby(['배출가스인증번호', '검사방법'])['q2'].transform('mean')
+cert_df1.loc[(cert_df1['q2'] >= cert_df1['q2_mean']*5) | (cert_df1['q2'] <= cert_df1['q2_mean']/5), '검토구분'] = '주의'
+cert_df1['검토구분'] = cert_df1['검토구분'].fillna('양호')
+grp1 = cert_df1.groupby(['배출가스인증번호', '검사방법', '검토구분', '제작사명', '차명', '제원관리번호'])['차량대수'].sum().reset_index().sort_values('차량대수', ascending=False)
+grp1 = grp1.drop_duplicates(['배출가스인증번호', '검사방법', '검토구분', '제원관리번호']).reset_index(drop=True)
+grp1 = grp1.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명'})
+grp1 = grp1.drop('차량대수', axis=1)
+
+cg1 = cert_df1.merge(grp1, on=['배출가스인증번호', '검사방법', '검토구분', '제원관리번호'], how='left')
+cg2 = cg1.drop_duplicates(['배출가스인증번호', '검사방법', '검토구분', '대표제작사명', '대표차명', '제원관리번호']).reset_index(drop=True)
+
+STD_BD_DAT_GRD4_CERT_NO_RVW = cg2[[
+    '배출가스인증번호',
+    '검사방법',
+    '검토구분',
+    '대표제작사명',
+    '대표차명',
+    '제원관리번호',
+    'q1',
+    'q2',
+    'q3',
+    '테이블생성일자',
+]]
+cdict = {
+    '배출가스인증번호':'EXHST_GAS_CERT_NO',
+    '검사방법':'INSP_MTHD',
+    '검토구분':'RVW_SE',
+    '대표제작사명':'RPRS_VHCNM',
+    '대표차명':'RPRS_VHCNM', 
+    '제원관리번호':'MANG_MNG_NO',
+    'q1':'LOWR_QRT',
+    'q2':'MID_QRT',
+    'q3':'UP_QRT',
+    '테이블생성일자':'LOAD_DT',
+}
+STD_BD_DAT_GRD4_CERT_NO_RVW = STD_BD_DAT_GRD4_CERT_NO_RVW.rename(columns=cdict)
+STD_BD_DAT_GRD4_CERT_NO_RVW.columns
+## [출력] STD_BD_DAT_GRD4_CERT_NO_RVW
+expdf = STD_BD_DAT_GRD4_CERT_NO_RVW
+table_nm = 'STD_BD_DAT_GRD4_CERT_NO_RVW'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 1s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 열화도 테이블
+sidf.groupby(['배출가스인증번호', '검사방법']).agg({'차량연식':lambda x : x.nsmallest(1)}).reset_index()
+grp2 = sidf.groupby(['배출가스인증번호', '검사방법']).agg({'제작사명':lambda x:x.value_counts().index[0], '차명':lambda x:x.value_counts().index[0], '차종':lambda x:x.value_counts().index[0], '연료':lambda x:x.value_counts().index[0], '차량연식':lambda x : x.nsmallest(1), 'SI':'mean'}).reset_index()
+grp2 = grp2.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명', '차종':'대표차종', '연료':'대표차연료', '차량연식':'대표차연식', 'SI':'열화도'})
+
+grp2['테이블생성일자'] = today_date
+cdict = {
+    '배출가스인증번호':'EXHST_GAS_CERT_NO', 
+    '검사방법':'INSP_MTHD', 
+    '대표제작사명':'RPRS_MNFCTR_NM', 
+    '대표차명':'RPRS_VHCNM', 
+    '대표차종':'RPRS_VHCTY_CD', 
+    '대표차연료':'RPRS_FUEL', 
+    '대표차연식':'RPRS_YRIDNW', 
+    '열화도':'SI', 
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_GRD4_SI = grp2.rename(columns=cdict)
+## [출력] STD_BD_DAT_GRD4_SI
+expdf = STD_BD_DAT_GRD4_SI
+table_nm = 'STD_BD_DAT_GRD4_SI'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 1s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
 ################################################################### 1-1 code end
 
 ## 지역 정보 부착
@@ -1205,7 +1328,7 @@ dft = rdf1.drop('DPF유무_수정', axis=1)
 dfte = dft.merge(errc[['차대번호', '변경일자']], on='차대번호', how='left')
 dftem = dfte.merge(df1[['차대번호', 'Grade']], on='차대번호', how='left')
 dftem['테이블생성일자'] = today_date
-STD_BD_GRD4_DTL_INFO = dftem[[
+STD_BD_DAT_GRD4_DTL_INFO = dftem[[
     '자동차등록번호',
     '차대번호',
     'Grade',
@@ -1238,9 +1361,9 @@ STD_BD_GRD4_DTL_INFO = dftem[[
     # '조기폐차최종승인YN',
 ]]
 
-### [출력] STD_BD_GRD4_DTL_INFO
-expdf = STD_BD_GRD4_DTL_INFO
-table_nm = 'STD_BD_GRD4_DTL_INFO'.upper()
+### [출력] STD_BD_DAT_GRD4_DTL_INFO
+expdf = STD_BD_DAT_GRD4_DTL_INFO
+table_nm = 'STD_BD_DAT_GRD4_DTL_INFO'.upper()
 
 # 테이블 생성
 sql = 'create or replace table ' + table_nm + '( \n'
@@ -4937,7 +5060,7 @@ grp2['연도'] = '2022'
 # grp2['연도'] = today_date[:4]
 grp2['테이블생성일자'] = today_date
 
-STD_BD_DAT_GRD4_EXHST_MASS_CURSTT = grp2[[
+STD_BD_DAT_GRD4_EXHST_MSS_CURSTT = grp2[[
     '연도',
     '시도',
     '시군구_수정',
@@ -4967,11 +5090,11 @@ cdict = {
     'E_PM2_5_total_sum':'PM2_5_EXHST_MSS_SM',
     '테이블생성일자':'LOAD_DT',
 }
-STD_BD_DAT_GRD4_EXHST_MASS_CURSTT = STD_BD_DAT_GRD4_EXHST_MASS_CURSTT.rename(columns=cdict)
+STD_BD_DAT_GRD4_EXHST_MSS_CURSTT = STD_BD_DAT_GRD4_EXHST_MSS_CURSTT.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD4_EXHST_MASS_CURSTT
-expdf = STD_BD_DAT_GRD4_EXHST_MASS_CURSTT
-table_nm = 'STD_BD_DAT_GRD4_EXHST_MASS_CURSTT'.upper()
+## [출력] STD_BD_DAT_GRD4_EXHST_MSS_CURSTT
+expdf = STD_BD_DAT_GRD4_EXHST_MSS_CURSTT
+table_nm = 'STD_BD_DAT_GRD4_EXHST_MSS_CURSTT'.upper()
 
 # 테이블 생성
 sql = 'create or replace table ' + table_nm + '( \n'
