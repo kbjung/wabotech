@@ -6752,12 +6752,16 @@ print(f'data export : {table_nm}')
 # DNSTY_STDR_ID(농도기준아이디) : 실발령(C011), 모의발령(C012)
 # TY_STDR_ID(유형기준아이디) : 비상시(T001), 계절제(T002)
 is_season = is_total.loc[(is_total['농도기준아이디'] == 'C011') & (is_total['유형기준아이디'] == 'T002')].reset_index(drop=True)
-is_season.loc[(is_season['단속일'] > 20191130) & (is_season['단속일'] < 20200401), '계절제_1차여부'] = 'Y'
-is_season.loc[(is_season['단속일'] > 20201130) & (is_season['단속일'] < 20210401), '계절제_2차여부'] = 'Y'
-is_season.loc[(is_season['단속일'] > 20211130) & (is_season['단속일'] < 20220401), '계절제_3차여부'] = 'Y'
-is_season.loc[(is_season['단속일'] > 20221130) & (is_season['단속일'] < 20230401), '계절제_4차여부'] = 'Y'
-limit_season = is_season.groupby(['차대번호'], as_index=False).agg({'계절제_1차여부':'count', '계절제_2차여부':'count', '계절제_3차여부':'count', '계절제_4차여부':'count'})
-limit_season = limit_season.rename(columns={'계절제_1차여부':'계절제_1차', '계절제_2차여부':'계절제_2차', '계절제_3차여부':'계절제_3차', '계절제_4차여부':'계절제_4차'})
+for yr in range(2019, int(today_date[:4])):
+    start_date = f'{yr}1130'
+    end_date = f'{yr+1}0401'
+    is_season.loc[(is_season['단속일'] > int(start_date)) & (is_season['단속일'] < int(end_date)), f'계절제_{yr-2018}차여부'] = 'Y'
+
+agg_dict = {x:'count' for x in is_season.columns if '계절제' in x}
+limit_season_rename_dict = {x:x.replace('여부','') for x in agg_dict.keys()}
+
+limit_season = is_season.groupby(['차대번호'], as_index=False).agg(agg_dict)
+limit_season = limit_season.rename(columns=limit_season_rename_dict)
 
 # 11.0s
 # DNSTY_STDR_ID(농도기준아이디) : 실발령(C011), 모의발령(C012)
@@ -6771,7 +6775,7 @@ limit_alw = limit_alw.rename(columns={'적발건수':'상시'})
 limit_sh = limit_season.merge(limit_high, on='차대번호', how='left')
 limit = limit_sh.merge(limit_alw, on='차대번호', how='left')
 
-limit[['계절제_1차', '계절제_2차', '계절제_3차', '계절제_4차', '비상시', '상시']] = limit[['계절제_1차', '계절제_2차', '계절제_3차', '계절제_4차', '비상시', '상시']].fillna(0)
+limit.iloc[:, 1:] = limit.iloc[:, 1:].fillna(0)
 limit['비상시'] = limit['비상시'].astype('int')
 limit['상시'] = limit['상시'].astype('int')
 
@@ -6780,38 +6784,71 @@ lmt1.loc[(lmt1['시도'] == '서울특별시') | (lmt1['시도'] == '경기도')
 lmt1['지역'] = lmt1['지역'].fillna('수도권외')
 lmt1['DPF_YN'] = lmt1['DPF_YN'].fillna('무')
 
+season_start_date = datetime(2020, 12, 1)
+season_end_date = datetime(2021, 3, 31)
+days = (season_end_date - season_start_date).days
+for one in [x for x in limit_season_rename_dict.values()]:
+    lmt1[one + '_일평균'] = lmt1[one] / days
+
 lmt1['테이블생성일자'] = today_date
-season = lmt1.loc[ (lmt1['계절제_1차'] > 0) | (lmt1['계절제_2차'] > 0) | (lmt1['계절제_3차'] > 0) | (lmt1['계절제_4차'] > 0),[
-    '테이블생성일자', 
-    '차대번호', 
-    '계절제_1차', 
-    '계절제_2차',
-    '계절제_3차', 
-    '계절제_4차',
-    '지역', 
-    '시도', 
-    'DPF_YN', 
-    '차종', 
-    '차종유형', 
-]]
+season_col = ['테이블생성일자', '차대번호'] + ['지역', '시도', 'DPF_YN', '차종', '차종유형'] + [x for x in limit_season_rename_dict.values()]
+lmt1[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]] = lmt1[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]].fillna(0)
+season = lmt1[season_col]
 cdict = {
     '테이블생성일자':'LOAD_DT', 
     '차대번호':'VIN', 
-    '계절제_1차':'SEASON_1ODR_CRDN_NOCS', 
-    '계절제_2차':'SEASON_2ODR_CRDN_NOCS',
-    '계절제_3차':'SEASON_3ODR_CRDN_NOCS', 
-    '계절제_4차':'SEASON_4ODR_CRDN_NOCS',
     '지역':'RGN', 
     '시도':'CTPV', 
     'DPF_YN':'DPF_EXTRNS_YN', 
     '차종':'VHCTY_CD', 
     '차종유형':'VHCTY_TY', 
 }
+for one in limit_season_rename_dict.values():
+    cdict[one] = one.replace('계절제', 'SEASON').replace('차', 'ODR_CRDN_NOCS')
 STD_BD_SEASON_CRDN_NOCS_CURSTT = season.rename(columns=cdict)
 
 ### [출력] STD_BD_SEASON_CRDN_NOCS_CURSTT
 expdf = STD_BD_SEASON_CRDN_NOCS_CURSTT
 table_nm = 'STD_BD_SEASON_CRDN_NOCS_CURSTT'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 5s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 계절제별 적발건수
+season_tot = lmt1[[x + '_일평균' for x in limit_season_rename_dict.values()]].sum().reset_index()
+season_tot = season_tot.rename(columns={'index':'계절제차수', 0:'일평균적발건수'})
+season_tot['계절제차수'] = season_tot['계절제차수'].str.replace('계절제_', '').str.replace('_일평균', '')
+season_tot['테이블생성일자'] = today_date
+cdict = {
+    '계절제차수':'SEASON_ORD', 
+    '일평균적발건수':'DY_AVRG_CRDN_NOCS', 
+    '테이블생성일자':'LOAD_DT', 
+    }
+STD_BD_SEASON_DY_AVRG_CRDN_NOCS = season_tot.rename(columns=cdict)
+
+## [출력] STD_BD_SEASON_DY_AVRG_CRDN_NOCS
+expdf = STD_BD_SEASON_DY_AVRG_CRDN_NOCS
+table_nm = 'STD_BD_SEASON_DY_AVRG_CRDN_NOCS'.upper()
 
 # 테이블 생성
 sql = 'create or replace table ' + table_nm + '( \n'
