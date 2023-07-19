@@ -512,13 +512,15 @@ df1 = df[df['배출가스등급'] == '4'].reset_index(drop=True)
 
 ### 테이블생성일자 컬럼 추가
 today_date = datetime.today().strftime("%Y%m%d")
-# 기준연월 추가 고민
+df1['기준연월'] = '2022.12'
+# df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 df1['테이블생성일자'] = today_date
 # RH제공 법정동코드 타입 문자열로 수정
 df1['법정동코드_mod'] = df1['법정동코드_mod'].astype('str')
 df1['법정동코드_mod'].head()
 STD_BD_GRD4_CAR_CURSTT = df1[[
     '테이블생성일자', 
+    '기준연월',
     '차대번호', 
     '제원관리번호', 
     '차종', 
@@ -918,7 +920,7 @@ print(f'data export : {table_nm}')
 ## 열화도 테이블
 sidf.groupby(['배출가스인증번호', '검사방법']).agg({'차량연식':lambda x : x.nsmallest(1)}).reset_index()
 grp2 = sidf.groupby(['배출가스인증번호', '검사방법']).agg({'제작사명':lambda x:x.value_counts().index[0], '차명':lambda x:x.value_counts().index[0], '차종':lambda x:x.value_counts().index[0], '연료':lambda x:x.value_counts().index[0], '차량연식':lambda x : x.nsmallest(1), 'SI':'mean'}).reset_index()
-grp2 = grp2.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명', '차종':'대표차종', '연료':'대표차연료', '차량연식':'대표차연식', 'SI':'열화도'})
+grp2 = grp2.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명', '차종':'대표차종', '연료':'대표차연료', '차량연식':'최초연식', 'SI':'열화도'})
 grp2['테이블생성일자'] = today_date
 
 cdict = {
@@ -928,7 +930,7 @@ cdict = {
     '대표차명':'RPRS_VHCNM', 
     '대표차종':'RPRS_VHCTY_CD', 
     '대표차연료':'RPRS_FUEL', 
-    '대표차연식':'RPRS_YRIDNW', 
+    '최초연식':'FRST_YRIDNW', 
     '열화도':'SI', 
     '테이블생성일자':'LOAD_DT', 
 }
@@ -977,7 +979,11 @@ elpm = elpm[elpm['조기폐차최종승인YN'] == 'Y'].reset_index(drop=True)
 ## 조기폐차 정보 추가
 df = csc.merge(elpm, on='차대번호', how='left')
 df1 = df[df['연료'] == '경유'].reset_index(drop=True)
+# 기준연월 추가
+df1['기준연월'] = '2022.12'
+# df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 STD_BD_GRD4_ELPDSRC_CURSTT = df1[[
+    '기준연월',
     '차대번호', 
     '법정동코드', 
     '차종', 
@@ -992,7 +998,7 @@ STD_BD_GRD4_ELPDSRC_CURSTT = df1[[
 today_date = datetime.today().strftime("%Y%m%d")
 STD_BD_GRD4_ELPDSRC_CURSTT['테이블생성일자'] = today_date
 STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT[[
-    '테이블생성일자', 
+    '기준연월',
     '차대번호', 
     '법정동코드', 
     '차종', 
@@ -1003,9 +1009,9 @@ STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT[[
     '시군구', 
     '조기폐차상태코드',
     '조기폐차최종승인YN', 
+    '테이블생성일자', 
 ]]
 chc_dict = {
-    '테이블생성일자':'LOAD_DT', 
     '기준연월':'CRTR_YM', 
     '차대번호':'VIN', 
     '법정동코드':'STDG_CD', 
@@ -1017,6 +1023,7 @@ chc_dict = {
     '시군구':'SGG', 
     '조기폐차상태코드':'ELPDSRC_STTS_CD',
     '조기폐차최종승인YN':'ELPDSRC_LST_APRV_YN', 
+    '테이블생성일자':'LOAD_DT', 
 }
 STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT.rename(columns=chc_dict)
 
@@ -1528,7 +1535,7 @@ base4 = base3[[
 ]]
 chc_col = {
     '테이블생성일자':'LOAD_DT',
-    '연도':'YR', 
+    '연도':'CRTR_Y', 
     '시도':'CTPV', 
     '차종':'VHCTY_CD', 
     '차량대수':'VHCL_MKCNT', 
@@ -4818,7 +4825,9 @@ grp1 = grp1[['연도', '시도', '시군구_수정', 'E_CO_total', 'E_HC_total',
 
 today_date = datetime.today().strftime("%Y%m%d")
 grp1['테이블생성일자'] = today_date
-# 기준연월 추가 고민
+# 기준연월 추가
+grp1['기준연월'] = '2022.12'
+# grp1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 chc_dict = {
     '테이블생성일자':'LOAD_DT', 
     '연도':'YR', 
@@ -4857,7 +4866,7 @@ we.execute(sql)
 we.import_from_pandas(expdf, table_nm)
 
 ## 출력(4등급)
-df3 = df2[[
+STD_BD_GRD4_EXHST_GAS_MSS = df2[[
     '차대번호',
     '차량번호',
     '제원관리번호',
@@ -4893,14 +4902,17 @@ df3 = df2[[
     'E_PM2_5_total', 
     '법정동코드_mod',
     ]]
+STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = '2022.12'
+# STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 today_date = datetime.today().strftime("%Y%m%d")
 
-df3['테이블생성일자'] = today_date
+STD_BD_GRD4_EXHST_GAS_MSS['테이블생성일자'] = today_date
 # RH법정동코드 문자열타입으로 변경
-df3['법정동코드_mod'] = df3['법정동코드_mod'].astype('str')
+STD_BD_GRD4_EXHST_GAS_MSS['법정동코드_mod'] = STD_BD_GRD4_EXHST_GAS_MSS['법정동코드_mod'].astype('str')
 # 기준연월 추가 고민
-df4 = df3[[
+STD_BD_GRD4_EXHST_GAS_MSS = STD_BD_GRD4_EXHST_GAS_MSS[[
     '테이블생성일자', 
+    '기준연월', 
     '차대번호',
     '차량번호',
     '제원관리번호',
@@ -4921,6 +4933,7 @@ df4 = df3[[
     '적재중량', 
     '엔진출력', 
     '배기량', 
+    '법정동코드', 
     '시도', 
     '시군구',
     '소유자구분',
@@ -4928,7 +4941,6 @@ df4 = df3[[
     '배출가스인증번호',
     '배출가스등급',
     'DPF_YN',
-    '법정동코드', 
     'E_CO_total', 
     'E_HC_total', 
     'E_NOx_total', 
@@ -4976,7 +4988,7 @@ ch_col_dict = {
                 '법정동코드_mod':'STDG_CD_MOD',
                 }
                 
-STD_BD_GRD4_EXHST_GAS_MSS = df4.rename(columns=ch_col_dict)
+STD_BD_GRD4_EXHST_GAS_MSS = STD_BD_GRD4_EXHST_GAS_MSS.rename(columns=ch_col_dict)
 
 ### [출력] STD_BD_GRD4_EXHST_GAS_MSS
 expdf = STD_BD_GRD4_EXHST_GAS_MSS
@@ -6267,7 +6279,7 @@ cdict = {
     '테이블생성일자':'LOAD_DT', 
     '연도':'YR', 
     'fuel':'FUEL_CD', 
-    '배출가스등급':'GRD', 
+    '배출가스등급':'EXHST_GAS_GRD_CD', 
     '차량대수':'VHCL_MKCNT', 
     '차량예측':'VHCL_PRET', 
 }
