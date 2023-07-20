@@ -447,6 +447,9 @@ attr['저감장치구분'] = attr['저감장치구분'].replace(rdcdvc_dict)
 ## 저감장치 부착 유무
 attr.loc[(attr['저감장치구분'] == '1종') | (attr['저감장치구분'] == '1종+SCR'), 'DPF_YN'] = '유'
 
+# 중복 차대번호 제거
+attr = attr.sort_values('DPF_YN').drop_duplicates('차대번호').reset_index(drop=True)
+
 ## 등록&제원&정기&정밀 병합
 # 2m 0.5s
 csi = cs.merge(insm, on='차대번호', how='left')
@@ -1713,22 +1716,6 @@ for ctpv, sgg, cd in df3n.loc[df3n['일일평균주행거리'].isnull() == True,
 df2nm = pd.concat([df3y, df3n], ignore_index=True)
 df1nm = pd.concat([df2y, df2nm], ignore_index=True)
 df = pd.concat([df1y, df1nm], ignore_index=True)
-
-## 저감장치구분 코드 변환
-# 27.5s
-rdcdvc_dict = {
-    'A1001':'1종', 
-    'A1002':'2종', 
-    'A1003':'3종', 
-    'A1004':'1종+SCR', 
-    'A1005':'엔진개조', 
-    'A1006':'엔진교체',
-    'A1007':'삼원촉매',
-}
-attr['저감장치구분'] = attr['저감장치구분'].replace(rdcdvc_dict)
-
-## 저감장치 부착 유무
-attr.loc[(attr['저감장치구분'] == '1종') | (attr['저감장치구분'] == '1종+SCR'), 'DPF_YN'] = '유'
 
 ### 저감장치 부착 유무 정보 병합
 df1 = df.merge(attr[['차대번호', 'DPF_YN']], on='차대번호', how='left')
@@ -6494,8 +6481,8 @@ today_date = datetime.today().strftime("%Y%m%d")
 # 데이터 연도 설정
 year = 2022
 month = 12
-# year = today_date[:4]
-# month = today_date[4:6]
+# year = int(today_date[:4])
+# month = int(today_date[4:6])
 
 # 차량 대수
 grp1 = df9.groupby(['시도', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
@@ -7125,6 +7112,78 @@ we.execute(sql)
 # 데이터 추가
 # 5s
 we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 5등급 저감사업
+ce = carr.merge(elpm, on='차대번호', how='left')
+dfe = ce.merge(attr, on='차대번호', how='left')
+dfe['최초등록일자'] = dfe['최초등록일자'].astype('str')
+dfe['최초등록일자_년'] = dfe['최초등록일자'].str[:4]
+dfe['최초등록일자_월'] = dfe['최초등록일자'].str[4:6]
+dfe['최초등록일자_일'] = dfe['최초등록일자'].str[6:8]
+
+year = 2022
+# year = int(today_date[:4])
+
+grp1 = pd.DataFrame({'연도':[f'{year}'], 
+                     '차량대수':dfe.shape[0], 
+                     '자연감소':np.nan, 
+                     '조기폐차':dfe[dfe['조기폐차최종승인YN'] == 'Y'].shape[0], 
+                     '저감장치(1종)':dfe[dfe['저감장치구분'] == '1종'].shape[0], 
+                     '저감장치(1종+SCR)':dfe[dfe['저감장치구분'] == '1종+SCR'].shape[0],
+                     })
+grp1['미장착'] = grp1['차량대수'] - grp1['저감장치(1종)'] - grp1['저감장치(1종+SCR)']
+grp1['테이블생성일자'] = today_date
+
+STD_BD_DAT_GRD5_REDUC_BIZ = grp1[[
+    '연도', 
+    '차량대수', 
+    '자연감소', 
+    '조기폐차', 
+    '저감장치(1종)', 
+    '저감장치(1종+SCR)', 
+    '미장착', 
+    '테이블생성일자', 
+]]
+cdict = {
+    '연도':'YR', 
+    '차량대수':'VHCL_MKCNT', 
+    '자연감소':'NTRL_DCLN', 
+    '조기폐차':'ELPDSRC', 
+    '저감장치(1종)':'RDCDVC_1KND', 
+    '저감장치(1종+SCR)':'RDCDVC_1KND_SCR', 
+    '미장착':'UNMNTNG', 
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_GRD5_REDUC_BIZ = STD_BD_DAT_GRD5_REDUC_BIZ.rename(columns=cdict)
+
+### [출력] STD_BD_DAT_GRD5_REDUC_BIZ
+expdf = STD_BD_DAT_GRD5_REDUC_BIZ
+table_nm = 'STD_BD_DAT_GRD5_REDUC_BIZ'.upper()
+
+# 테이블 생성
+try:
+    sql = 'create table ' + table_nm + '( \n'
+
+    for idx,column in enumerate(expdf.columns):
+        if 'float' in expdf[column].dtype.name:
+            sql += column + ' float'
+        elif 'int' in expdf[column].dtype.name:
+            sql += column + ' number'
+        else:
+            sql += column + ' varchar(255)'
+
+        if len(expdf.columns) - 1 != idx:
+            sql += ','
+        sql += '\n'
+    sql += ')'    
+    we.execute(sql)
+    we.import_from_pandas(expdf, table_nm)
+except:
+    # 데이터 추가
+    # 5s
+    we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
 
