@@ -6486,6 +6486,144 @@ we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
 
+## 등급별현황 테이블
+# - 시도, 연도, 월, 등급, 연료, 차종, 차량유형, 용도별 / 차량대수, 말소차량대수, 차량 비율
+df9 = dfm.copy()
+today_date = datetime.today().strftime("%Y%m%d")
+
+# 데이터 연도 설정
+year = 2022
+month = 12
+# year = today_date[:4]
+# month = today_date[4:6]
+
+# 차량 대수
+grp1 = df9.groupby(['시도', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
+grp1 = grp1.rename(columns={'차대번호':'차량대수'})
+grp1['연도'] = f'{year}'
+grp1['월'] = f'{month}'
+
+# 4개월 설정
+date_date = '20221231'
+# date_date = datetime.today().strftime("%Y%m%d")
+# 37.5s
+
+# 차량 통계 기본 데이터셋
+ctpv_list, yr_list, month_list, grd_list, fuel_list, vhcty_list, ty_list, purps_list = [], [], [], [], [], [], [], []
+for ctpv in grp1['시도'].unique():
+    for yr in grp1['연도'].unique():
+        for month in list(pd.date_range(end='20221231', periods=4, freq='MS').month):
+            for grd in grp1['배출가스등급'].unique():
+                for fuel in grp1['연료'].unique():
+                    for vhcty in grp1['차종'].unique():
+                        for ty in grp1['차종유형'].unique():
+                            for purps in grp1['용도'].unique():
+                                ctpv_list.append(ctpv)
+                                yr_list.append(str(yr))
+                                month_list.append(f'{month:0>2}')
+                                grd_list.append(grd)
+                                fuel_list.append(fuel)
+                                vhcty_list.append(vhcty)
+                                ty_list.append(ty)
+                                purps_list.append(purps)
+base = pd.DataFrame({
+    '시도':ctpv_list, 
+    '연도':yr_list, 
+    '월':month_list, 
+    '배출가스등급':grd_list, 
+    '연료':fuel_list, 
+    '차종':vhcty_list, 
+    '차종유형':ty_list, 
+    '용도':purps_list, 
+    })
+
+# 13.6s
+# 연도별 등록대수
+grp2 = df9.groupby(['시도', '최초등록일자_년', '최초등록일자_월', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
+grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '최초등록일자_월':'월', '차대번호':'등록대수'})
+
+#2.5s
+# 연도별 말소대수
+grp3 = errc.groupby(['시도', '변경일자_년', '변경일자_월', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
+grp3 = grp3.rename(columns={'변경일자_년':'연도', '변경일자_월':'월', '차대번호':'말소대수'})
+
+base1 = base.merge(grp1, on=['시도', '연도', '월', '배출가스등급', '연료', '차종', '차종유형', '용도'], how='left')
+base2 = base1.merge(grp2, on=['시도', '연도', '월', '배출가스등급', '연료', '차종', '차종유형', '용도'], how='left')
+base3 = base2.merge(grp3, on=['시도', '연도', '월', '배출가스등급', '연료', '차종', '차종유형', '용도'], how='left')
+base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
+base3 = base3.sort_values(['시도', '배출가스등급', '연료', '차종', '차종유형', '용도', '연도', '월']).reset_index(drop=True)
+
+# 1m 28.6s
+n = len(base3['월'].unique())
+for i in range(base3.shape[0] // n):
+    for j in range(2, n+1):
+        base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
+
+anl1 = base3[['시도', '연도', '월', '배출가스등급', '연료', '차종', '차종유형', '용도', '차량대수', '말소대수']]
+anl1['연도별_차량대수'] = anl1.groupby(['연도'])['차량대수'].transform('sum')
+anl1['연도_연료별_차량대수'] = anl1.groupby(['연도', '연료'])['차량대수'].transform('sum')
+anl1['연도_연료차량비율'] = anl1['연도_연료별_차량대수'] / anl1['연도별_차량대수']
+anl1['테이블생성일자'] = today_date
+
+STD_BD_DAT_GRD_CURSTT = anl1[[
+    '시도',
+    '연도',
+    '월',
+    '배출가스등급',
+    '연료',
+    '차종',
+    '차종유형',
+    '용도',
+    '차량대수',
+    '말소대수',
+    '연도_연료차량비율',
+    '테이블생성일자'
+    ]]
+cdict = {
+    '시도':'CTPV', 
+    '연도':'YR', 
+    '월':'MM', 
+    '배출가스등급':'EXHST_GAS_GRD_CD', 
+    '연료':'FUEL_CD', 
+    '차종':'VHCTY_CD', 
+    '차종유형':'VHCTY_TY', 
+    '용도':'PURPS_CD2', 
+    '차량대수':'VHCL_MKCNT', 
+    '말소대수':'ERSR_MKCNT', 
+    '연도_연료차량비율':'YR_FUEL_VHCL_RT', 
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_GRD_CURSTT = STD_BD_DAT_GRD_CURSTT.rename(columns=cdict)
+
+## [출력] STD_BD_DAT_GRD_CURSTT
+expdf = STD_BD_DAT_GRD_CURSTT
+table_nm = 'STD_BD_DAT_GRD_CURSTT'.upper()
+
+# 테이블 생성
+try:
+    sql = 'create table ' + table_nm + '( \n'
+
+    for idx,column in enumerate(expdf.columns):
+        if 'float' in expdf[column].dtype.name:
+            sql += column + ' float'
+        elif 'int' in expdf[column].dtype.name:
+            sql += column + ' number'
+        else:
+            sql += column + ' varchar(255)'
+
+        if len(expdf.columns) - 1 != idx:
+            sql += ','
+        sql += '\n'
+    sql += ')'    
+    we.execute(sql)
+    we.import_from_pandas(expdf, table_nm)
+except:
+    # 데이터 추가
+    # 7s
+    we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
 ################################################################### 3-1 code end
 
 ## 등록정보(STD_CEG_CAR_MIG) 5등급만
