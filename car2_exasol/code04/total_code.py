@@ -7384,32 +7384,32 @@ idx5 = set(gm5d.index)
 # - 운행제한건수 1이상
 idx4a = gm4d.loc[((gm4d['최근검사경과일'] > 1095) | (gm4d['최근검사경과일'].isnull() == True)) & (gm4d['운행제한건수'] >= 1)].index
 gm4da = gm4d.loc[idx4a]
-gm4da['우선등급'] = 1
+gm4da['우선순위'] = 1
 
 idx5a = gm5d.loc[((gm5d['최근검사경과일'] > 1095) | (gm5d['최근검사경과일'].isnull() == True)) & (gm5d['운행제한건수'] >= 1)].index
 gm5da = gm5d.loc[idx5a]
-gm5da['우선등급'] = 1
+gm5da['우선순위'] = 1
 
 ## B급
 # - 최근검사경과일 365*3 = 1095 초과 또는 최근검사경과일 없는 경우
 # - 운행제한건수 1미만
 idx4b = gm4d.loc[((gm4d['최근검사경과일'] > 1095) | (gm4d['최근검사경과일'].isnull() == True)) & (gm4d['운행제한건수'] < 1)].index
 gm4db = gm4d.loc[idx4b]
-gm4db['우선등급'] = 2
+gm4db['우선순위'] = 2
 
 idx5b = gm5d.loc[((gm5d['최근검사경과일'] > 1095) | (gm5d['최근검사경과일'].isnull() == True)) & (gm5d['운행제한건수'] < 1)].index
 gm5db = gm5d.loc[idx5b]
-gm5db['우선등급'] = 2
+gm5db['우선순위'] = 2
 
 ## C급
 # - 최근검사경과일 365*3 = 1095 이하
 idx4c = gm4d.loc[gm4d['최근검사경과일'] <= 1095].index
 gm4dc = gm4d.loc[idx4c]
-gm4dc['우선등급'] = 3
+gm4dc['우선순위'] = 3
 
 idx5c = gm5d.loc[gm5d['최근검사경과일'] <= 1095].index
 gm5dc = gm5d.loc[idx5c]
-gm5dc['우선등급'] = 3
+gm5dc['우선순위'] = 3
 
 # 분석
 ## 가중치 설정을 위한 상관계수 확인
@@ -7493,7 +7493,7 @@ STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT = total4d[[
     '용도', 
     '차종', 
     '차종유형', 
-    '우선등급',
+    '우선순위',
     '선별포인트',
     '무부하매연측정치1', 
     '일일평균주행거리',
@@ -7509,7 +7509,7 @@ chc_col = {
     '용도':'PURPS_CD2', 
     '차종':'VHCTY_CD', # 차종코드
     '차종유형':'VHCTY_TY', 
-    '우선등급':'PRIO_GRD',
+    '우선순위':'PRIO_GRD',
     '선별포인트':'SELCT_PNT',
     '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
     '일일평균주행거리':'DY_AVRG_DRVNG_DSTNC',
@@ -7614,7 +7614,7 @@ export5 = gm5di[[
     '차종', 
     '차종유형', 
     '저감장치',
-    '우선등급', 
+    '우선순위', 
     '선별포인트',
     '무부하매연측정치1', 
     '일일평균주행거리',
@@ -7625,8 +7625,8 @@ export5 = export5.sort_values(['선별포인트'], ascending=False)
 
 gm5da['선별포인트'] = np.nan
 gm5db['선별포인트'] = np.nan
-gm5da = gm5da[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '저감장치', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
-gm5db = gm5db[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '저감장치', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
+gm5da = gm5da[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '저감장치', '우선순위', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
+gm5db = gm5db[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '저감장치', '우선순위', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
 
 total5d = pd.concat([gm5da, gm5db, export5], ignore_index=True)
 total5d['테이블생성일자'] = today_date
@@ -7641,7 +7641,7 @@ chc_col = {
     '차종':'VHCTY_CD', # 차종코드
     '차종유형':'VHCTY_TY', 
     '저감장치':'RDCDVC',
-    '우선등급':'PRIO_GRD',
+    '우선순위':'PRIO_GRD',
     '선별포인트':'SELCT_PNT',
     '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
     '일일평균주행거리':'DY_AVRG_DRVNG_DSTNC',
@@ -7656,6 +7656,124 @@ STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT = total5d.rename(columns=chc_col)
 
 expdf = STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT
 table_nm = 'STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 5s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 저공해조치선별
+lem4d = total4d.merge(coder[['법정동코드', '시도']], on='법정동코드', how='left')
+lem5d = total5d.merge(coder[['법정동코드', '시도']], on='법정동코드', how='left')
+lem5d.loc[lem5d['법정동코드'] == 4165052000, '시도'] = '경기도' # 경기도 포천시 선단동
+lem4d['배출가스등급'] = '4'
+lem5d['배출가스등급'] = '5'
+lem = pd.concat([lem4d, lem5d], ignore_index=True)
+
+grp1 = lem.groupby(['시도', '배출가스등급', '차종', '차종유형', '우선순위']).agg({'차대번호':'count'}).unstack('우선순위').reset_index()
+grp1.columns = ['시도', '배출가스등급', '차종', '차종유형', '1순위(대수)', '2순위(대수)', '3순위(대수)']
+grp1[['1순위(대수)', '2순위(대수)', '3순위(대수)']] = grp1[['1순위(대수)', '2순위(대수)', '3순위(대수)']].fillna(0)
+grp1['합계'] = grp1.iloc[:, -3:].sum(axis=1)
+grp1['1순위(비율)'] = grp1['1순위(대수)'] / grp1['합계']
+grp1['2순위(비율)'] = grp1['2순위(대수)'] / grp1['합계']
+grp1['3순위(비율)'] = grp1['3순위(대수)'] / grp1['합계']
+grp1 = grp1[['시도', '배출가스등급', '차종', '차종유형', '합계', '1순위(대수)', '1순위(비율)', '2순위(대수)', '2순위(비율)', '3순위(대수)', '3순위(비율)']]
+grp1 = grp1.rename(columns={'합계':'선별대수'})
+
+grp2 = lem.groupby(['시도', '배출가스등급', '차종', '차종유형']).agg({'저감장치':'count'}).reset_index()
+grp2 = grp2.rename(columns={'저감장치':'저감장치부착대수'})
+
+grp = grp1.merge(grp2, on=['시도', '배출가스등급', '차종', '차종유형'], how='left')
+grp['테이블생성일자'] = today_date
+cdict = {
+    '시도':'CTPV',
+    '배출가스등급':'EXHST_GAS_GRD_CD',
+    '차종':'VHCTY_CD',
+    '차종유형':'VHCTY_TY',
+    '선별대수':'SELCT_MKCNT',
+    '1순위(대수)':'SENO1_MKCNT',
+    '1순위(비율)':'SENO1_RT',
+    '2순위(대수)':'SENO2_MKCNT',
+    '2순위(비율)':'SENO2_RT',
+    '3순위(대수)':'SENO3_MKCNT',
+    '3순위(비율)':'SENO3_RT',
+    '저감장치부착대수':'RDCDVC_EXTRNS_MKCNT',
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_LEM_SELCT = grp.rename(columns=cdict)
+
+### [출력] STD_BD_DAT_LEM_SELCT
+expdf = STD_BD_DAT_LEM_SELCT
+table_nm = 'STD_BD_DAT_LEM_SELCT'.upper()
+
+# 테이블 생성
+sql = 'create or replace table ' + table_nm + '( \n'
+
+for idx,column in enumerate(expdf.columns):
+    if 'float' in expdf[column].dtype.name:
+        sql += column + ' float'
+    elif 'int' in expdf[column].dtype.name:
+        sql += column + ' number'
+    else:
+        sql += column + ' varchar(255)'
+
+    if len(expdf.columns) - 1 != idx:
+        sql += ','
+    sql += '\n'
+sql += ')'    
+we.execute(sql)
+
+# 데이터 추가
+# 5s
+we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 선별포인트현황
+for n in range(0, 350, 50):
+    if n <= 300:
+        lem.loc[(lem['선별포인트'] >= n) & (lem['선별포인트'] < n + 50), '선별포인트구간'] = f'{n} ~ {n+49}'
+    else:
+        lem.loc[lem['선별포인트'] >= n, '선별포인트구간'] = f'{n}이상'
+
+stat = lem.groupby(['배출가스등급', '선별포인트구간', '차종', '차종유형']).agg({'차대번호':'count', '무부하매연측정치1':'mean', '일일평균주행거리':'mean', '최근검사경과일':'mean', '운행제한건수':'mean'}).reset_index()
+stat = stat.rename(columns={'차대번호':'차량대수', '무부하매연측정치1':'매연측정값'})
+stat['테이블생성일자'] = today_date
+cdict = {
+    '배출가스등급':'EXHST_GAS_GRD_CD',
+    '선별포인트구간':'SELCT_PNT_RNG',
+    '차종':'VHCTY_CD',
+    '차종유형':'VHCTY_TY',
+    '차량대수':'VHCL_MKCNT',
+    '매연측정값':'SMO_MSRMT_VAL',
+    '일일평균주행거리':'DY_AVRG_DRVNG_DSTNC',
+    '최근검사경과일':'RCNT_INSP_ELPSD_WHL',
+    '운행제한건수':'RUN_LMT_NOCS',
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_SELCT_PNT_CURSTT = stat.rename(columns=cdict)
+
+### [출력] STD_BD_DAT_SELCT_PNT_CURSTT
+expdf = STD_BD_DAT_SELCT_PNT_CURSTT
+table_nm = 'STD_BD_DAT_SELCT_PNT_CURSTT'.upper()
 
 # 테이블 생성
 sql = 'create or replace table ' + table_nm + '( \n'
