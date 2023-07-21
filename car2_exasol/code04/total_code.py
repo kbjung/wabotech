@@ -7286,7 +7286,7 @@ df = rdf1.drop('DPF유무_수정', axis=1)
 ## 일일평균주행거리 계산
 df['최초등록일자'] = pd.to_datetime(df['최초등록일자'], format="%Y%m%d", errors='coerce')
 df['검사일자'] = pd.to_datetime(df['검사일자'], format="%Y%m%d", errors='coerce')
-today_date = datetime.today().strftime("%Y-%d-%m")
+today_date = datetime.today().strftime("%Y-%m-%d")
 df['현재날짜'] = today_date
 df['현재날짜'] = pd.to_datetime(df['현재날짜'], format='%Y-%m-%d', errors='coerce')
 df['최근검사경과일'] = df['현재날짜'] - df['검사일자']
@@ -7341,7 +7341,7 @@ gm5d = g5.loc[g5['연료'] == '경유'].reset_index(drop=True)
 gm5r = g5.loc[g5['연료'] != '경유'].reset_index(drop=True)
 
 ## 필수 컬럼 추출
-gm4d = gm4d.rename(columns={'차량연식':'연식'})
+gm4d = gm4d.rename(columns={'차량연식':'연식', 'DPF_YN':'저감장치'})
 gm4d = gm4d[[
     '차대번호', 
     '차량번호', 
@@ -7350,6 +7350,7 @@ gm4d = gm4d[[
     '용도', 
     '차종', 
     '차종유형', 
+    '저감장치', 
     '무부하매연측정치1', 
     '일일평균주행거리',
     '최근검사경과일', 
@@ -7478,7 +7479,13 @@ w1, w2, w3, w4 = c1/sc1, c2/sc1, c3/sc1, c4/sc1
 gm4di['선별포인트'] = np.round(w1 * gm4di['무부하매연측정치1'] + w2 * gm4di['일일평균주행거리'] + w3 * gm4di['최근검사경과일'] + w4 * gm4di['운행제한건수'] , 0)
 
 #### 4등급 경유차 선별포인트 샘플
-export4 = gm4di[[
+gm4da['선별포인트'] = np.nan
+gm4db['선별포인트'] = np.nan
+total4d = pd.concat([gm4da, gm4db, gm4di], ignore_index=True)
+
+total4d['테이블생성일자'] = today_date
+STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT = total4d[[
+    '테이블생성일자', 
     '차대번호', 
     '차량번호', 
     '법정동코드', 
@@ -7493,13 +7500,6 @@ export4 = gm4di[[
     '최근검사경과일', 
     '운행제한건수', 
     ]]
-export4 = export4.sort_values(['선별포인트'], ascending=False)
-gm4da['선별포인트'] = np.nan
-gm4db['선별포인트'] = np.nan
-gm4da = gm4da[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
-gm4db = gm4db[['차대번호', '차량번호', '법정동코드', '연식', '용도', '차종', '차종유형', '우선등급', '선별포인트', '무부하매연측정치1', '일일평균주행거리', '최근검사경과일', '운행제한건수']]
-total4d = pd.concat([gm4da, gm4db, export4], ignore_index=True)
-
 chc_col = {
     '테이블생성일자':'LOAD_DT', 
     '차대번호':'VIN', 
@@ -7519,8 +7519,7 @@ chc_col = {
     '배기량_리터':'DSPLVL',
     '총중량_톤':'TOTL_WGHT',
 }
-total4d['테이블생성일자'] = today_date
-STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT = total4d.rename(columns=chc_col)
+STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT = STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT.rename(columns=chc_col)
 
 ##### [출력] STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT
 expdf = STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT
