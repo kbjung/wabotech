@@ -5294,6 +5294,7 @@ errc['변경일자'] = errc['변경일자'].astype('str')
 errc['변경일자_년'] = errc['변경일자'].str[:4]
 errc['변경일자_월'] = errc['변경일자'].str[4:6]
 errc['변경일자_일'] = errc['변경일자'].str[6:8]
+errc['변경일자'] = errc['변경일자_년'] + errc['변경일자_월'] + errc['변경일자_일']
 
 # 시군구명 앞쪽 지역명만 남기기(errc)
 errc['시군구_수정'] = errc['시군구'].str.split(' ').str[0]
