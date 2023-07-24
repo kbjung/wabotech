@@ -7302,34 +7302,73 @@ print(f'data export : {table_nm}')
 ## 5등급 저감사업
 ce = carr.merge(elpm, on='차대번호', how='left')
 dfe = ce.merge(attr, on='차대번호', how='left')
+
 dfe['최초등록일자'] = dfe['최초등록일자'].astype('str')
 dfe['최초등록일자_년'] = dfe['최초등록일자'].str[:4]
 dfe['최초등록일자_월'] = dfe['최초등록일자'].str[4:6]
 dfe['최초등록일자_일'] = dfe['최초등록일자'].str[6:8]
+errc['변경일자'] = errc['변경일자'].astype('str')
+errc['변경일자_년'] = errc['변경일자'].str[:4]
+errc['변경일자_월'] = errc['변경일자'].str[4:6]
+errc['변경일자_일'] = errc['변경일자'].str[6:8]
 
-year = 2022
-# year = int(today_date[:4])
+ere = errc.merge(elpm, on='차대번호', how='left')
+erea = ere.merge(attr, on='차대번호', how='left')
 
-grp1 = pd.DataFrame({'연도':[f'{year}'], 
-                     '차량대수':dfe.shape[0], 
-                     '자연감소':np.nan, 
-                     '조기폐차':dfe[dfe['조기폐차최종승인YN'] == 'Y'].shape[0], 
-                     '저감장치(1종)':dfe[dfe['저감장치구분'] == '1종'].shape[0], 
-                     '저감장치(1종+SCR)':dfe[dfe['저감장치구분'] == '1종+SCR'].shape[0],
-                     })
-grp1['미장착'] = grp1['차량대수'] - grp1['저감장치(1종)'] - grp1['저감장치(1종+SCR)']
-grp1['테이블생성일자'] = today_date
+year = '2022'
+# year = today_date[:4]
+dfe['연도'] = year
 
-STD_BD_DAT_GRD5_REDUC_BIZ = grp1[[
-    '연도', 
-    '차량대수', 
-    '자연감소', 
-    '조기폐차', 
-    '저감장치(1종)', 
-    '저감장치(1종+SCR)', 
-    '미장착', 
-    '테이블생성일자', 
-]]
+# 2022년 차량 대수
+grp1 = dfe.groupby(['연도']).agg({'차대번호':'count', '조기폐차최종승인YN':'count', '저감장치구분':[lambda x: x.value_counts()['1종'], lambda x:x.value_counts()['1종+SCR']]}).reset_index()
+grp1.columns = ['연도', '차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)']
+def knd1(x):
+    if '1종' in x.unique():
+        return x.value_counts()['1종']
+    else:
+        return 0
+def knd2(x):
+    if '1종+SCR' in x.unique():
+        return x.value_counts()['1종+SCR']
+    else:
+        return 0
+
+# 2022년 차량 대수
+grp1 = dfe.groupby(['연도']).agg({'차대번호':'count', '조기폐차최종승인YN':'count', '저감장치구분':[knd1, knd2]}).reset_index()
+grp1.columns = ['연도', '차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)']
+
+# 4년간 차량 통계 기본 데이터셋
+yr_list = []
+for yr in range(2019, int(year) + 1):
+    yr_list.append(str(yr))
+base = pd.DataFrame({'연도':yr_list})
+
+# 연도별 등록대수
+grp2 = dfe.groupby(['최초등록일자_년']).agg({'차대번호':'count', '조기폐차최종승인YN':'count', '저감장치구분':[knd1, knd2]}).reset_index()
+grp2.columns = ['연도', '등록대수', '등록조기폐차', '등록저감장치(1종)', '등록저감장치(1종+SCR)']
+
+# 연도별 말소대수
+grp3 = erea.groupby('변경일자_년').agg({'차대번호':'count', '조기폐차최종승인YN':'count', '저감장치구분':[knd1, knd2]}).reset_index()
+grp3.columns = ['연도', '말소대수', '말소조기폐차', '말소저감장치(1종)', '말소저감장치(1종+SCR)']
+
+base1 = base.merge(grp1, on='연도', how='left')
+base2 = base1.merge(grp2, on='연도', how='left')
+base3 = base2.merge(grp3, on='연도', how='left')
+base3[['차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)', '등록대수', '등록조기폐차', '등록저감장치(1종)', '등록저감장치(1종+SCR)', '말소대수', '말소조기폐차', '말소저감장치(1종)', '말소저감장치(1종+SCR)']] = base3[['차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)', '등록대수', '등록조기폐차', '등록저감장치(1종)', '등록저감장치(1종+SCR)', '말소대수', '말소조기폐차', '말소저감장치(1종)', '말소저감장치(1종+SCR)']].fillna(0)
+
+n = len(base3['연도'].unique())
+for i in range(base3.shape[0] // n):
+    for j in range(2, n+1):
+        base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
+        base3.loc[(i+1)*n - j, '조기폐차'] = base3.loc[(i+1)*n - (j-1), '조기폐차'] + base3.loc[(i+1)*n - (j-1), '말소조기폐차'] - base3.loc[(i+1)*n - (j-1), '등록조기폐차']
+        base3.loc[(i+1)*n - j, '저감장치(1종)'] = base3.loc[(i+1)*n - (j-1), '저감장치(1종)'] + base3.loc[(i+1)*n - (j-1), '말소저감장치(1종)'] - base3.loc[(i+1)*n - (j-1), '등록저감장치(1종)']
+        base3.loc[(i+1)*n - j, '저감장치(1종+SCR)'] = base3.loc[(i+1)*n - (j-1), '저감장치(1종+SCR)'] + base3.loc[(i+1)*n - (j-1), '말소저감장치(1종+SCR)'] - base3.loc[(i+1)*n - (j-1), '등록저감장치(1종+SCR)']
+
+base4 = base3[['연도', '차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)']]
+base4['자연감소'] = base4['차량대수'].shift() - base4['차량대수']
+base4['미장착'] = base4['차량대수'] - base4['저감장치(1종)'] - base4['저감장치(1종+SCR)']
+base4['테이블생성일자'] = today_date
+base4 = base4[['연도', '차량대수', '자연감소', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)', '미장착', '테이블생성일자']]
 cdict = {
     '연도':'YR', 
     '차량대수':'VHCL_MKCNT', 
@@ -7340,11 +7379,83 @@ cdict = {
     '미장착':'UNMNTNG', 
     '테이블생성일자':'LOAD_DT', 
 }
-STD_BD_DAT_GRD5_REDUC_BIZ = STD_BD_DAT_GRD5_REDUC_BIZ.rename(columns=cdict)
-
-### [출력] STD_BD_DAT_GRD5_REDUC_BIZ
+STD_BD_DAT_GRD5_REDUC_BIZ = base4.rename(columns=cdict)
+## [출력] STD_BD_DAT_GRD5_REDUC_BIZ
 expdf = STD_BD_DAT_GRD5_REDUC_BIZ
 table_nm = 'STD_BD_DAT_GRD5_REDUC_BIZ'.upper()
+
+# 테이블 생성
+try:
+    sql = 'create table ' + table_nm + '( \n'
+
+    for idx,column in enumerate(expdf.columns):
+        if 'float' in expdf[column].dtype.name:
+            sql += column + ' float'
+        elif 'int' in expdf[column].dtype.name:
+            sql += column + ' number'
+        else:
+            sql += column + ' varchar(255)'
+
+        if len(expdf.columns) - 1 != idx:
+            sql += ','
+        sql += '\n'
+    sql += ')'    
+    we.execute(sql)
+    we.import_from_pandas(expdf, table_nm)
+except:
+    # 데이터 추가
+    # 5s
+    we.import_from_pandas(expdf, table_nm)
+
+print(f'data export : {table_nm}')
+
+## 운행제한현황
+run_lmt1 = lmt1.copy()
+run_lmt1.loc[run_lmt1['DPF_YN'] == '무', '저감장치미장착'] = '미장착'
+
+total_grp_lmt = pd.DataFrame()
+for one in limit_season_rename_dict.values():
+    temp1 = run_lmt1.loc[run_lmt1[one] > 0, ['차대번호', '지역', '시도', '차종', '차종유형', '저감장치미장착'] + [one]]
+    temp2 = run_lmt1.loc[run_lmt1[one] > 1, ['차대번호', '지역', '시도', '차종', '차종유형'] + [one]]
+    if temp1.shape[0] > 0 and temp2.shape[0] > 0:
+        grp1 = temp1.groupby(['지역', '시도', '차종', '차종유형']).agg({'차대번호':'count', '저감장치미장착':'count'}).reset_index()
+        grp1 = grp1.rename(columns={'차대번호':'적발차량대수', '저감장치미장착':'저공해미조치'})
+        grp2 = temp2.groupby(['지역', '시도', '차종', '차종유형'])['차대번호'].count().reset_index()
+        grp2 = grp2.rename(columns={'차대번호':'중복적발대수'})
+        grp = grp1.merge(grp2, on=['지역', '시도', '차종', '차종유형'], how='left')
+        grp['계절관리제'] = one
+        total_grp_lmt = pd.concat([total_grp_lmt, grp], ignore_index=True)
+    else:
+        pass
+
+total_grp_lmt['테이블생성일자'] = today_date
+total_grp_lmt = total_grp_lmt[[
+    '계절관리제', 
+    '지역', 
+    '시도', 
+    '차종', 
+    '차종유형', 
+    '적발차량대수', 
+    '저공해미조치', 
+    '중복적발대수', 
+    '테이블생성일자', 
+]]
+cdict = {
+    '계절관리제':'SEASON', 
+    '지역':'RGN', 
+    '시도':'CTPV', 
+    '차종':'VHCTY_CD', 
+    '차종유형':'VHCTY_TY', 
+    '적발차량대수':'DSCL_VHCL_MKCNT', 
+    '저공해미조치':'UNLEM', 
+    '중복적발대수':'DUP_DSCL_MKCNT', 
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_RUN_LMT_CURSTT = total_grp_lmt.rename(columns=cdict)
+
+### [출력] STD_BD_DAT_RUN_LMT_CURSTT
+expdf = STD_BD_DAT_RUN_LMT_CURSTT
+table_nm = 'STD_BD_DAT_RUN_LMT_CURSTT'.upper()
 
 # 테이블 생성
 try:
