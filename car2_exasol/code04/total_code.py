@@ -6612,6 +6612,189 @@ except:
 
 print(f'data export : {table_nm}')
 
+## 내연기관차 감소추이
+
+grp1 = dfm2dgl.groupby(['배출가스등급', '연료'])['차대번호'].count().reset_index()
+grp1 = grp1.rename(columns={'차대번호':'차량대수'})
+year = '2022'
+month = '12'
+# year = today_date[:4]
+# month = today_date[4:6]
+grp1[['연도', '월']] = [year, month]
+grp1
+grp1['연도'].unique(), grp1['월'].unique()
+yr_list, month_list, grd_list, fuel_list = [], [], [], []
+for grd in ['1', '2', '3', '4', '5', 'X']:
+    for fuel in grp1['연료'].unique():
+        for yr in range(2019, int(year) + 1):
+            for month in range(1, 13):
+                yr_list.append(str(yr))
+                month_list.append(f'{month:0>2}')
+                grd_list.append(grd)
+                fuel_list.append(fuel)
+base = pd.DataFrame({'연도':yr_list, '월':month_list, '배출가스등급':grd_list, '연료':fuel_list})
+
+grp2 = dfm2dgl.groupby(['최초등록일자_년', '최초등록일자_월', '배출가스등급', '연료'])['차대번호'].count().reset_index()
+grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '최초등록일자_월':'월', '차대번호':'등록대수'})
+grp3 = errc2dgl.groupby(['변경일자_년', '변경일자_월', '배출가스등급', '연료'])['차대번호'].count().reset_index()
+grp3 = grp3.rename(columns={'변경일자_년':'연도', '변경일자_월':'월', '차대번호':'말소대수'})
+
+base1 = base.merge(grp1, on=['연도', '월', '배출가스등급', '연료'], how='left')
+base2 = base1.merge(grp2, on=['연도', '월', '배출가스등급', '연료'], how='left')
+base3 = base2.merge(grp3, on=['연도', '월', '배출가스등급', '연료'], how='left')
+base3 = base3.sort_values(['배출가스등급', '연료', '연도', '월']).reset_index(drop=True)
+base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
+
+n = len(base3['연도'].unique()) * len(base3['월'].unique())
+for i in range(base3.shape[0] // n):
+    for j in range(2, n+1):
+        base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
+
+pred_grd_list, pred_fuel_list, pred_yr_list, pred_month_list = [], [], [], []
+for grd in ['1', '2', '3', '4', '5', 'X']:
+    for fuel in grp1['연료'].unique():
+        for yr in range(int(year) + 1, 2036):
+            for month in range(1, 13):
+                pred_grd_list.append(grd)
+                pred_fuel_list.append(fuel)
+                pred_yr_list.append(str(yr))
+                pred_month_list.append(f'{month:0>2}')
+pred_df = pd.DataFrame({'연도':pred_yr_list, '연료':pred_fuel_list, '월':pred_month_list, '배출가스등급':pred_grd_list})
+total_base = pd.concat([base3, pred_df], ignore_index=True)
+total_base = total_base.sort_values(['배출가스등급', '연료', '연도', '월']).reset_index(drop=True)
+
+total_pred_df = pd.DataFrame()
+for fuel in total_base['연료'].unique():
+    for grd in total_base['배출가스등급'].unique():
+        temp = total_base.loc[(total_base['연료'] == fuel) & (total_base['배출가스등급'] == grd)].reset_index(drop=True).reset_index()
+        present = temp[temp['연도'] <= year]
+        future = temp.loc[temp['연도'] > year, ['index', '연도', '월', '배출가스등급', '연료']]
+        if fuel == 'LPG(액화석유가스)':
+            fuel_mod = 'LPG'
+        else:
+            fuel_mod = fuel
+        present = present.rename(columns={'차량대수':f"{fuel_mod}_대수"})
+        # 선형예측
+        a, b = np.polyfit(present['index'], present[f"{fuel_mod}_대수"], 1)
+        future[f'{fuel_mod}_예측'] = a * future['index'] + b
+        # BSpline 예측
+        spl = intp.BSpline(present['index'], present[f"{fuel_mod}_대수"], 1, extrapolate=True)
+        future[f'{fuel_mod}_예측_BSpline'] = spl(future['index'])
+        # Akima 예측
+        aki = intp.Akima1DInterpolator(present['index'], present[f"{fuel_mod}_대수"])
+        future[f'{fuel_mod}_예측_Akima'] = aki(future['index'], extrapolate=True)
+        temp2 = pd.concat([present, future], ignore_index=True)
+        total_pred_df = pd.concat([total_pred_df, temp2], ignore_index=True)       
+
+df5 = total_pred_df[[
+    '연도',
+    '월',
+    '배출가스등급',
+    '연료',
+    'LPG_대수',
+    'LPG_예측',
+    'LPG_예측_BSpline',
+    'LPG_예측_Akima',
+    '경유_대수',
+    '경유_예측',
+    '경유_예측_BSpline',
+    '경유_예측_Akima',
+    '휘발유_대수',
+    '휘발유_예측',
+    '휘발유_예측_BSpline',
+    '휘발유_예측_Akima'
+]]
+
+# 음수 0으로 처리
+df5.loc[df5['경유_예측'] < 0, '경유_예측'] = 0
+df5.loc[df5['경유_예측_BSpline'] < 0, '경유_예측_BSpline'] = 0
+df5.loc[df5['경유_예측_Akima'] < 0, '경유_예측_Akima'] = 0
+df5.loc[df5['휘발유_예측'] < 0, '휘발유_예측'] = 0
+df5.loc[df5['휘발유_예측_BSpline'] < 0, '휘발유_예측_BSpline'] = 0
+df5.loc[df5['휘발유_예측_Akima'] < 0, '휘발유_예측_Akima'] = 0
+df5.loc[df5['LPG_예측'] < 0, 'LPG_예측'] = 0
+df5.loc[df5['LPG_예측_BSpline'] < 0, 'LPG_예측_BSpline'] = 0
+df5.loc[df5['LPG_예측_Akima'] < 0, 'LPG_예측_Akima'] = 0
+
+# 첫째자리에서 반올림
+df5[['경유_대수', '휘발유_대수', 'LPG_대수', '경유_예측', '경유_예측_BSpline','경유_예측_Akima', '휘발유_예측', '휘발유_예측_BSpline', '휘발유_예측_Akima', 'LPG_예측', 'LPG_예측_BSpline', 'LPG_예측_Akima']] = df5[['경유_대수', '휘발유_대수', 'LPG_대수', '경유_예측', '경유_예측_BSpline','경유_예측_Akima', '휘발유_예측', '휘발유_예측_BSpline', '휘발유_예측_Akima', 'LPG_예측', 'LPG_예측_BSpline', 'LPG_예측_Akima']].round(0)
+
+# 분기 정보 추가
+df6 = df5.loc[(df5['월'] == '03') | (df5['월'] == '06') | (df5['월'] == '09') | (df5['월'] == '12')]
+df6.loc[df6['월'] == '03' , '분기'] = '1'
+df6.loc[df6['월'] == '06' , '분기'] = '2'
+df6.loc[df6['월'] == '09' , '분기'] = '3'
+df6.loc[df6['월'] == '12' , '분기'] = '4'
+
+df6 = df6[[
+    '연도',
+    '분기', 
+    '배출가스등급',
+    '연료',
+    'LPG_대수',
+    'LPG_예측',
+    'LPG_예측_BSpline',
+    'LPG_예측_Akima',
+    '경유_대수',
+    '경유_예측',
+    '경유_예측_BSpline',
+    '경유_예측_Akima',
+    '휘발유_대수',
+    '휘발유_예측',
+    '휘발유_예측_BSpline',
+    '휘발유_예측_Akima',
+]]
+
+today_date = datetime.today().strftime("%Y%m%d")
+df6['테이블생성일자'] = today_date
+cdict = {
+    '연도':'YR',
+    '분기':'QRT',
+    '배출가스등급':'EXHST_GAS_GRD_CD',
+    '연료':'FUEL_CD',
+    'LPG_대수':'LPG_MKCNT',
+    'LPG_예측':'LPG_PRET',
+    'LPG_예측_BSpline':'LPG_PRET_BSPLN',
+    'LPG_예측_Akima':'LPG_PRET_AKM',
+    '경유_대수':'DSL_MKCNT',
+    '경유_예측':'DSL_PRET',
+    '경유_예측_BSpline':'DSL_PRET_BSPLN',
+    '경유_예측_Akima':'DSL_PRET_AKM',
+    '휘발유_대수':'GSL_MKCNT',
+    '휘발유_예측':'GSL_PRET',
+    '휘발유_예측_BSpline':'GSL_PRET_BSPLN',
+    '휘발유_예측_Akima':'GSL_PRET_AKM',
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_FUEL_CAR_DEC = df6.rename(columns=cdict)
+
+## [출력] STD_BD_DAT_FUEL_CAR_DEC
+expdf = STD_BD_DAT_FUEL_CAR_DEC
+table_nm = 'STD_BD_DAT_FUEL_CAR_DEC'.upper()
+
+# 테이블 생성
+try:
+    sql = 'create or replace table ' + table_nm + '( \n'
+
+    for idx,column in enumerate(expdf.columns):
+        if 'float' in expdf[column].dtype.name:
+            sql += column + ' float'
+        elif 'int' in expdf[column].dtype.name:
+            sql += column + ' number'
+        else:
+            sql += column + ' varchar(255)'
+
+        if len(expdf.columns) - 1 != idx:
+            sql += ','
+        sql += '\n'
+    sql += ')'    
+    we.execute(sql)
+    we.import_from_pandas(expdf, table_nm)
+except:
+    # 데이터 추가
+    # 7s
+    we.import_from_pandas(expdf, table_nm)
+
 ################################################################### 3-1 code end
 
 ## 등록정보(STD_CEG_CAR_MIG) 5등급만
