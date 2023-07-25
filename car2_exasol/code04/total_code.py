@@ -7,6 +7,11 @@ import pyexasol
 import psycopg2
 import scipy.interpolate as intp
 
+# 날짜 코드
+## 기준연월 설정
+## 연도 설정
+## 날짜 설정
+
 # server
 # insider db
 wd = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='VSYSD')
@@ -924,6 +929,7 @@ print(f'data export : {table_nm}')
 sidf.groupby(['배출가스인증번호', '검사방법']).agg({'차량연식':lambda x : x.nsmallest(1)}).reset_index()
 grp2 = sidf.groupby(['배출가스인증번호', '검사방법']).agg({'제작사명':lambda x:x.value_counts().index[0], '차명':lambda x:x.value_counts().index[0], '차종':lambda x:x.value_counts().index[0], '연료':lambda x:x.value_counts().index[0], '차량연식':lambda x : x.nsmallest(1), 'SI':'mean'}).reset_index()
 grp2 = grp2.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명', '차종':'대표차종', '연료':'대표차연료', '차량연식':'최초연식', 'SI':'열화도'})
+today_date = datetime.today().strftime("%Y%m%d")
 grp2['테이블생성일자'] = today_date
 
 cdict = {
@@ -982,8 +988,10 @@ elpm = elpm[elpm['조기폐차최종승인YN'] == 'Y'].reset_index(drop=True)
 ## 조기폐차 정보 추가
 df = csc.merge(elpm, on='차대번호', how='left')
 df1 = df[df['연료'] == '경유'].reset_index(drop=True)
+
 # 기준연월 추가
 df1['기준연월'] = '2022.12'
+today_date = datetime.today().strftime("%Y%m%d")
 # df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 STD_BD_GRD4_ELPDSRC_CURSTT = df1[[
     '기준연월',
@@ -1208,6 +1216,7 @@ grp1 = dat_mlsfc.groupby(['연료', '시도', '시군구_수정', '차종', '차
 
 # 연도 설정
 grp1['연도'] = '2022'
+today_date = datetime.today().strftime("%Y%m%d")
 # grp1['연도'] = today_date[:4]
 grp1['테이블생성일자'] = today_date
 
@@ -1290,6 +1299,7 @@ rdf1.loc[(rdf1['DPF유무_수정'] == '확인불가'), 'DPF_YN'] = '확인불가
 dft = rdf1.drop('DPF유무_수정', axis=1)
 dfte = dft.merge(errc[['차대번호', '변경일자']], on='차대번호', how='left')
 dftem = dfte.merge(df1[['차대번호', 'Grade']], on='차대번호', how='left')
+today_date = datetime.today().strftime("%Y%m%d")
 dftem['테이블생성일자'] = today_date
 STD_BD_DAT_GRD4_DTL_INFO = dftem[[
     '자동차등록번호',
@@ -1527,7 +1537,7 @@ n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소차량대수'] - base3.loc[(i+1)*n - (j-1), '등록차량대수']
-today_date = datetime.today().strftime("%Y%m")
+today_date = datetime.today().strftime("%Y%m%d")
 base3['테이블생성일자'] = today_date
 base4 = base3[[
     '테이블생성일자', 
@@ -1594,6 +1604,7 @@ if len(num_car_by_local1['월'].unique()) != 1:
 else:
     num_car_by_local1['감소율'] = np.nan
 
+today_date = datetime.today().strftime("%Y%m%d")
 num_car_by_local1['테이블생성일자'] = today_date
 
 STD_BD_DAT_GRD4_CAR_CURSTT = num_car_by_local1[[
@@ -4805,18 +4816,21 @@ check_E_col = ['E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2
 
 ## 시도/시군구별 배출량 합계
 grp1 = df2.groupby(['시도', '시군구_수정'], as_index=False).agg({'E_CO_total':'sum', 'E_HC_total':'sum', 'E_NOx_total':'sum', 'E_PM10_total':'sum', 'E_PM2_5_total':'sum'})
-# today_date = datetime.today().strftime("%Y")
-# grp1['연도'] = today_date
+
+# 연도 설정
+today_date = datetime.today().strftime("%Y%m%d")
+# grp1['연도'] = today_date[:4]
 grp1['연도'] = '2022' # 하드코딩
 grp1 = grp1[['연도', '시도', '시군구_수정', 'E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2_5_total']]
 
-today_date = datetime.today().strftime("%Y%m%d")
 grp1['테이블생성일자'] = today_date
+
 # 기준연월 추가
 grp1['기준연월'] = '2022.12'
 # grp1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 chc_dict = {
     '테이블생성일자':'LOAD_DT', 
+    '기준연월':'CRTR_YM', 
     '연도':'YR', 
     '시도':'CTPV', 
     '시군구_수정':'SGG', 
@@ -4890,8 +4904,8 @@ STD_BD_GRD4_EXHST_GAS_MSS = df2[[
     '법정동코드_mod',
     ]]
 STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = '2022.12'
-# STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 today_date = datetime.today().strftime("%Y%m%d")
+# STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 
 STD_BD_GRD4_EXHST_GAS_MSS['테이블생성일자'] = today_date
 # RH법정동코드 문자열타입으로 변경
@@ -5010,6 +5024,7 @@ grp2 = grp2.rename(columns={'E_CO_total':'E_CO_total_sum', 'E_HC_total':'E_HC_to
 
 # 연도 설정
 grp2['연도'] = '2022'
+today_date = datetime.today().strftime("%Y%m%d")
 # grp2['연도'] = today_date[:4]
 grp2['테이블생성일자'] = today_date
 
@@ -5305,8 +5320,11 @@ dfm2 = dfm.loc[(dfm['fuel'] == '경유') | (dfm['fuel'] == '휘발유') | (dfm['
 errc2 = errc.loc[(errc['fuel'] == '경유') | (errc['fuel'] == '휘발유') | (errc['fuel'] == 'LPG') | (errc['fuel'] == '전기') | (errc['fuel'] == '수소')].reset_index(drop=True)
 
 ## 등급, 지역별 차량현황
-# 데이터 연도 설정
+# 연도 설정
+today_date = datetime.today().strftime("%Y%m%d")
 year = 2022
+# year = int(today_date[:4])
+
 # 2022년 차량 대수
 grp1 = dfm2.groupby(['지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
@@ -5430,6 +5448,7 @@ for i in range(base3.shape[0] // n):
 df2 = base3[['연도', 'fuel', '배출가스등급', '차량대수']]
 df2 = df2.rename(columns={'fuel':'연료'})
 df2['기준연월'] = df2['연도'] + '12'
+today_date = datetime.today().strftime("%Y%m%d")
 df2['테이블생성일자'] = today_date
 
 cdict = {
@@ -5470,6 +5489,7 @@ we.import_from_pandas(expdf, table_nm)
 print(f'data export : {table_nm}')
 
 ## 전체 차량 현황(등급, 차종, 지역별 차량현황)
+today_date = datetime.today().strftime("%Y%m%d")
 dfm2['테이블생성일자'] = today_date
 df3 = dfm2[[
     '테이블생성일자', 
@@ -5567,6 +5587,7 @@ for i in range(base3.shape[0] // n):
 
 gp = base3.groupby(['연도', '시도', 'fuel'], as_index=False)['차량대수'].sum()
 gp['연료비율'] = round((gp['차량대수'] / gp.groupby(['연도', '시도'])['차량대수'].transform('sum')), 2)
+today_date = datetime.today().strftime("%Y%m%d")
 gp['테이블생성일자'] = today_date
 gp1 = gp[['테이블생성일자', '연도', 'fuel', '시도', '차량대수', '연료비율']]
 cdict = {
@@ -5739,6 +5760,7 @@ df5.loc[df5['LPG_예측_Akima'] < 0, 'LPG_예측_Akima'] = 0
 # 첫째자리까지 반올림
 df5[['경유_대수', '휘발유_대수', 'LPG_대수', '경유_예측', '경유_예측_BSpline','경유_예측_Akima', '휘발유_예측', '휘발유_예측_BSpline', '휘발유_예측_Akima', 'LPG_예측', 'LPG_예측_BSpline', 'LPG_예측_Akima']] = df5[['경유_대수', '휘발유_대수', 'LPG_대수', '경유_예측', '경유_예측_BSpline','경유_예측_Akima', '휘발유_예측', '휘발유_예측_BSpline', '휘발유_예측_Akima', 'LPG_예측', 'LPG_예측_BSpline', 'LPG_예측_Akima']].round(0)
 
+today_date = datetime.today().strftime("%Y%m%d")
 df5['테이블생성일자'] = today_date
 df5 = df5[[
    '테이블생성일자',
@@ -6268,6 +6290,7 @@ df6.loc[df6['차량예측'] < 0, '차량예측'] = 0
 # 첫째자리까지 반올림
 df6[['차량대수', '차량예측']] = df6[['차량대수', '차량예측']].round(0)
 
+today_date = datetime.today().strftime("%Y%m%d")
 df6['테이블생성일자'] = today_date
 cdict = {
     '테이블생성일자':'LOAD_DT', 
@@ -6384,6 +6407,7 @@ df7 = pd.concat([ bt_t[['연도', '전기_대수', '전기_예측']], hy_t[['수
 # 첫째자리까지 반올림
 df7[['전기_대수', '전기_예측', '수소_대수', '수소_예측']] = df7[['전기_대수', '전기_예측', '수소_대수', '수소_예측']].round(0)
 
+today_date = datetime.today().strftime("%Y%m%d")
 df7['테이블생성일자'] = today_date
 df7 = df7[[
     '테이블생성일자', 
@@ -6431,6 +6455,7 @@ we.import_from_pandas(expdf, table_nm)
 print(f'data export : {table_nm}')
 
 ## 지역, 등급별 말소 차량 현황
+today_date = datetime.today().strftime("%Y%m%d")
 errc2['테이블생성일자'] = today_date
 df8 = errc2[[
     '테이블생성일자', 
@@ -6483,11 +6508,11 @@ print(f'data export : {table_nm}')
 ## 등급별현황 테이블
 # - 시도, 연도, 월, 등급, 연료, 차종, 차량유형, 용도별 / 차량대수, 말소차량대수, 차량 비율
 df9 = dfm.copy()
-today_date = datetime.today().strftime("%Y%m%d")
 
 # 데이터 연도 설정
 year = 2022
 month = 12
+today_date = datetime.today().strftime("%Y%m%d")
 # year = int(today_date[:4])
 # month = int(today_date[4:6])
 
@@ -6497,7 +6522,7 @@ grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1['월'] = f'{month}'
 
-# 4개월 설정
+# 날짜 설정
 date_date = '20221231'
 # date_date = datetime.today().strftime("%Y%m%d")
 # 37.5s
@@ -6610,10 +6635,10 @@ try:
         sql += '\n'
     sql += ')'    
     we.execute(sql)
+    # 데이터 추가
     we.import_from_pandas(expdf, table_nm)
 except:
     # 데이터 추가
-    # 7s
     we.import_from_pandas(expdf, table_nm)
 
 print(f'data export : {table_nm}')
@@ -6624,11 +6649,11 @@ grp1 = dfm2dgl.groupby(['배출가스등급', '연료'])['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 year = '2022'
 month = '12'
+today_date = datetime.today().strftime("%Y%m%d")
 # year = today_date[:4]
 # month = today_date[4:6]
 grp1[['연도', '월']] = [year, month]
-grp1
-grp1['연도'].unique(), grp1['월'].unique()
+
 yr_list, month_list, grd_list, fuel_list = [], [], [], []
 for grd in ['1', '2', '3', '4', '5', 'X']:
     for fuel in grp1['연료'].unique():
@@ -7027,6 +7052,7 @@ we.import_from_pandas(expdf, table_nm)
 print(f'data export : {table_nm}')
 
 ## 5등급 지역별 저공해미조치 차량현황
+today_date = datetime.today().strftime("%Y%m%d")
 no_dpf['테이블생성일자'] = today_date
 cdict = {
     '테이블생성일자':'LOAD_DT',
@@ -7067,6 +7093,7 @@ print(f'data export : {table_nm}')
 # DNSTY_STDR_ID(농도기준아이디) : 실발령(C011), 모의발령(C012)
 # TY_STDR_ID(유형기준아이디) : 비상시(T001), 계절제(T002)
 is_season = is_total.loc[(is_total['농도기준아이디'] == 'C011') & (is_total['유형기준아이디'] == 'T002')].reset_index(drop=True)
+today_date = datetime.today().strftime("%Y%m%d")
 for yr in range(2019, int(today_date[:4])):
     start_date = f'{yr}1130'
     end_date = f'{yr+1}0401'
@@ -7105,6 +7132,7 @@ days = (season_end_date - season_start_date).days
 for one in [x for x in limit_season_rename_dict.values()]:
     lmt1[one + '_일평균'] = lmt1[one] / days
 
+today_date = datetime.today().strftime("%Y%m%d")
 lmt1['테이블생성일자'] = today_date
 season_col = ['테이블생성일자', '차대번호'] + ['지역', '시도', 'DPF_YN', '차종', '차종유형'] + [x for x in limit_season_rename_dict.values()]
 lmt1[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]] = lmt1[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]].fillna(0)
@@ -7153,6 +7181,7 @@ print(f'data export : {table_nm}')
 season_tot = lmt1[[x + '_일평균' for x in limit_season_rename_dict.values()]].sum().reset_index()
 season_tot = season_tot.rename(columns={'index':'계절제차수', 0:'일평균적발건수'})
 season_tot['계절제차수'] = season_tot['계절제차수'].str.replace('계절제_', '').str.replace('_일평균', '')
+today_date = datetime.today().strftime("%Y%m%d")
 season_tot['테이블생성일자'] = today_date
 cdict = {
     '계절제차수':'SEASON_ORD', 
@@ -7206,6 +7235,7 @@ orditm = us_total2.loc[(us_total2['적발건수'] > 0)& (us_total2['적발년도
     '시도',
 ]]
 
+today_date = datetime.today().strftime("%Y%m%d")
 orditm['테이블생성일자'] = today_date
 cdict = {
     '테이블생성일자':'LOAD_DT', 
@@ -7263,6 +7293,7 @@ is_lmt = is_lmt[[
 dfm = df.sort_values('최초등록일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
 slimit = is_lmt.merge(dfm[['차대번호', '차종', '차종유형']], on='차대번호', how='left')
+today_date = datetime.today().strftime("%Y%m%d")
 slimit['테이블생성일자'] = today_date
 cdict = {
     '테이블생성일자':'LOAD_DT', 
@@ -7313,6 +7344,10 @@ dfe['최초등록일자'] = dfe['최초등록일자'].astype('str')
 dfe['최초등록일자_년'] = dfe['최초등록일자'].str[:4]
 dfe['최초등록일자_월'] = dfe['최초등록일자'].str[4:6]
 dfe['최초등록일자_일'] = dfe['최초등록일자'].str[6:8]
+dfe['말소일자_년'] = dfe['말소일자'].astype('str').str[:4]
+dfe['말소일자_월'] = dfe['말소일자'].astype('str').str[4:6]
+dfe['말소일자_일'] = dfe['말소일자'].astype('str').str[6:8]
+
 errc['변경일자'] = errc['변경일자'].astype('str')
 errc['변경일자_년'] = errc['변경일자'].str[:4]
 errc['변경일자_월'] = errc['변경일자'].str[4:6]
@@ -7321,13 +7356,11 @@ errc['변경일자_일'] = errc['변경일자'].str[6:8]
 ere = errc.merge(elpm, on='차대번호', how='left')
 erea = ere.merge(attr, on='차대번호', how='left')
 
+# 연도 설정
 year = '2022'
 # year = today_date[:4]
-dfe['연도'] = year
 
-# 2022년 차량 대수
-grp1 = dfe.groupby(['연도']).agg({'차대번호':'count', '조기폐차최종승인YN':'count', '저감장치구분':[lambda x: x.value_counts()['1종'], lambda x:x.value_counts()['1종+SCR']]}).reset_index()
-grp1.columns = ['연도', '차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)']
+dfe['연도'] = year
 def knd1(x):
     if '1종' in x.unique():
         return x.value_counts()['1종']
@@ -7340,8 +7373,20 @@ def knd2(x):
         return 0
 
 # 2022년 차량 대수
-grp1 = dfe.groupby(['연도']).agg({'차대번호':'count', '조기폐차최종승인YN':'count', '저감장치구분':[knd1, knd2]}).reset_index()
-grp1.columns = ['연도', '차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)']
+grp1 = dfe[dfe['차량말소YN'] == 'N'].groupby(['연도']).agg({'차대번호':'count', '저감장치구분':[knd1, knd2]}).reset_index()
+grp1.columns = ['연도', '차량대수', '저감장치(1종)', '저감장치(1종+SCR)']
+
+# 연도별 등록대수
+grp2 = dfe[dfe['차량말소YN'] == 'N'].groupby(['최초등록일자_년']).agg({'차대번호':'count', '저감장치구분':[knd1, knd2]}).reset_index()
+grp2.columns = ['연도', '등록대수', '등록저감장치(1종)', '등록저감장치(1종+SCR)']
+
+# 연도별 말소대수
+grp3 = erea.groupby('변경일자_년').agg({'차대번호':'count', '저감장치구분':[knd1, knd2]}).reset_index()
+grp3.columns = ['연도', '말소대수', '말소저감장치(1종)', '말소저감장치(1종+SCR)']
+
+# 연도별 조기폐차 대수
+grp4 = dfe.groupby('말소일자_년').agg({'조기폐차최종승인YN':'count'}).reset_index()
+grp4 = grp4.rename(columns={'말소일자_년':'연도', '조기폐차최종승인YN':'조기폐차'})
 
 # 4년간 차량 통계 기본 데이터셋
 yr_list = []
@@ -7349,32 +7394,36 @@ for yr in range(2019, int(year) + 1):
     yr_list.append(str(yr))
 base = pd.DataFrame({'연도':yr_list})
 
-# 연도별 등록대수
-grp2 = dfe.groupby(['최초등록일자_년']).agg({'차대번호':'count', '조기폐차최종승인YN':'count', '저감장치구분':[knd1, knd2]}).reset_index()
-grp2.columns = ['연도', '등록대수', '등록조기폐차', '등록저감장치(1종)', '등록저감장치(1종+SCR)']
-
-# 연도별 말소대수
-grp3 = erea.groupby('변경일자_년').agg({'차대번호':'count', '조기폐차최종승인YN':'count', '저감장치구분':[knd1, knd2]}).reset_index()
-grp3.columns = ['연도', '말소대수', '말소조기폐차', '말소저감장치(1종)', '말소저감장치(1종+SCR)']
-
 base1 = base.merge(grp1, on='연도', how='left')
 base2 = base1.merge(grp2, on='연도', how='left')
 base3 = base2.merge(grp3, on='연도', how='left')
-base3[['차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)', '등록대수', '등록조기폐차', '등록저감장치(1종)', '등록저감장치(1종+SCR)', '말소대수', '말소조기폐차', '말소저감장치(1종)', '말소저감장치(1종+SCR)']] = base3[['차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)', '등록대수', '등록조기폐차', '등록저감장치(1종)', '등록저감장치(1종+SCR)', '말소대수', '말소조기폐차', '말소저감장치(1종)', '말소저감장치(1종+SCR)']].fillna(0)
+base4 = base3.merge(grp4, on='연도', how='left')
 
-n = len(base3['연도'].unique())
-for i in range(base3.shape[0] // n):
+base4[['차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)', '등록대수', '등록저감장치(1종)', '등록저감장치(1종+SCR)', '말소대수', '말소저감장치(1종)', '말소저감장치(1종+SCR)']] = base4[['차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)', '등록대수', '등록저감장치(1종)', '등록저감장치(1종+SCR)', '말소대수', '말소저감장치(1종)', '말소저감장치(1종+SCR)']].fillna(0)
+
+n = len(base4['연도'].unique())
+for i in range(base4.shape[0] // n):
     for j in range(2, n+1):
-        base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
-        base3.loc[(i+1)*n - j, '조기폐차'] = base3.loc[(i+1)*n - (j-1), '조기폐차'] + base3.loc[(i+1)*n - (j-1), '말소조기폐차'] - base3.loc[(i+1)*n - (j-1), '등록조기폐차']
-        base3.loc[(i+1)*n - j, '저감장치(1종)'] = base3.loc[(i+1)*n - (j-1), '저감장치(1종)'] + base3.loc[(i+1)*n - (j-1), '말소저감장치(1종)'] - base3.loc[(i+1)*n - (j-1), '등록저감장치(1종)']
-        base3.loc[(i+1)*n - j, '저감장치(1종+SCR)'] = base3.loc[(i+1)*n - (j-1), '저감장치(1종+SCR)'] + base3.loc[(i+1)*n - (j-1), '말소저감장치(1종+SCR)'] - base3.loc[(i+1)*n - (j-1), '등록저감장치(1종+SCR)']
+        base4.loc[(i+1)*n - j, '차량대수'] = base4.loc[(i+1)*n - (j-1), '차량대수'] + base4.loc[(i+1)*n - (j-1), '말소대수'] - base4.loc[(i+1)*n - (j-1), '등록대수']
+        base4.loc[(i+1)*n - j, '저감장치(1종)'] = base4.loc[(i+1)*n - (j-1), '저감장치(1종)'] + base4.loc[(i+1)*n - (j-1), '말소저감장치(1종)'] - base4.loc[(i+1)*n - (j-1), '등록저감장치(1종)']
+        base4.loc[(i+1)*n - j, '저감장치(1종+SCR)'] = base4.loc[(i+1)*n - (j-1), '저감장치(1종+SCR)'] + base4.loc[(i+1)*n - (j-1), '말소저감장치(1종+SCR)'] - base4.loc[(i+1)*n - (j-1), '등록저감장치(1종+SCR)']
 
-base4 = base3[['연도', '차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)']]
-base4['자연감소'] = base4['차량대수'].shift() - base4['차량대수']
-base4['미장착'] = base4['차량대수'] - base4['저감장치(1종)'] - base4['저감장치(1종+SCR)']
-base4['테이블생성일자'] = today_date
-base4 = base4[['연도', '차량대수', '자연감소', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)', '미장착', '테이블생성일자']]
+base5 = base4[['연도', '차량대수', '조기폐차', '저감장치(1종)', '저감장치(1종+SCR)']]
+base5['감소대수'] = base5['차량대수'].shift() - base5['차량대수']
+base5['자연감소'] = base5['감소대수'] - base5['조기폐차']
+base5['미장착'] = base5['차량대수'] - base5['저감장치(1종)'] - base5['저감장치(1종+SCR)']
+
+base5['테이블생성일자'] = today_date
+base5 = base5[[
+    '연도',
+    '차량대수',
+    '자연감소',
+    '조기폐차',
+    '저감장치(1종)',
+    '저감장치(1종+SCR)',
+    '미장착',
+    '테이블생성일자'
+    ]]
 cdict = {
     '연도':'YR', 
     '차량대수':'VHCL_MKCNT', 
@@ -7385,7 +7434,8 @@ cdict = {
     '미장착':'UNMNTNG', 
     '테이블생성일자':'LOAD_DT', 
 }
-STD_BD_DAT_GRD5_REDUC_BIZ = base4.rename(columns=cdict)
+STD_BD_DAT_GRD5_REDUC_BIZ = base5.rename(columns=cdict)
+
 ## [출력] STD_BD_DAT_GRD5_REDUC_BIZ
 expdf = STD_BD_DAT_GRD5_REDUC_BIZ
 table_nm = 'STD_BD_DAT_GRD5_REDUC_BIZ'.upper()
@@ -7434,6 +7484,7 @@ for one in limit_season_rename_dict.values():
     else:
         pass
 
+today_date = datetime.today().strftime("%Y%m%d")
 total_grp_lmt['테이블생성일자'] = today_date
 total_grp_lmt = total_grp_lmt[[
     '계절관리제', 
@@ -7738,7 +7789,7 @@ t4 = pd.concat([gm4di_corr, gm4di_corr.sum()], axis=1)
 t4 = t4.rename(columns={0:'합계'})
 t4 = t4.reset_index()
 
-today_date = datetime.today().strftime("%Y%d%m")
+today_date = datetime.today().strftime("%Y%m%d")
 t4['테이블생성일자'] = today_date
 chc_col = {
     '테이블생성일자':'LOAD_DT', 
@@ -7788,6 +7839,7 @@ gm4da['선별포인트'] = np.nan
 gm4db['선별포인트'] = np.nan
 total4d = pd.concat([gm4da, gm4db, gm4di], ignore_index=True)
 
+today_date = datetime.today().strftime("%Y%m%d")
 total4d['테이블생성일자'] = today_date
 STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT = total4d[[
     '테이블생성일자', 
@@ -7868,6 +7920,7 @@ gm5di_corr = gm5di[col].corr()
 t5 = pd.concat([gm5di_corr, gm5di_corr.sum()], axis=1)
 t5 = t5.rename(columns={0:'합계'})
 t5 = t5.reset_index()
+today_date = datetime.today().strftime("%Y%m%d")
 t5['테이블생성일자'] = today_date
 
 chc_col = {
@@ -7919,6 +7972,7 @@ gm5da['선별포인트'] = np.nan
 gm5db['선별포인트'] = np.nan
 
 total5d = pd.concat([gm5da, gm5db, gm5di], ignore_index=True)
+today_date = datetime.today().strftime("%Y%m%d")
 total5d['테이블생성일자'] = today_date
 
 chc_col = {
@@ -7994,6 +8048,7 @@ grp2 = lem.groupby(['시도', '배출가스등급', '차종', '차종유형']).a
 grp2 = grp2.rename(columns={'저감장치':'저감장치부착대수'})
 
 grp = grp1.merge(grp2, on=['시도', '배출가스등급', '차종', '차종유형'], how='left')
+today_date = datetime.today().strftime("%Y%m%d")
 grp['테이블생성일자'] = today_date
 cdict = {
     '시도':'CTPV',
@@ -8048,6 +8103,7 @@ for n in range(0, 350, 50):
 
 stat = lem.groupby(['배출가스등급', '선별포인트구간', '차종', '차종유형']).agg({'차대번호':'count', '무부하매연측정치1':'mean', '일일평균주행거리':'mean', '최근검사경과일':'mean', '운행제한건수':'mean'}).reset_index()
 stat = stat.rename(columns={'차대번호':'차량대수', '무부하매연측정치1':'매연측정값'})
+today_date = datetime.today().strftime("%Y%m%d")
 stat['테이블생성일자'] = today_date
 cdict = {
     '배출가스등급':'EXHST_GAS_GRD_CD',
