@@ -7265,6 +7265,9 @@ dfm = df.sort_values('최초등록일자', ascending=False).drop_duplicates('차
 
 slimit = is_lmt.merge(dfm[['차대번호', '차종', '차종유형']], on='차대번호', how='left')
 today_date = datetime.today().strftime("%Y%m%d")
+
+# 시도명 2글자로 수정
+slimit['적발시도'] = slimit['적발시도'].map({'경기도':'경기', '대구광역시':'대구', '부산광역시':'부산', '서울특별시':'서울', '인천광역시':'인천'})
 slimit['테이블생성일자'] = today_date
 cdict = {
     '테이블생성일자':'LOAD_DT', 
@@ -7659,12 +7662,18 @@ g4.loc[g4['차량번호'] == '31고7134', '연료'] = '휘발유'
 gm4d = g4.loc[g4['연료'] == '경유'].reset_index(drop=True)
 gm4r = g4.loc[g4['연료'] != '경유'].reset_index(drop=True)
 
+### 5등급 저감장치 변환
+# - 1종 -> DPF
+# - 1종+SCR -> PM-NOx
+g5.loc[g5['저감장치구분'] == '1종', '저감장치'] = 'DPF'
+g5.loc[g5['저감장치구분'] == '1종+SCR', '저감장치'] = 'PM-NOx'
+
 ## 5등급 경유차 추출(gm5d)
 gm5d = g5.loc[g5['연료'] == '경유'].reset_index(drop=True)
 gm5r = g5.loc[g5['연료'] != '경유'].reset_index(drop=True)
 
 ## 필수 컬럼 추출
-gm4d = gm4d.rename(columns={'차량연식':'연식', 'DPF_YN':'저감장치'})
+gm4d = gm4d.rename(columns={'차량연식':'연식', 'DPF_YN':'저감장치부착유무'})
 gm4d = gm4d[[
     '차대번호', 
     '차량번호', 
@@ -7675,14 +7684,14 @@ gm4d = gm4d[[
     '용도', 
     '차종', 
     '차종유형', 
-    '저감장치', 
+    '저감장치부착유무', 
     '무부하매연측정치1', 
     '일일평균주행거리',
     '최근검사경과일', 
     '운행제한건수', 
     ]]
 
-gm5d = gm5d.rename(columns={'차량등록번호':'차량번호', '본거지법정동코드':'법정동코드', '차량연식':'연식', 'DPF_YN':'저감장치'})
+gm5d = gm5d.rename(columns={'차량등록번호':'차량번호', '본거지법정동코드':'법정동코드', '차량연식':'연식', 'DPF_YN':'저감장치부착유무'})
 gm5d = gm5d[[
     '차대번호', 
     '차량번호', 
@@ -7693,7 +7702,8 @@ gm5d = gm5d[[
     '용도', 
     '차종', 
     '차종유형', 
-    '저감장치',
+    '저감장치', 
+    '저감장치부착유무',
     '무부하매연측정치1', 
     '일일평균주행거리',
     '최근검사경과일', 
@@ -7940,7 +7950,25 @@ gm5db['선별포인트'] = np.nan
 total5d = pd.concat([gm5da, gm5db, gm5di], ignore_index=True)
 today_date = datetime.today().strftime("%Y%m%d")
 total5d['테이블생성일자'] = today_date
-
+STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT = total5d[[
+    '차대번호',
+    '차량번호',
+    '법정동코드',
+    '시도',
+    '시군구',
+    '연식',
+    '용도',
+    '차종',
+    '차종유형',
+    '저감장치',
+    '우선순위',
+    '선별포인트',
+    '무부하매연측정치1',
+    '일일평균주행거리',
+    '최근검사경과일',
+    '운행제한건수',
+    '테이블생성일자', 
+]]
 chc_col = {
     '테이블생성일자':'LOAD_DT', 
     '차대번호':'VIN', 
@@ -7959,12 +7987,8 @@ chc_col = {
     '일일평균주행거리':'DY_AVRG_DRVNG_DSTNC',
     '최근검사경과일':'RCNT_INSP_ELPSD_WHL', 
     '운행제한건수':'RUN_LMT_NOCS', 
-    '지원비용_조기폐차_백만원':'SPRT_CST_ELPDSRC',
-    '지원비용_DPF_백만원':'SPRT_CST_DPF', 
-    '배기량_리터':'DSPLVL',
-    '총중량_톤':'TOTL_WGHT',
 }
-STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT = total5d.rename(columns=chc_col)
+STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT = STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT.rename(columns=chc_col)
 
 expdf = STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT
 table_nm = 'STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT'.upper()
