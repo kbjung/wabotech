@@ -7440,7 +7440,7 @@ STD_BD_DAT_GRD5_REDUC_BIZ = base5.rename(columns=cdict)
 expdf = STD_BD_DAT_GRD5_REDUC_BIZ
 table_nm = 'STD_BD_DAT_GRD5_REDUC_BIZ'.upper()
 
-# 테이블 생성
+# 테이블 생성ㄴ
 try:
     sql = 'create table ' + table_nm + '( \n'
 
