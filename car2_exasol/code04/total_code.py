@@ -5391,12 +5391,7 @@ table_nm = 'STD_BD_CAR_CURSTT_MOD'.upper()
 sql = 'create or replace table ' + table_nm + '( \n'
 
 for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+    sql += column + ' varchar(255)'
 
     if len(expdf.columns) - 1 != idx:
         sql += ','
@@ -5469,12 +5464,7 @@ table_nm = 'STD_BD_CAR_CURSTT_MOD2'.upper()
 sql = 'create or replace table ' + table_nm + '( \n'
 
 for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+    sql += column + ' varchar(255)'
 
     if len(expdf.columns) - 1 != idx:
         sql += ','
@@ -5608,12 +5598,7 @@ table_nm = 'STD_BD_CAR_REG_MKCNT'.upper()
 sql = 'create or replace table ' + table_nm + '( \n'
 
 for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+    sql += column + ' varchar(255)'
 
     if len(expdf.columns) - 1 != idx:
         sql += ','
@@ -5804,12 +5789,7 @@ table_nm = 'STD_BD_CAR_PRET'.upper()
 sql = 'create or replace table ' + table_nm + '( \n'
 
 for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+    sql += column + ' varchar(255)'
 
     if len(expdf.columns) - 1 != idx:
         sql += ','
@@ -6310,12 +6290,7 @@ table_nm = 'STD_BD_FUEL_GRD_VHCL_CURSTT_PRET'.upper()
 sql = 'create or replace table ' + table_nm + '( \n'
 
 for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+    sql += column + ' varchar(255)'
 
     if len(expdf.columns) - 1 != idx:
         sql += ','
@@ -6455,6 +6430,7 @@ we.import_from_pandas(expdf, table_nm)
 print(f'data export : {table_nm}')
 
 ## 지역, 등급별 말소 차량 현황
+errc2['배출가스등급'] = errc2['배출가스등급'].map({'1':'1.0', '2':'2.0', '3':'3.0', '4':'4.0', '5':'5.0', 'X':'X'})
 today_date = datetime.today().strftime("%Y%m%d")
 errc2['테이블생성일자'] = today_date
 df8 = errc2[[
@@ -6469,7 +6445,7 @@ df8 = errc2[[
     ]]
 chc_col = {
     '테이블생성일자':'LOAD_DT', 
-    '법정동코드':'STDG_CD',
+    '법정동코드':'BSPL_STDG_CD',
     '시도':'CTPV',
     '시군구':'SGG', 
     '차대번호':'VIN', 
@@ -6477,10 +6453,10 @@ chc_col = {
     '배출가스등급':'EXHST_GAS_GRD_CD', 
     '연료':'FUEL_CD', 
 }
-STD_BD_GRD4_ERSR_RSLT = df8.rename(columns=chc_col)
-### [출력] STD_BD_GRD4_ERSR_RSLT
-expdf = STD_BD_GRD4_ERSR_RSLT
-table_nm = 'STD_BD_GRD4_ERSR_RSLT'.upper()
+STD_BD_ERSR_RSLT = df8.rename(columns=chc_col)
+### [출력] STD_BD_ERSR_RSLT
+expdf = STD_BD_ERSR_RSLT
+table_nm = 'STD_BD_ERSR_RSLT'.upper()
 
 # 테이블 생성
 sql = 'create or replace table ' + table_nm + '( \n'
@@ -7158,12 +7134,7 @@ table_nm = 'STD_BD_SEASON_CRDN_NOCS_CURSTT'.upper()
 sql = 'create or replace table ' + table_nm + '( \n'
 
 for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+    sql += column + ' varchar(255)'
 
     if len(expdf.columns) - 1 != idx:
         sql += ','
@@ -7890,12 +7861,7 @@ table_nm = 'STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT'.upper()
 sql = 'create or replace table ' + table_nm + '( \n'
 
 for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+    sql += column + ' varchar(255)'
 
     if len(expdf.columns) - 1 != idx:
         sql += ','
@@ -8007,12 +7973,7 @@ table_nm = 'STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT'.upper()
 sql = 'create or replace table ' + table_nm + '( \n'
 
 for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+    sql += column + ' varchar(255)'
 
     if len(expdf.columns) - 1 != idx:
         sql += ','
