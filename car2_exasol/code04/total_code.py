@@ -5349,14 +5349,17 @@ for i in range(base3.shape[0] // n):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
 
 df1 = base3[['연도', '지역', '시도', '배출가스등급', '차량대수']]
+df1['기준연월'] = df1['연도'] + '12'
 
 today_date = datetime.today().strftime("%Y%m%d")
 df1['테이블생성일자'] = today_date
+
 cdict = {
     '테이블생성일자':'LOAD_DT', 
+    '기준연월':'CRTR_YM', 
     '연도':'YR', 
     '지역':'RGN', 
-    '시도':'CTPV', 
+    '시도':'CTPV_NM', 
     '배출가스등급':'EXHST_GAS_GRD_CD', 
     '차량대수':'VHCL_MKCNT',
 }
@@ -5425,10 +5428,13 @@ for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
 df2 = base3[['연도', 'fuel', '배출가스등급', '차량대수']]
-
+df2 = df2.rename(columns={'fuel':'연료'})
+df2['기준연월'] = df2['연도'] + '12'
 df2['테이블생성일자'] = today_date
+
 cdict = {
     '테이블생성일자':'LOAD_DT', 
+    '기준연월':'CRTR_YM', 
     '연도':'YR', 
     '연료':'FUEL_CD', 
     '배출가스등급':'EXHST_GAS_GRD_CD', 
@@ -5481,7 +5487,7 @@ df3 = dfm2[[
 ]]
 cdict = {
     '테이블생성일자':'LOAD_DT',
-    '법정동코드':'STDG_CD', 
+    '법정동코드':'BSPL_STDG_CD', 
     '차종':'VHCTY_CD',
     '용도':'PURPS_CD2', 
     '차대번호':'VIN', 
