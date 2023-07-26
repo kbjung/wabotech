@@ -7296,6 +7296,13 @@ today_date = datetime.today().strftime("%Y%m%d")
 
 # 시도명 2글자로 수정
 slimit['적발시도'] = slimit['적발시도'].map({'경기도':'경기', '대구광역시':'대구', '부산광역시':'부산', '서울특별시':'서울', '인천광역시':'인천'})
+
+# 건수 0 -> nan
+slimit.loc[slimit['계절제_1차'] == 0, '계절제_1차'] = np.nan
+slimit.loc[slimit['계절제_2차'] == 0, '계절제_2차'] = np.nan
+slimit.loc[slimit['계절제_3차'] == 0, '계절제_3차'] = np.nan
+slimit.loc[slimit['계절제_4차'] == 0, '계절제_4차'] = np.nan
+
 slimit['테이블생성일자'] = today_date
 cdict = {
     '테이블생성일자':'LOAD_DT', 
