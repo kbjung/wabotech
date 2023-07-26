@@ -5273,6 +5273,19 @@ df.loc[df['연료'] == '등유', 'fuel'] = '등유'
 df.loc[df['연료'] == '기타연료', 'fuel'] = '기타연료'
 df.loc[df['연료'].isnull() == True, 'fuel'] = np.nan
 
+# about 23.6s
+df.loc[(df['연료'] == '휘발유') | (df['연료'] == '휘발유 하이브리드'), 'fuel2'] = '휘발유'
+df.loc[(df['연료'] == '경유') | (df['연료'] == '경유 하이브리드'), 'fuel2'] = '경유'
+df.loc[(df['연료'] == 'LPG(액화석유가스)') | (df['연료'] == 'LPG 하이브리드'), 'fuel2'] = 'LPG(액화석유가스)'
+df.loc[(df['연료'] == 'CNG(압축천연가스)') | (df['연료'] == 'CNG 하이브리드'), 'fuel2'] = '기타'
+df.loc[(df['연료'] == 'LNG(액화천연가스)') | (df['연료'] == 'LNG 하이브리드'), 'fuel2'] = '기타'
+df.loc[(df['연료'] == '전기') | (df['연료'] == '수소'), 'fuel2'] = '전기수소'
+df.loc[df['연료'] == '태양열', 'fuel2'] = '기타'
+df.loc[df['연료'] == '알코올', 'fuel2'] = '기타'
+df.loc[df['연료'] == '등유', 'fuel2'] = '기타'
+df.loc[df['연료'] == '기타연료', 'fuel2'] = '기타'
+df.loc[df['연료'].isnull() == True, 'fuel2'] = '기타'
+
 # about 3.3s
 errc.loc[(errc['연료'] == '휘발유') | (errc['연료'] == '휘발유 하이브리드'), 'fuel'] = '휘발유'
 errc.loc[(errc['연료'] == '경유') | (errc['연료'] == '경유 하이브리드'), 'fuel'] = '경유'
@@ -5286,6 +5299,19 @@ errc.loc[errc['연료'] == '알코올', 'fuel'] = '알코올'
 errc.loc[errc['연료'] == '등유', 'fuel'] = '등유'
 errc.loc[errc['연료'] == '기타연료', 'fuel'] = '기타연료'
 errc.loc[errc['연료'].isnull() == True, 'fuel'] = np.nan
+
+# about 23.6s
+errc.loc[(errc['연료'] == '휘발유') | (errc['연료'] == '휘발유 하이브리드'), 'fuel2'] = '휘발유'
+errc.loc[(errc['연료'] == '경유') | (errc['연료'] == '경유 하이브리드'), 'fuel2'] = '경유'
+errc.loc[(errc['연료'] == 'LPG(액화석유가스)') | (errc['연료'] == 'LPG 하이브리드'), 'fuel2'] = 'LPG(액화석유가스)'
+errc.loc[(errc['연료'] == 'CNG(압축천연가스)') | (errc['연료'] == 'CNG 하이브리드'), 'fuel2'] = '기타'
+errc.loc[(errc['연료'] == 'LNG(액화천연가스)') | (errc['연료'] == 'LNG 하이브리드'), 'fuel2'] = '기타'
+errc.loc[(errc['연료'] == '전기') | (errc['연료'] == '수소'), 'fuel2'] = '전기수소'
+errc.loc[errc['연료'] == '태양열', 'fuel2'] = '기타'
+errc.loc[errc['연료'] == '알코올', 'fuel2'] = '기타'
+errc.loc[errc['연료'] == '등유', 'fuel2'] = '기타'
+errc.loc[errc['연료'] == '기타연료', 'fuel2'] = '기타'
+errc.loc[errc['연료'].isnull() == True, 'fuel2'] = '기타'
 
 # 6s
 # 수도권 : 서울특별시, 인천광역시, 경기도
@@ -5326,7 +5352,7 @@ year = 2022
 # year = int(today_date[:4])
 
 # 2022년 차량 대수
-grp1 = dfm2.groupby(['지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
+grp1 = dfm.groupby(['지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', '지역', '시도', '배출가스등급', '차량대수']]
@@ -5341,20 +5367,20 @@ for ctpv in grp1['시도'].unique():
         rgn = '수도권'
     else:
         rgn = '비수도권'
-        for grd in ['1', '2', '3', '4', '5', 'X']:
-            for yr in range(2019, year + 1):
-                yr_list.append(str(yr))
-                rgn_list.append(rgn)
-                ctpv_list.append(ctpv)
-                grd_list.append(grd)
+    for grd in ['1', '2', '3', '4', '5', 'X']:
+        for yr in range(2019, year + 1):
+            yr_list.append(str(yr))
+            rgn_list.append(rgn)
+            ctpv_list.append(ctpv)
+            grd_list.append(grd)
 base = pd.DataFrame({'연도':yr_list, '지역':rgn_list, '시도':ctpv_list, '배출가스등급':grd_list})
 
 # 연도별 등록대수
-grp2 = dfm2.groupby(['최초등록일자_년', '지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
+grp2 = dfm.groupby(['최초등록일자_년', '지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc2.groupby(['변경일자_년', '지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
+grp3 = errc.groupby(['변경일자_년', '지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
 base1 = base.merge(grp1, on=['연도', '지역', '시도', '배출가스등급'], how='left')
 base2 = base1.merge(grp2, on=['연도', '지역', '시도', '배출가스등급'], how='left')
@@ -5368,6 +5394,8 @@ for i in range(base3.shape[0] // n):
 
 df1 = base3[['연도', '지역', '시도', '배출가스등급', '차량대수']]
 df1['기준연월'] = df1['연도'] + '12'
+
+df1['배출가스등급'] = df1['배출가스등급'].map({'1':'1', '2':'2', '3':'3', '4':'4', '5':'5', 'X':'미분류'})
 
 today_date = datetime.today().strftime("%Y%m%d")
 df1['테이블생성일자'] = today_date
@@ -5407,41 +5435,41 @@ print(f'data export : {table_nm}')
 
 ## 등급, 연료별 차량현황
 # 2022년 차량 대수
-grp1 = dfm2.groupby(['fuel', '배출가스등급'], as_index=False)['차대번호'].count()
+grp1 = dfm.groupby(['fuel2', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
-grp1 = grp1[['연도', 'fuel', '배출가스등급', '차량대수']]
+grp1 = grp1[['연도', 'fuel2', '배출가스등급', '차량대수']]
 
 # 차량 통계 기본 데이터셋
 yr_list = []
 fuel_list = []
 grd_list = []
-for fuel in grp1['fuel'].unique():
+for fuel in grp1['fuel2'].unique():
     for grd in ['1', '2', '3', '4', '5', 'X']:
         for yr in range(2019, year + 1):
             yr_list.append(str(yr))
             fuel_list.append(fuel)
             grd_list.append(grd)
-base = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list})
+base = pd.DataFrame({'연도':yr_list, 'fuel2':fuel_list, '배출가스등급':grd_list})
 
 # 연도별 등록대수
-grp2 = dfm2.groupby(['최초등록일자_년', 'fuel', '배출가스등급'], as_index=False)['차대번호'].count()
+grp2 = dfm.groupby(['최초등록일자_년', 'fuel2', '배출가스등급'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc2.groupby(['변경일자_년', 'fuel', '배출가스등급'], as_index=False)['차대번호'].count()
+grp3 = errc.groupby(['변경일자_년', 'fuel2', '배출가스등급'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
-base1 = base.merge(grp1, on=['연도', 'fuel', '배출가스등급'], how='left')
-base2 = base1.merge(grp2, on=['연도', 'fuel', '배출가스등급'], how='left')
-base3 = base2.merge(grp3, on=['연도', 'fuel', '배출가스등급'], how='left')
+base1 = base.merge(grp1, on=['연도', 'fuel2', '배출가스등급'], how='left')
+base2 = base1.merge(grp2, on=['연도', 'fuel2', '배출가스등급'], how='left')
+base3 = base2.merge(grp3, on=['연도', 'fuel2', '배출가스등급'], how='left')
 base3[['차량대수', '등록대수', '말소대수']] = base3[['차량대수', '등록대수', '말소대수']].fillna(0)
 
 n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
-df2 = base3[['연도', 'fuel', '배출가스등급', '차량대수']]
-df2 = df2.rename(columns={'fuel':'연료'})
+df2 = base3[['연도', 'fuel2', '배출가스등급', '차량대수']]
+df2 = df2.rename(columns={'fuel2':'연료'})
 df2['기준연월'] = df2['연도'] + '12'
 today_date = datetime.today().strftime("%Y%m%d")
 df2['테이블생성일자'] = today_date
