@@ -1,7 +1,6 @@
 # Library
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 from datetime import datetime
 import pyexasol
 import psycopg2
@@ -496,7 +495,7 @@ df.loc[(df['연료'] == '휘발유') | (df['연료'] == 'LPG(액화석유가스)
 # 분석
 ## EG 분류
 grade_list = []
-for f, y, cy, e in tqdm(df[['fuel', '제작일자', '차량연식', 'DPF유무_수정']].values):
+for f, y, cy, e in df[['fuel', '제작일자', '차량연식', 'DPF유무_수정']].values:
     if (f == '휘발유_가스') and ( (19980101 <= y <= 20001231) or (1998 <= cy <= 2000) ):
         grade_list.append('A')
     elif (f == '휘발유_가스') and ( (y <= 19971231) or (cy <= 1997) ):
@@ -640,7 +639,7 @@ def flat_cols(df):
 total_g_df = pd.DataFrame()
 groupby_col1 = ['제작사명', '배출가스인증번호', '제원관리번호', '자동차형식', '엔진형식', '검사종류', '검사방법', '검사판정']
 groupby_col2 = ['제작사명', '배출가스인증번호', '제원관리번호', '자동차형식', '엔진형식', '검사종류', '검사방법']
-for one in tqdm(df3y['배출가스인증번호'].unique()):
+for one in df3y['배출가스인증번호'].unique():
     # 배인번호별 df
     gas_df = df3y.loc[df3y['배출가스인증번호'] == str(one)].reset_index(drop=True)
 
@@ -1112,7 +1111,7 @@ df1.loc[(df1['연료'] == '휘발유') | (df1['연료'] == 'LPG(액화석유가�
 # 분석
 ## EG 분류
 grade_list = []
-for f, y, cy, e in tqdm(df1[['fuel', '제작일자', '차량연식', 'DPF_YN']].values):
+for f, y, cy, e in df1[['fuel', '제작일자', '차량연식', 'DPF_YN']].values:
     if (f == '휘발유_가스') and ( (19980101 <= y <= 20001231) or (1998 <= cy <= 2000) ):
         grade_list.append('A')
     elif (f == '휘발유_가스') and ( (y <= 19971231) or (cy <= 1997) ):
@@ -1786,7 +1785,7 @@ DF_HC_list = []
 DF_PM_list = []
 DF_NOx_list = []
 # '연료', '차종', '차종유형', '차량연식', '차령'
-for fuel, car_type, car_size, car_birth, car_age in tqdm(df2[DF_col].values):    
+for fuel, car_type, car_size, car_birth, car_age in df2[DF_col].values:    
     if fuel == '경유':
         if (car_type == '승용') or ( (car_type == '특수') and (car_size == '소형') ): # 최 확인(2023.04.20) : "특수 소형" -> "승용 소형" 조건으로 계산
             warranty = 5
@@ -2097,7 +2096,7 @@ EFi_PM2_5_list = []
 EFi_NH3_list = []
 
 # 차종, 차종유형, 연료, 연식
-for car_type, car_size, fuel, car_birth in tqdm(df2[EFi_col].values):
+for car_type, car_size, fuel, car_birth in df2[EFi_col].values:
     EFi_COm = 0
     EFi_HCm = 0
     EFi_NOxm = 0
