@@ -1396,7 +1396,6 @@ num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대�
 max_date = dfm['최초등록일자'].max()
 max_year = max_date[:4]
 max_month = max_date[4:6]
-max_year, max_month
 num_car_by_local1[['연도', '월']] = [max_year, max_month]
 
 ### 연료 지역별 등록차량대수
