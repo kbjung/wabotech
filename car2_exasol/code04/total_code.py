@@ -1635,6 +1635,7 @@ we.import_from_pandas(expdf, table_nm)
 print(f'data export : {table_nm}')
 
 ## 4등급 차량현황(그룹)
+# code1
 # - 연도, 월, 시도, 시군구, 연료, 차종, 차종유형, 용도
 ### 현재 차량 대수
 num_car_by_local1 = dfm.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False, as_index=False).agg({'차대번호':'count', 'DPF_YN':'count', '조기폐차최종승인YN':'count'})
@@ -1692,6 +1693,138 @@ chc_col = {
     '테이블생성일자':'LOAD_DT', 
 }
 STD_BD_DAT_GRD4_CAR_CURSTT = STD_BD_DAT_GRD4_CAR_CURSTT.rename(columns=chc_col)
+
+# code2
+# cse = carr.merge(srcr, on='제원관리번호', how='left')
+# ce = cse.merge(elpm, on='차대번호', how='left')
+# cea = ce.merge(attr, on='차대번호', how='left')
+# dfe = cea.merge(coder, on='법정동코드', how='left')
+# dfe.loc[dfe['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+# dfe['시군구_수정'] = dfe['시군구'].str.split(' ').str[0]
+
+# ere = errc.merge(elpm, on='차대번호', how='left')
+# erea = ere.merge(attr, on='차대번호', how='left')
+
+# rdf = dfe.copy()
+# rs = rs.drop_duplicates('차대번호').reset_index(drop=True)
+# rdf1 = rdf.merge(rs, on='차대번호', how='left')
+# rdf1.loc[(rdf1['DPF_YN'] == '유') | (rdf1['DPF유무_수정'] == '유'), 'DPF_YN'] = '유'
+# rdf1.loc[(rdf1['DPF유무_수정'] == '무'), 'DPF_YN'] = '무'
+# rdf1.loc[(rdf1['DPF유무_수정'] == '확인불가'), 'DPF_YN'] = '확인불가'
+
+# dfe = rdf1.drop('DPF유무_수정', axis=1)
+# dfe['연도'] = max_year
+# dfe['월'] = max_month
+
+# dfe['최초등록일자'] = dfe['최초등록일자'].astype('str')
+# dfe['최초등록일자_년'] = dfe['최초등록일자'].str[:4]
+# dfe['최초등록일자_월'] = dfe['최초등록일자'].str[4:6]
+# dfe['최초등록일자_일'] = dfe['최초등록일자'].str[6:8]
+# dfe.loc[dfe['DPF_YN'] == '유', '저감장치부착유무'] = 'Y'
+# erea.loc[erea['DPF_YN'] == '유', '저감장치부착유무'] = 'Y'
+# dfe['말소일자'] = dfe['말소일자'].astype('str')
+# dfe['말소일자_년'] = dfe['말소일자'].str[:4]
+# dfe['말소일자_월'] = dfe['말소일자'].str[4:6]
+# dfe['말소일자_일'] = dfe['말소일자'].str[6:8]
+# erea['말소일자'] = erea['말소일자'].astype('str')
+# erea['말소일자_년'] = erea['말소일자'].str[:4]
+# erea['말소일자_월'] = erea['말소일자'].str[4:6]
+# erea['말소일자_일'] = erea['말소일자'].str[6:8]
+
+# # 2022년 차량 대수
+# grp1 = dfe[dfe['차량말소YN'] == 'N'].groupby(['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index()
+# grp1 = grp1.rename(columns={'차대번호':'차량대수', '저감장치부착유무':'저감대수'})
+
+# # 연도별 등록대수
+# grp2 = dfe[dfe['차량말소YN'] == 'N'].groupby(['최초등록일자_년', '최초등록일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index()
+# grp2 = grp2.rename(columns={'차대번호':'등록대수', '저감장치부착유무':'등록저감대수', '최초등록일자_년':'연도', '최초등록일자_월':'월'})
+
+# # 연도별 말소대수
+# grp3 = erea.groupby(['변경일자_년', '변경일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index()
+# grp3 = grp3.rename(columns={'차대번호':'말소대수', '저감장치부착유무':'말소저감대수', '변경일자_년':'연도', '변경일자_월':'월'})
+
+# # 연도별 조기폐차 대수
+# grp4 = dfe.groupby(['말소일자_년', '말소일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'조기폐차최종승인YN':'count'}).reset_index()
+# grp4 = grp4.rename(columns={'말소일자_년':'연도', '말소일자_월':'월', '조기폐차최종승인YN':'조기폐차'})
+
+# y_plist = list(pd.date_range(end=date, periods=4, freq="MS").year)
+# mth_plist = list(pd.date_range(end=date, periods=4, freq="MS").month)
+# ctpv_sgg = grp1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
+
+# # 18s
+# # 4개월 차량 통계 기본 데이터셋
+# ctpv_list, sgg_list, fuel_list, vhcty_list, ty_list, purps_list, yr_list, month_list = [], [], [], [], [], [], [], []
+# ctpv_sgg = grp1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
+# for ctpv, sgg in ctpv_sgg[['시도', '시군구_수정']].values:
+#     for fuel in grp1['연료'].unique():
+#         for vhcty in grp1['차종'].unique():
+#             for ty in grp1['차종유형'].unique():
+#                 for purps in grp1['용도'].unique():
+#                     for yr, month in zip(y_plist, mth_plist):
+#                         ctpv_list.append(ctpv)
+#                         sgg_list.append(sgg)
+#                         fuel_list.append(fuel)
+#                         vhcty_list.append(vhcty)
+#                         ty_list.append(ty)
+#                         purps_list.append(purps)
+#                         yr_list.append(str(yr))
+#                         month_list.append(f'{month:0>2}')
+# base = pd.DataFrame({'연도':yr_list, '월':month_list, '시도':ctpv_list, '시군구_수정':sgg_list, '연료':fuel_list, '차종':vhcty_list, '차종유형':ty_list, '용도':purps_list})
+# base1 = base.merge(grp1, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], how='left')
+# base2 = base1.merge(grp2, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], how='left')
+# base3 = base2.merge(grp3, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], how='left')
+# base4 = base3.merge(grp4, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], how='left')
+# base4[['차량대수', '조기폐차', '저감대수', '등록대수', '등록저감대수', '말소대수', '말소저감대수']] = base4[['차량대수', '조기폐차', '저감대수', '등록대수', '등록저감대수', '말소대수', '말소저감대수']].fillna(0)
+# base4[['차량대수_1', '등록대수_1', '말소대수_1', '저감대수_1', '등록저감대수_1', '말소저감대수_1']] = base4[['차량대수', '등록대수', '말소대수', '저감대수', '등록저감대수', '말소저감대수']].shift(-1)
+# base4.loc[[x for x in range(3, base4.shape[0], 4)], ['차량대수_1', '저감대수_1']]  = base4.loc[[x for x in range(3, base4.shape[0], 4)], ['차량대수', '저감대수']].values
+# base4.loc[[x for x in range(3, base4.shape[0], 4)], ['등록대수_1', '말소대수_1', '등록저감대수_1', '말소저감대수_1']] = 0
+# base4['차량대수'] = base4['차량대수_1'] - base4['등록대수_1'] + base4['말소대수_1']
+
+# base5 = base4[['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '차량대수', '조기폐차', '저감대수']]
+# base5['감소대수'] = base5['차량대수'].shift() - base5['차량대수']
+# base5['감소율'] = base5['감소대수'] / base5['차량대수'].shift()
+# base5.loc[(base5['감소율'] == -np.inf) | (base5['감소율'] == np.inf), '감소율'] = 0
+# base5['감소율'] = base5['감소율'].fillna(0)
+# base5['저감장치미부착대수'] = base5['차량대수'] - base5['저감대수']
+
+# base5.loc[base5['차량대수'] < 0, '차량대수'] = 0
+# base5.loc[base5['저감장치미부착대수'] < 0, '저감장치미부착대수'] = 0
+# base5.loc[[x for x in range(0, base5.shape[0], 4)], '감소율'] = 0
+
+# base5['테이블생성일자'] = today_date
+# base5 = base5.rename(columns={'조기폐차':'조기폐차대수', '저감대수':'저감장치부착대수'})
+# STD_BD_DAT_GRD4_CAR_CURSTT = base5[[
+#     '연도',
+#     '월',
+#     '시도',
+#     '시군구_수정',
+#     '연료',
+#     '차종',
+#     '차종유형', 
+#     '용도',
+#     '차량대수',
+#     '감소율',
+#     '저감장치부착대수',
+#     '저감장치미부착대수',
+#     '조기폐차대수',
+#     '테이블생성일자',
+# ]]
+# chc_col = {
+#     '연도':'YR',
+#     '월':'MM',
+#     '시도':'CTPV',
+#     '시군구_수정':'SGG',
+#     '연료':'FUEL_CD',
+#     '차종':'VHCTY_CD',
+#     '차종유형':'VHCTY_TY', 
+#     '용도':'PURPS_CD2',
+#     '차량대수':'VHCL_MKCNT',
+#     '감소율':'DEC_RT',
+#     '저감장치부착대수':'RDCDVC_EXTRNS_MKCNT',
+#     '저감장치미부착대수':'RDCDVC_UNAT_MKCNT',
+#     '조기폐차대수':'ELPDSRC_MKCNT',
+#     '테이블생성일자':'LOAD_DT', 
+# }
 
 ## [출력] STD_BD_DAT_GRD4_CAR_CURSTT
 expdf = STD_BD_DAT_GRD4_CAR_CURSTT
