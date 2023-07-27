@@ -15,6 +15,7 @@ import scipy.interpolate as intp
 # insider db
 wd = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='VSYSD')
 we = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='vsyse')
+ws = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='SYS')
 
 # # exasol db
 # wd = pyexasol.connect(dsn='dev.openankus.org:8563', user='sys', password='djslzja', compression=True, schema='VSYSD')
@@ -162,17 +163,25 @@ print('data load : STD_DLM_TB_ERP_ATT_HIS')
 
 ## 등록이력(CEG_CAR_HISTORY_MIG)
 # 1.8s
-edb_id = 'vsysd'
-edb_database = 'edb'
-edb_port = 5444
-edb_url = '172.29.135.50'
-edb_pwd = 'vsyswynn'
-conn = psycopg2.connect(dbname=edb_database, user=edb_id, password=edb_pwd, host=edb_url, port=edb_port)
-cur = conn.cursor()
-sql = 'select VHCL_ERSR_YN, CHNG_DE, VHMNO from vsysd.ceg_car_history_mig'
-cur.execute(sql)
-his = pd.DataFrame(cur.fetchall())
-his.columns = [desc[0].upper() for desc in cur.description]
+# edb_id = 'vsysd'
+# edb_database = 'edb'
+# edb_port = 5444
+# edb_url = '172.29.135.50'
+# edb_pwd = 'vsyswynn'
+# conn = psycopg2.connect(dbname=edb_database, user=edb_id, password=edb_pwd, host=edb_url, port=edb_port)
+# cur = conn.cursor()
+# sql = 'select VHCL_ERSR_YN, CHNG_DE, VHMNO from vsysd.ceg_car_history_mig'
+# cur.execute(sql)
+# his = pd.DataFrame(cur.fetchall())
+# his.columns = [desc[0].upper() for desc in cur.description]
+# his_ch_col = {
+#     'VHCL_ERSR_YN':'차량말소YN', 
+#     'CHNG_DE':'변경일자',
+#     'VHMNO':'차량관리번호'
+# }
+# hisr = his.rename(columns=his_ch_col)
+
+his = ws.export_to_pandas("SELECT VHCL_ERSR_YN, CHNG_DE, VHMNO FROM CEG_CAR_HISTORY_MIG;")
 his_ch_col = {
     'VHCL_ERSR_YN':'차량말소YN', 
     'CHNG_DE':'변경일자',
@@ -184,11 +193,22 @@ print('data load : ceg_car_history_mig')
 
 ## 비상시 및 계절제 단속발령(N_IS_ISSUE_DISCLOSURE)
 # 1.8s
-sql = "select REGLT_NO, GNFD_NO, VIN, REG_SIDO_CD, REG_SIGNGU_CD, REGLT_AREA_CD from vsysd.n_is_issue_disclosure"
-cur.execute(sql)
-isdis = pd.DataFrame(cur.fetchall())
+# sql = "select REGLT_NO, GNFD_NO, VIN, REG_SIDO_CD, REG_SIGNGU_CD, REGLT_AREA_CD from vsysd.n_is_issue_disclosure"
+# cur.execute(sql)
+# isdis = pd.DataFrame(cur.fetchall())
 
-isdis.columns = [desc[0].upper() for desc in cur.description]
+# isdis.columns = [desc[0].upper() for desc in cur.description]
+# isdis_ch_col = {
+#     'REGLT_NO':'적발번호', 
+#     'GNFD_NO':'발령번호', 
+#     'REG_SIDO_CD':'등록시도코드', 
+#     'REG_SIGNGU_CD':'등록시군구코드', 
+#     'VIN':'차대번호',
+#     'REGLT_AREA_CD':'적발지역코드', 
+# }
+# isdisr = isdis.rename(columns=isdis_ch_col)
+
+isdis = wd.export_to_pandas("SELECT REGLT_NO, GNFD_NO, VIN, REG_SIDO_CD, REG_SIGNGU_CD, REGLT_AREA_CD FROM STD_N_IS_ISSUE_DISCLOSURE;")
 isdis_ch_col = {
     'REGLT_NO':'적발번호', 
     'GNFD_NO':'발령번호', 
@@ -202,11 +222,19 @@ isdisr = isdis.rename(columns=isdis_ch_col)
 print('data load : n_is_issue_disclosure')
 
 ## 운행제한 발령정보(N_IS_ISSUE)
-sql = "select GNFD_NO, TY_STDR_ID, DNSTY_STDR_ID from vsysd.n_is_issue"
-cur.execute(sql)
-isis = pd.DataFrame(cur.fetchall())
+# sql = "select GNFD_NO, TY_STDR_ID, DNSTY_STDR_ID from vsysd.n_is_issue"
+# cur.execute(sql)
+# isis = pd.DataFrame(cur.fetchall())
 
-isis.columns = [desc[0].upper() for desc in cur.description]
+# isis.columns = [desc[0].upper() for desc in cur.description]
+# isis_ch_col = {
+#     'GNFD_NO':'발령번호', 
+#     'DNSTY_STDR_ID':'농도기준아이디', 
+#     'TY_STDR_ID':'유형기준아이디', 
+# }
+# isisr = isis.rename(columns=isis_ch_col)
+
+isis = wd.export_to_pandas("SELECT GNFD_NO, TY_STDR_ID, DNSTY_STDR_ID FROM STD_N_IS_ISSUE;")
 isis_ch_col = {
     'GNFD_NO':'발령번호', 
     'DNSTY_STDR_ID':'농도기준아이디', 
@@ -217,10 +245,17 @@ isisr = isis.rename(columns=isis_ch_col)
 print('data load : n_is_issue')
 
 ## N_IS_PENALTY
-sql = "select REGLT_NO, REGLT_DE from vsysd.n_is_penalty"
-cur.execute(sql)
-ispe = pd.DataFrame(cur.fetchall())
-ispe.columns = [desc[0].upper() for desc in cur.description]
+# sql = "select REGLT_NO, REGLT_DE from vsysd.n_is_penalty"
+# cur.execute(sql)
+# ispe = pd.DataFrame(cur.fetchall())
+# ispe.columns = [desc[0].upper() for desc in cur.description]
+# ispe_ch_col = {
+#     'REGLT_NO':'적발번호', 
+#     'REGLT_DE':'단속일', 
+# }
+# isper = ispe.rename(columns=ispe_ch_col)
+
+ispe = ws.export_to_pandas("SELECT REGLT_NO, REGLT_DE FROM N_IS_PENALTY;")
 ispe_ch_col = {
     'REGLT_NO':'적발번호', 
     'REGLT_DE':'단속일', 
@@ -230,10 +265,21 @@ isper = ispe.rename(columns=ispe_ch_col)
 print('data load : n_is_penalty')
 
 ## 운행제한 단속정보(N_US_DISCLOSURE)
-sql = 'select "NO", VIN, DISCL_TY, REGLT_AREA_CD, REG_SIDO_CD, REG_SIGNGU_CD from vsysd.n_us_disclosure'
-cur.execute(sql)
-usdis = pd.DataFrame(cur.fetchall())
-usdis.columns = [desc[0].upper() for desc in cur.description]
+# sql = 'select "NO", VIN, DISCL_TY, REGLT_AREA_CD, REG_SIDO_CD, REG_SIGNGU_CD from vsysd.n_us_disclosure'
+# cur.execute(sql)
+# usdis = pd.DataFrame(cur.fetchall())
+# usdis.columns = [desc[0].upper() for desc in cur.description]
+# usdis_ch_dict = {
+#     'NO':'번호', 
+#     'VIN':'차대번호', 
+#     'REG_SIDO_CD':'등록시도코드', 
+#     'REG_SIGNGU_CD':'등록시군구코드', 
+#     'DISCL_TY':'적발유형', 
+#     'REGLT_AREA_CD':'단속지역코드', 
+# }
+# usdisr = usdis.rename(columns=usdis_ch_dict)
+
+usdis = wd.export_to_pandas('SELECT "no", VIN, DISCL_TY, REGLT_AREA_CD, REG_SIDO_CD, REG_SIGNGU_CD FROM STD_N_US_DISCLOSURE;')
 usdis_ch_dict = {
     'NO':'번호', 
     'VIN':'차대번호', 
@@ -247,18 +293,26 @@ usdisr = usdis.rename(columns=usdis_ch_dict)
 print('data load : n_us_disclosure')
 
 ## N_US_PENALTY
-sql = 'select "NO", REGLT_CNT, REGLT_YM FROM from vsysd.n_us_penalty'
-cur.execute(sql)
-uspe = pd.DataFrame(cur.fetchall())
-uspe.columns = [desc[0].upper() for desc in cur.description]
+# sql = 'select "NO", REGLT_CNT, REGLT_YM FROM from vsysd.n_us_penalty'
+# cur.execute(sql)
+# uspe = pd.DataFrame(cur.fetchall())
+# uspe.columns = [desc[0].upper() for desc in cur.description]
+# uspe_ch_dict = {
+#     'NO':'번호', 
+#     'REGLT_CNT':'적발건수', 
+#     'REGLT_YM':'적발년월'
+# }
+# usper = uspe.rename(columns=uspe_ch_dict)
+# cur.close()
+# conn.close()
+
+uspe = ws.export_to_pandas('SELECT "no", REGLT_CNT, REGLT_YM FROM N_US_PENALTY;')
 uspe_ch_dict = {
     'NO':'번호', 
     'REGLT_CNT':'적발건수', 
     'REGLT_YM':'적발년월'
 }
 usper = uspe.rename(columns=uspe_ch_dict)
-cur.close()
-conn.close()
 
 print('data load : n_us_penalty')
 
