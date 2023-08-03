@@ -7142,11 +7142,11 @@ errc = ersr.merge(coder, on='법정동코드', how='left')
 # Load
 ## 5등급 지역별 조기폐차(STD_BD_GRD5_ELPDSRC_CURSTT)(한글파일 내용 입력)
 # 8.6s
-df1 = we.export_to_pandas("SELECT * FROM GRD5_ELPDSRC;")
+df1 = we.export_to_pandas("SELECT * FROM STD_BD_GRD5_ELPDSRC;")
 
-## 5등급 저공해 미조치(STD_BD_GRD5_LEM_N_MOD)(한글파일 내용 입력)
+## 5등급 저공해 미조치(STD_BD_GRD5_LEM_N)(한글파일 내용 입력)
 # 8.6s
-no_dpf = we.export_to_pandas("SELECT * FROM GRD5_LEM_N;")
+no_dpf = we.export_to_pandas("SELECT * FROM STD_BD_GRD5_LEM_N;")
 
 # 분석
 ## 5등급 지역별 조기폐차 현황
