@@ -1,10 +1,14 @@
 # Library
+
 import pandas as pd
 import numpy as np
 from datetime import datetime
 import pyexasol
-import psycopg2
+# import psycopg2
 import scipy.interpolate as intp
+import time
+
+start_time = time.time()
 
 # 날짜 코드
 ## 기준연월 설정
@@ -12,19 +16,21 @@ import scipy.interpolate as intp
 ## 날짜 설정
 
 # server
+
 # insider db
 wd = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='VSYSD')
 we = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='VSYSE')
-ws = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='SYS')
+# ws = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='SYS')
 
 # # exasol db
 # wd = pyexasol.connect(dsn='dev.openankus.org:8563', user='sys', password='djslzja', compression=True, schema='VSYSD')
 # we = pyexasol.connect(dsn='dev.openankus.org:8563', user='sys', password='djslzja', compression=True, schema='VSYSE')
 # wbt = pyexasol.connect(dsn='dev.openankus.org:8563', user='sys', password='djslzja', compression=True, schema='wbt')
 
-
 # Load ###################################################################################################################
+
 ## 등록정보(STD_CEG_CAR_MIG) 4등급만
+
 # 8.6s
 car = wd.export_to_pandas("SELECT VIN, BSPL_STDG_CD, EXHST_GAS_GRD_CD, EXHST_GAS_CERT_NO, VHCL_ERSR_YN, MANP_MNG_NO, YRIDNW, VHCTY_CD, PURPS_CD2, FRST_REG_YMD, VHCL_FBCTN_YMD, VHCL_MNG_NO, VHRNO, EXTGAS_INSP_VLD_YMD, VHCL_OWNR_CL_CD FROM STD_CEG_CAR_MIG WHERE EXHST_GAS_GRD_CD = 'A0504' OR EXHST_GAS_GRD_CD = 'A05T4';")
 car_ch_col = {
@@ -40,7 +46,7 @@ car_ch_col = {
     'FRST_REG_YMD':'최초등록일자',
     'VHCL_FBCTN_YMD':'제작일자', 
     'VHCL_MNG_NO':'차량관리번호', 
-    'VHRNO':'차량번호',
+    'VHRNO':'자동차등록번호',
     'EXTGAS_INSP_VLD_YMD':'검사유효일',
     'VHCL_OWNR_CL_CD':'소유자구분',  
 }
@@ -49,6 +55,7 @@ carr = car.rename(columns=car_ch_col)
 print('data load : STD_CEG_CAR_MIG')
 
 ## 제원정보(STD_CEG_CAR_SRC_MIG)
+
 # 3.8s
 src = wd.export_to_pandas("SELECT MANP_MNG_NO, FUEL_CD, VHCTY_TY_CD2, MNFCTR_NM, VHCNM, VHCL_FRM, EGIN_TY, VHCTY_CL_CD, TOTL_WGHT, CRYNG_WGHT, DSPLVL, EGIN_OTPT FROM STD_CEG_CAR_SRC_MIG;")
 src_ch_col = {
@@ -70,6 +77,7 @@ srcr = src.rename(columns=src_ch_col)
 print('data load : STD_CEG_CAR_SRC_MIG')
 
 ## 정기검사(STD_TB_JGT_HIS)
+
 # 3m 34.9s
 # jgt = wb.export_to_pandas("SELECT VIN, FDRM_INSP_INSP_MTHD_CD, FDRM_INSP_KND_CD, FDRM_INSP_JGMT, FDRM_NLOD_SMO_MSTVL1, FDRM_NLOD_SMO_MSTVL2, FDRM_NLOD_SMO_MSTVL3, FDRM_NLOD_SMO_JT_YN1, FDRM_INSP_YMD, FDRM_DRVNG_DSTNC, FDRM_NLOD_SMO_PRMVL1 FROM STD_TB_JGT_HIS WHERE ROWNUM <= 10000;") # 테스트용
 jgt = wd.export_to_pandas("SELECT VIN, FDRM_INSP_INSP_MTHD_CD, FDRM_INSP_KND_CD, FDRM_INSP_JGMT, FDRM_NLOD_SMO_MSTVL1, FDRM_NLOD_SMO_MSTVL2, FDRM_NLOD_SMO_MSTVL3, FDRM_NLOD_SMO_JT_YN1, FDRM_INSP_YMD, FDRM_DRVNG_DSTNC, FDRM_NLOD_SMO_PRMVL1 FROM STD_TB_JGT_HIS;")
@@ -91,6 +99,7 @@ jgtr = jgt.rename(columns=jgt_ch_col)
 print('data load : STD_CEG_CAR_SRC_MIG')
 
 ## 정밀검사(STD_TB_EET_HIS_ME)
+
 # 6m 36.1s
 eet = wd.export_to_pandas("SELECT VIN, PRCINSP_MSRMT_MTHD_CD, PRCINSP_KND_CD, PRCINSP_JGMT, PREC_NLOD_SMO_MSTVL1, PREC_NLOD_SMO_MSTVL2, PREC_NLOD_SMO_MSTVL3, PREC_NLOD_SMO_JT_YN1, PRCINSP_YMD, PRCINSP_DRVNG_DSTNC, PREC_NLOD_SMO_PRMVL1 FROM STD_TB_EET_HIS_ME;")
 eet_ch_col = {
@@ -111,6 +120,7 @@ eetr = eet.rename(columns=eet_ch_col)
 print('data load : STD_TB_EET_HIS_ME')
 
 ## 법정동코드(STD_BJCD_INFO)
+
 # 1.3s
 code = wd.export_to_pandas("SELECT STDG_CD, STDG_CTPV_NM, STDG_SGG_NM, STDG_CTPV_CD, STDG_SGG_CD FROM STD_BJCD_INFO;")
 code_ch_col = {
@@ -125,6 +135,7 @@ coder = code.rename(columns=code_ch_col)
 print('data load : STD_BJCD_INFO')
 
 ## 노후차 조기폐차 관리정보(수도권)(STD_DLM_TB_ERP_EARLY_ERASE_AEA)
+
 # 2.4s
 aea = wd.export_to_pandas("SELECT VIN, ELPDSRC_STTS_CD, ELPDSRC_LST_APRV_YN, ERSR_YMD FROM STD_DLM_TB_ERP_EARLY_ERASE_AEA;")
 aea_ch_col = {
@@ -138,6 +149,7 @@ aear = aea.rename(columns=aea_ch_col)
 print('data load : STD_DLM_TB_ERP_EARLY_ERASE_AEA')
 
 ## 노후차 조기폐차 관리정보(수도권외)(STD_DLM_TB_ERP_EARLY_ERASE_LGV)
+
 # 1.8s
 lgv = wd.export_to_pandas("SELECT VIN, ELPDSRC_STTS_CD, ELPDSRC_LST_APRV_YN, ERSR_YMD FROM STD_DLM_TB_ERP_EARLY_ERASE_LGV;")
 lgv_ch_col = {
@@ -151,17 +163,20 @@ lgvr = lgv.rename(columns=lgv_ch_col)
 print('data load : STD_DLM_TB_ERP_EARLY_ERASE_LGV')
 
 ## 저감장치 부착이력(STD_DLM_TB_ERP_ATT_HIS)
+
 # 3.0s
-att = wd.export_to_pandas("SELECT VIN, RDCDVC_SE_CD FROM STD_DLM_TB_ERP_ATT_HIS;")
+att = wd.export_to_pandas("SELECT VIN, RDCDVC_SE_CD, RDCDVC_KND_CD FROM STD_DLM_TB_ERP_ATT_HIS;")
 att_ch_col = {
     'VIN':'차대번호', 
-    'RDCDVC_SE_CD':'저감장치구분', 
+    'RDCDVC_SE_CD':'저감장치구분',
+    'RDCDVC_KND_CD':'저감장치종류',
 }
 attr = att.rename(columns=att_ch_col)
 
 print('data load : STD_DLM_TB_ERP_ATT_HIS')
 
 ## 등록이력(CEG_CAR_HISTORY_MIG)
+
 # 1.8s
 # edb_id = 'vsysd'
 # edb_database = 'edb'
@@ -181,7 +196,7 @@ print('data load : STD_DLM_TB_ERP_ATT_HIS')
 # }
 # hisr = his.rename(columns=his_ch_col)
 
-his = ws.export_to_pandas("SELECT VHCL_ERSR_YN, CHNG_DE, VHMNO FROM CEG_CAR_HISTORY_MIG;")
+his = wd.export_to_pandas("SELECT VHCL_ERSR_YN, CHNG_DE, VHMNO FROM CEG_CAR_HISTORY_MIG;")
 his_ch_col = {
     'VHCL_ERSR_YN':'차량말소YN', 
     'CHNG_DE':'변경일자',
@@ -189,9 +204,10 @@ his_ch_col = {
 }
 hisr = his.rename(columns=his_ch_col)
 
-print('data load : ceg_car_history_mig')
+print('data load : CEG_CAR_HISTORY_MIG')
 
 ## 비상시 및 계절제 단속발령(N_IS_ISSUE_DISCLOSURE)
+
 # 1.8s
 # sql = "select REGLT_NO, GNFD_NO, VIN, REG_SIDO_CD, REG_SIGNGU_CD, REGLT_AREA_CD from vsysd.n_is_issue_disclosure"
 # cur.execute(sql)
@@ -208,7 +224,7 @@ print('data load : ceg_car_history_mig')
 # }
 # isdisr = isdis.rename(columns=isdis_ch_col)
 
-isdis = wd.export_to_pandas("SELECT REGLT_NO, GNFD_NO, VIN, REG_SIDO_CD, REG_SIGNGU_CD, REGLT_AREA_CD FROM STD_N_IS_ISSUE_DISCLOSURE;")
+isdis = wd.export_to_pandas("SELECT REGLT_NO, GNFD_NO, VIN, REG_SIDO_CD, REG_SIGNGU_CD, REGLT_AREA_CD FROM N_IS_ISSUE_DISCLOSURE;")
 isdis_ch_col = {
     'REGLT_NO':'적발번호', 
     'GNFD_NO':'발령번호', 
@@ -219,9 +235,10 @@ isdis_ch_col = {
 }
 isdisr = isdis.rename(columns=isdis_ch_col)
 
-print('data load : n_is_issue_disclosure')
+print('data load : STD_N_IS_ISSUE_DISCLOSURE')
 
 ## 운행제한 발령정보(N_IS_ISSUE)
+
 # sql = "select GNFD_NO, TY_STDR_ID, DNSTY_STDR_ID from vsysd.n_is_issue"
 # cur.execute(sql)
 # isis = pd.DataFrame(cur.fetchall())
@@ -234,7 +251,7 @@ print('data load : n_is_issue_disclosure')
 # }
 # isisr = isis.rename(columns=isis_ch_col)
 
-isis = wd.export_to_pandas("SELECT GNFD_NO, TY_STDR_ID, DNSTY_STDR_ID FROM STD_N_IS_ISSUE;")
+isis = wd.export_to_pandas("SELECT GNFD_NO, TY_STDR_ID, DNSTY_STDR_ID FROM N_IS_ISSUE;")
 isis_ch_col = {
     'GNFD_NO':'발령번호', 
     'DNSTY_STDR_ID':'농도기준아이디', 
@@ -242,9 +259,10 @@ isis_ch_col = {
 }
 isisr = isis.rename(columns=isis_ch_col)
 
-print('data load : n_is_issue')
+print('data load : STD_N_IS_ISSUE')
 
 ## N_IS_PENALTY
+
 # sql = "select REGLT_NO, REGLT_DE from vsysd.n_is_penalty"
 # cur.execute(sql)
 # ispe = pd.DataFrame(cur.fetchall())
@@ -255,16 +273,17 @@ print('data load : n_is_issue')
 # }
 # isper = ispe.rename(columns=ispe_ch_col)
 
-ispe = ws.export_to_pandas("SELECT REGLT_NO, REGLT_DE FROM N_IS_PENALTY;")
+ispe = wd.export_to_pandas("SELECT REGLT_NO, REGLT_DE FROM N_IS_PENALTY;")
 ispe_ch_col = {
     'REGLT_NO':'적발번호', 
     'REGLT_DE':'단속일', 
 }
 isper = ispe.rename(columns=ispe_ch_col)
 
-print('data load : n_is_penalty')
+print('data load : N_IS_PENALTY')
 
 ## 운행제한 단속정보(N_US_DISCLOSURE)
+
 # sql = 'select "NO", VIN, DISCL_TY, REGLT_AREA_CD, REG_SIDO_CD, REG_SIGNGU_CD from vsysd.n_us_disclosure'
 # cur.execute(sql)
 # usdis = pd.DataFrame(cur.fetchall())
@@ -279,7 +298,7 @@ print('data load : n_is_penalty')
 # }
 # usdisr = usdis.rename(columns=usdis_ch_dict)
 
-usdis = wd.export_to_pandas('SELECT "no", VIN, DISCL_TY, REGLT_AREA_CD, REG_SIDO_CD, REG_SIGNGU_CD FROM STD_N_US_DISCLOSURE;')
+usdis = wd.export_to_pandas('SELECT "NO", VIN, DISCL_TY, REGLT_AREA_CD, REG_SIDO_CD, REG_SIGNGU_CD FROM N_US_DISCLOSURE;')
 usdis_ch_dict = {
     'NO':'번호', 
     'VIN':'차대번호', 
@@ -290,9 +309,10 @@ usdis_ch_dict = {
 }
 usdisr = usdis.rename(columns=usdis_ch_dict)
 
-print('data load : n_us_disclosure')
+print('data load : N_US_DISCLOSURE')
 
 ## N_US_PENALTY
+
 # sql = 'select "NO", REGLT_CNT, REGLT_YM FROM from vsysd.n_us_penalty'
 # cur.execute(sql)
 # uspe = pd.DataFrame(cur.fetchall())
@@ -306,7 +326,7 @@ print('data load : n_us_disclosure')
 # cur.close()
 # conn.close()
 
-uspe = ws.export_to_pandas('SELECT "no", REGLT_CNT, REGLT_YM FROM N_US_PENALTY;')
+uspe = wd.export_to_pandas('SELECT "NO", REGLT_CNT, REGLT_YM FROM N_US_PENALTY;')
 uspe_ch_dict = {
     'NO':'번호', 
     'REGLT_CNT':'적발건수', 
@@ -314,26 +334,29 @@ uspe_ch_dict = {
 }
 usper = uspe.rename(columns=uspe_ch_dict)
 
-print('data load : n_us_penalty')
+print('data load : STD_N_US_PENALTY')
 
 ## RH에서 제공한 법정동코드
-rh = we.export_to_pandas("SELECT DONG_CODE, CTPRVN_NM, SIGNGU_NM FROM TB_MAPDATA;")
+
+rh = we.export_to_pandas("SELECT DONG_CODE, CTPRVN_NM, SIGNGU_NM FROM STD_BD_TB_MAPDATA;")
 rh = rh.rename(columns={
     'DONG_CODE':'법정동코드_rh', 
     'CTPRVN_NM':'시도', 
     'SIGNGU_NM':'시군구'
     })
 
-print('data load : TB_MAPDATA')
+print('data load : STD_BD_TB_MAPDATA')
 
 ## 4등급 result(for DPF유무)
+
 # 20s
-rs = we.export_to_pandas("SELECT 차대번호, DPF유무_수정 FROM GRD4_RESULT;")
+rs = we.export_to_pandas("SELECT 차대번호, DPF유무_수정 FROM STD_BD_GRD4_RESULT;")
 
-print('data load : GRD4_RESULT')
+print('data load : STD_BD_GRD4_RESULT')
 
-## STD_KOSIS
-kosis = we.export_to_pandas("SELECT CTPV, SGG, VHCTY_CD, DY_AVRG_DRVNG_DSTNC FROM STD_KOSIS;")
+## STD_BD_KOSIS
+
+kosis = we.export_to_pandas("SELECT CTPV, SGG, VHCTY_CD, DY_AVRG_DRVNG_DSTNC FROM STD_BD_KOSIS;")
 kosis_ch_col = {
     'CTPV':'시도', 
     'SGG':'시군구', 
@@ -342,16 +365,19 @@ kosis_ch_col = {
 }
 kosisr = kosis.rename(columns=kosis_ch_col)
 
-print('data load : STD_KOSIS')
+print('data load : STD_BD_KOSIS')
 
-# ## 운행제한 건수 데이터
+## 운행제한 건수 데이터
+
 # # 3.0s
-# lmt = we.export_to_pandas("SELECT * FROM GRD5_LMT_NOCS;")
+# lmt = we.export_to_pandas("SELECT * FROM STD_BD_GRD5_LMT_NOCS;")
 # lmt['운행제한건수'] = lmt[['계절제_1차', '계절제_2차', '계절제_3차', '계절제_4차', '비상시', '상시']].sum(axis=1)
 
-# print('data load.')
+# print('data load : STD_BD_GRD5_LMT_NOCS')
 
 # 전처리 #############################################################################################
+
+## 등록정보
 
 ## 중복 차대번호 제거
 carr = carr.sort_values('최초등록일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
@@ -370,6 +396,8 @@ grd_dict = {
     'A05X':'X', 
 }
 carr['배출가스등급'] = carr['배출가스등급'].replace(grd_dict)
+
+# carr['배출가스등급'].unique()
 
 ## 차종 코드 변환
 cd_dict = {
@@ -402,6 +430,8 @@ carr['소유자구분'] = carr['소유자구분'].replace(ownr_dict)
 ## 등록정보 말소 제거
 carm = carr[carr['차량말소YN'] == 'N'].reset_index(drop=True)
 
+## 제원정보
+
 ## 연료 코드 변환
 fuel_dict = {
     'A90GS':'휘발유', 
@@ -433,10 +463,12 @@ ty_dict = {
 srcr['차종유형'] = srcr['차종유형'].replace(ty_dict)
 
 ## 등록&제원 병합
+
 # 0.7s
 cs = carm.merge(srcr, on='제원관리번호', how='left')
 
 ## 정기&정밀 병합
+
 # 3m 1.9s
 ins = pd.concat([jgtr, eetr], ignore_index=True)
 
@@ -491,6 +523,7 @@ mth_dict = {
 insm['검사방법'] = insm['검사방법'].replace(mth_dict)
 
 ## 저감장치구분 코드 변환
+
 rdcdvc_dict = {
     'A1001':'1종', 
     'A1002':'2종', 
@@ -508,46 +541,122 @@ attr.loc[(attr['저감장치구분'] == '1종') | (attr['저감장치구분'] ==
 # 중복 차대번호 제거
 attr = attr.sort_values('DPF_YN').drop_duplicates('차대번호').reset_index(drop=True)
 
+# attr.columns
+
+## 조기폐차(수도권, 수도권 외)
+
+# aear['조기폐차상태코드'].unique()
+
+# erase_dict = {
+#     'A32E':'조기폐차상태코드(추가보조금신청대상)',
+#     'A32G':'조기폐차상태코드(보조금청구)',
+#     'A32I':'조기폐차상태코드(신청등록)',
+#     'A32K':'조기폐차상태코드(추가보조금청구승인)',
+#     'A32M':'조기폐차상태코드(보조금산정)',
+#     'A32N':'조기폐차상태코드(보조금청구반려(제외))',
+#     'A32P':'조기폐차상태코드(보조금대상)',
+#     'A32T':'조기폐차상태코드(추가보조금청구)',
+#     'A32X':'조기폐차상태코드(신청취소(제외))',
+#     'A32Y':'조기폐차상태코드(보조금청구승인)',
+#     'A32C':'조기폐차상태코드(성능확인검사등록)',
+#     'A32D':'조기폐차상태코드(기간초과)',
+#     'A32A':'조기폐차상태코드(성능확인검사신청)',
+#     'A32B':'조기폐차상태코드(보조금미대상)',
+# }
+erase_dict = {
+    'A32E':'E',
+    'A32G':'G',
+    'A32I':'I',
+    'A32K':'K',
+    'A32M':'M',
+    'A32N':'N',
+    'A32P':'P',
+    'A32T':'T',
+    'A32X':'X',
+    'A32Y':'Y',
+    'A32C':'C',
+    'A32D':'D',
+    'A32A':'A',
+    'A32B':'B',
+}
+aear['조기폐차상태코드'] = aear['조기폐차상태코드'].replace(erase_dict)
+
+# aear['조기폐차상태코드'].unique()
+
+# lgvr['조기폐차상태코드'].unique()
+
+lgvr['조기폐차상태코드'] = lgvr['조기폐차상태코드'].replace(erase_dict)
+
+# lgvr['조기폐차상태코드'].unique()
+
+### 조기폐차 신청 정보 추가
+
+aear['조기폐차신청여부'] = 'Y'
+lgvr['조기폐차신청여부'] = 'Y'
+
+### 조기폐차 병합
+
+elp = pd.concat([aear, lgvr], ignore_index=True)
+
+# elp.shape
+
+elp.shape, len(elp['차대번호'].unique())
+
+elpm = elp.sort_values('조기폐차최종승인YN', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+
+# elpm.shape
+
+elpm = elpm[elpm['조기폐차최종승인YN'] == 'Y'].reset_index(drop=True)
+
+# elpm.shape
+
+## kosis 시도명 수정
+
+kosisr.loc[kosisr['시도'] == '강원도', '시도'] = '강원특별자치도'
+
 ## 등록&제원&정기&정밀 병합
+
 # 2m 0.5s
 csi = cs.merge(insm, on='차대번호', how='left')
 
 ## 등록&제원&정기&정밀&법정동코드 병합
+
+# csi['법정동코드'].isnull().sum()
+
+csi['법정동코드'] = csi['법정동코드'].astype('str')
+csi['법정동코드'] = csi['법정동코드'].str[:5] + '00000'
+csi['법정동코드'] = pd.to_numeric(csi['법정동코드'])
+
+# csi['법정동코드'].isnull().sum()
+
 df = csi.merge(coder, on='법정동코드', how='left')
 
-# 주소 수정
-df.loc[df['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
+# df['시도'].isnull().sum()
 
-## rh 법정동코드 참고하여 법정동코드 수정
-rdf = df.copy()
-rdf['법정동코드'] = rdf['법정동코드'].astype('str')
-rdf['법정동코드_mod'] = rdf['법정동코드'].str[:5] + '00000'
-rdf['법정동코드_mod'] = pd.to_numeric(rdf['법정동코드_mod'])
-# 2817000000 인천광역시 남구 -> 인천광역시 미추홀구 2817700000
-# 4119500000 경기도 부천시 원미구 -> 경기도 부천시 4119000000
-# 4119700000 경기도 부천시 소사구 -> 경기도 부천시 4119000000
-# 4119900000 경기도 부천시 오정구 -> 경기도 부천시 4119000000
-# 4173000000 경기도 여주군 -> 경기도 여주시 4167000000
-# 4371000000 충청북도 청원군 -> 충청북도 충주시 4311000000
-rdf.loc[rdf['법정동코드_mod'] == 2817000000, '법정동코드_mod'] = 2817700000
-rdf.loc[rdf['법정동코드_mod'] == 4119500000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4119700000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4119900000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4173000000, '법정동코드_mod'] = 4167000000
-rdf.loc[rdf['법정동코드_mod'] == 4371000000, '법정동코드_mod'] = 4311000000
-df = rdf.copy()
+## 주소 수정
+
+df['법정동코드_mod'] = df['법정동코드'].copy()
 
 ## 4등급 result 파일 참고하여 DPF유무 수정
+
 rdf = df.copy()
 rs = rs.drop_duplicates('차대번호').reset_index(drop=True)
 rdf1 = rdf.merge(rs, on='차대번호', how='left')
 df = rdf1.copy()
 
+# df.shape
+
 ## 연료 컬럼 추가
+
 df.loc[df['연료'] == '경유', 'fuel'] = '경유'
 df.loc[(df['연료'] == '휘발유') | (df['연료'] == 'LPG(액화석유가스)'), 'fuel'] = '휘발유_가스'
+
 # 분석
+
+## 1-1 start
+
 ## EG 분류
+
 grade_list = []
 for f, y, cy, e in df[['fuel', '제작일자', '차량연식', 'DPF유무_수정']].values:
     if (f == '휘발유_가스') and ( (19980101 <= y <= 20001231) or (1998 <= cy <= 2000) ):
@@ -571,6 +680,8 @@ df['Grade'] = grade_list
 # 2.8s
 df1 = df[df['배출가스등급'] == '4'].reset_index(drop=True)
 
+# df1.shape
+
 ### 테이블생성일자 컬럼 추가
 today_date = datetime.today().strftime("%Y%m%d")
 df1['기준연월'] = '2022.12'
@@ -578,7 +689,11 @@ df1['기준연월'] = '2022.12'
 df1['테이블생성일자'] = today_date
 # RH제공 법정동코드 타입 문자열로 수정
 df1['법정동코드_mod'] = df1['법정동코드_mod'].astype('str')
-df1['법정동코드_mod'].head()
+
+# df1['법정동코드_mod'].head()
+
+df1.loc[df1['시군구'] == '군위군', '시도'].unique()
+
 STD_BD_GRD4_CAR_CURSTT = df1[[
     '테이블생성일자', 
     '기준연월',
@@ -609,6 +724,7 @@ STD_BD_GRD4_CAR_CURSTT = df1[[
     ]]
 ch_col_dict = {
                 '테이블생성일자':'LOAD_DT',
+                '기준연월':'CRTR_YM', 
                 '차대번호':'VIN', 
                 '제원관리번호':'MANG_MNG_NO', 
                 '차종':'VHCTY_CD', 
@@ -638,32 +754,36 @@ ch_col_dict = {
                 '차종분류':'VHCTY_CL_CD',
                 }
 STD_BD_GRD4_CAR_CURSTT = STD_BD_GRD4_CAR_CURSTT.rename(columns=ch_col_dict)
+ 
+# STD_BD_GRD4_CAR_CURSTT.columns
 
-# [출력] STD_BD_GRD4_CAR_CURSTT
-expdf = STD_BD_GRD4_CAR_CURSTT
-table_nm = 'STD_BD_GRD4_CAR_CURSTT'.upper()
+### [출력] STD_BD_GRD4_CAR_CURSTT
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_CAR_CURSTT
+# table_nm = 'STD_BD_GRD4_CAR_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
-# 데이터 추가
-# 9s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+# # 데이터 추가
+# # 9s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_CAR_CURSTT')
 
 ## 경유차만 추출
 df2 = df1[df1['연료'] == '경유'].reset_index(drop=True)
@@ -774,31 +894,35 @@ chc_dict = {
     }
 STD_BD_GRD4_SI = sidf1.rename(columns=chc_dict)
 
+# STD_BD_GRD4_SI.columns
+
 ### [출력] SI 지수 정보(STD_BD_GRD4_SI)
-expdf = STD_BD_GRD4_SI
-table_nm = 'STD_BD_GRD4_SI'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_SI
+# table_nm = 'STD_BD_GRD4_SI'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
-# 데이터 추가
-# 6s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+# # 데이터 추가
+# # 6s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_SI')
 
 ## 동일 배번에서 제번별 매연 boxplot
 total_g_df1 = total_g_df.loc[(total_g_df['배출가스인증번호'] != '확인불가') | (total_g_df['배출가스인증번호'] != 'nan')]
@@ -833,6 +957,7 @@ for one in sample01['배출가스인증번호'].unique(): # 통계에서 100대 
 quantile_df1 = quantile_df.drop_duplicates(['배출가스인증번호', '제원관리번호', '검사방법', '검사종류'])
 today_date = datetime.today().strftime("%Y%m%d")
 quantile_df1['테이블생성일자'] = today_date
+
 STD_BD_GRD4_CAR_CURSTT_TOT = quantile_df1[[
     '테이블생성일자',
     '차명',
@@ -873,32 +998,36 @@ chc_dict = {
 # '차종분류':'VHCTY_CL_CD', 
 STD_BD_GRD4_CAR_CURSTT_TOT = STD_BD_GRD4_CAR_CURSTT_TOT.rename(columns=chc_dict)
 
+# STD_BD_GRD4_CAR_CURSTT_TOT.columns
+
 ### [출력] 제번별 4분위 값 df(STD_BD_GRD4_CAR_CURSTT_TOT)
-expdf = STD_BD_GRD4_CAR_CURSTT_TOT
-table_nm = 'STD_BD_GRD4_CAR_CURSTT_TOT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_CAR_CURSTT_TOT
+# table_nm = 'STD_BD_GRD4_CAR_CURSTT_TOT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 1s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 1s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_CAR_CURSTT_TOT')
 
 ## 인증번호검토
 cert_df1 = quantile_df1[[
@@ -951,32 +1080,34 @@ cdict = {
 }
 STD_BD_DAT_GRD4_CERT_NO_RVW = STD_BD_DAT_GRD4_CERT_NO_RVW.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD4_CERT_NO_RVW
-expdf = STD_BD_DAT_GRD4_CERT_NO_RVW
-table_nm = 'STD_BD_DAT_GRD4_CERT_NO_RVW'.upper()
+### [출력] STD_BD_DAT_GRD4_CERT_NO_RVW
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_DAT_GRD4_CERT_NO_RVW
+# table_nm = 'STD_BD_DAT_GRD4_CERT_NO_RVW'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 1s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 1s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD4_CERT_NO_RVW')
 
 ## 열화도 테이블
 sidf.groupby(['배출가스인증번호', '검사방법']).agg({'차량연식':lambda x : x.nsmallest(1)}).reset_index()
@@ -998,54 +1129,81 @@ cdict = {
 }
 STD_BD_DAT_GRD4_SI = grp2.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD4_SI
-expdf = STD_BD_DAT_GRD4_SI
-table_nm = 'STD_BD_DAT_GRD4_SI'.upper()
+# STD_BD_DAT_GRD4_SI.columns
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+### [출력] STD_BD_DAT_GRD4_SI
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# expdf = STD_BD_DAT_GRD4_SI
+# table_nm = 'STD_BD_DAT_GRD4_SI'.upper()
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-# 데이터 추가
-# 1s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-################################################################### 1-1 code end
+# # 데이터 추가
+# # 1s
+# we.import_from_pandas(expdf, table_nm)
 
-## 지역 정보 부착
-csc = cs.merge(coder, on='법정동코드', how='left')
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD4_SI')
 
-# 경기도 양주시
-csc.loc[csc['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+## 1-1 code end ##################################################################
 
-## 조기폐차 정보들 병합
-elp = pd.concat([aear, lgvr], ignore_index=True)
-elpm = elp.sort_values('조기폐차최종승인YN', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
-elpm = elpm[elpm['조기폐차최종승인YN'] == 'Y'].reset_index(drop=True)
+## 1-2 start
 
-## 조기폐차 정보 추가
-df = csc.merge(elpm, on='차대번호', how='left')
-df1 = df[df['연료'] == '경유'].reset_index(drop=True)
+# 전체 4등급 등록&제원 병합
+cse = carr.merge(srcr, on='제원관리번호', how='left')
+
+cse['법정동코드'] = cse['법정동코드'].astype('str')
+cse['법정동코드'] = cse['법정동코드'].str[:5] + '00000'
+cse['법정동코드'] = pd.to_numeric(cse['법정동코드'])
+
+# 시도, 시군구 추가
+csec = cse.merge(coder, on='법정동코드', how='left')
+
+# csec['시도'].isnull().sum()
+
+# ### 매칭 안되는 지역 처리
+# # 주소 수정
+# csec.loc[csec['법정동코드'] == 5172035031, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 강원특별자치도 홍천군
+# csec.loc[csec['법정동코드'] == 5180031023, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csec.loc[csec['법정동코드'] == 5180031031, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csec.loc[csec['법정동코드'] == 5172035030, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csec.loc[csec['법정동코드'] == 5180031028, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+
+# csec.loc[csec['법정동코드'] == 5172035021, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csec.loc[csec['법정동코드'] == 5180031025, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csec.loc[csec['법정동코드'] == 4165052000, ['시도', '시군구']] = ['경기도', '포천시'] # 경기도 포천시 선단동
+# csec.loc[csec['법정동코드'] == 5172035023, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csec.loc[csec['법정동코드'] == 5180031027, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+
+# csec.loc[csec['법정동코드'] == 5172035024, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csec.loc[csec['법정동코드'] == 5175037022, ['시도', '시군구']] = ['강원특별자치도', '영월군'] # 
+# csec.loc[csec['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
+# csec.loc[csec['법정동코드'] == 5180031033, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 경기도 양주시 회천3동
+
+# 조기폐차 추가
+dfe = csec.merge(elpm, on='차대번호', how='left')
+df1 = dfe[dfe['연료'] == '경유'].reset_index(drop=True)
 
 # 기준연월 추가
 df1['기준연월'] = '2022.12'
 today_date = datetime.today().strftime("%Y%m%d")
 # df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
+
 STD_BD_GRD4_ELPDSRC_CURSTT = df1[[
     '기준연월',
     '차대번호', 
@@ -1091,62 +1249,76 @@ chc_dict = {
 }
 STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT.rename(columns=chc_dict)
 
-## [출력] STD_BD_GRD4_ELPDSRC_CURSTT
-expdf = STD_BD_GRD4_ELPDSRC_CURSTT
-table_nm = 'STD_BD_GRD4_ELPDSRC_CURSTT'.upper()
+# STD_BD_GRD4_ELPDSRC_CURSTT.columns
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+### [출력] STD_BD_GRD4_ELPDSRC_CURSTT
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# expdf = STD_BD_GRD4_ELPDSRC_CURSTT
+# table_nm = 'STD_BD_GRD4_ELPDSRC_CURSTT'.upper()
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_ELPDSRC_CURSTT')
 
 ## 등록&제원&저감이력 병합
 # 1.7s
 csa = cs.merge(attr[['차대번호', 'DPF_YN']], on='차대번호', how='left')
 
+csa['법정동코드'] = csa['법정동코드'].astype('str')
+csa['법정동코드'] = csa['법정동코드'].str[:5] + '00000'
+csa['법정동코드'] = pd.to_numeric(csa['법정동코드'])
+
 ## 지역정보 병합
 df = csa.merge(coder, on='법정동코드', how='left')
 
-### 매칭 안되는 지역 처리
-# 경기도 양주시
-df.loc[df['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+# df['시도'].isnull().sum()
 
-### rh 법정동코드 참고하여 법정동코드 수정
-rdf = df.copy()
-rdf['법정동코드'] = rdf['법정동코드'].astype('str')
-rdf['법정동코드_mod'] = rdf['법정동코드'].str[:5] + '00000'
-rdf['법정동코드_mod'] = pd.to_numeric(rdf['법정동코드_mod'])
-# 2817000000 인천광역시 남구 -> 인천광역시 미추홀구 2817700000
-# 4119500000 경기도 부천시 원미구 -> 경기도 부천시 4119000000
-# 4119700000 경기도 부천시 소사구 -> 경기도 부천시 4119000000
-# 4119900000 경기도 부천시 오정구 -> 경기도 부천시 4119000000
-# 4173000000 경기도 여주군 -> 경기도 여주시 4167000000
-# 4371000000 충청북도 청원군 -> 충청북도 충주시 4311000000
-rdf.loc[rdf['법정동코드_mod'] == 2817000000, '법정동코드_mod'] = 2817700000
-rdf.loc[rdf['법정동코드_mod'] == 4119500000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4119700000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4119900000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4173000000, '법정동코드_mod'] = 4167000000
-rdf.loc[rdf['법정동코드_mod'] == 4371000000, '법정동코드_mod'] = 4311000000
-df = rdf.copy()
+# ### 매칭 안되는 지역 처리
+# # 경기도 양주시
+# df.loc[df['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+
+# df.loc[df['시도'].isnull(), '법정동코드'].unique()
+
+df['법정동코드_mod'] = df['법정동코드'].copy()
+
+# ### rh 법정동코드 참고하여 법정동코드 수정
+# rdf = df.copy()
+# rdf['법정동코드'] = rdf['법정동코드'].astype('str')
+# rdf['법정동코드_mod'] = rdf['법정동코드'].str[:5] + '00000'
+# rdf['법정동코드_mod'] = pd.to_numeric(rdf['법정동코드_mod'])
+# # 2817000000 인천광역시 남구 -> 인천광역시 미추홀구 2817700000
+# # 4119500000 경기도 부천시 원미구 -> 경기도 부천시 4119000000
+# # 4119700000 경기도 부천시 소사구 -> 경기도 부천시 4119000000
+# # 4119900000 경기도 부천시 오정구 -> 경기도 부천시 4119000000
+# # 4173000000 경기도 여주군 -> 경기도 여주시 4167000000
+# # 4371000000 충청북도 청원군 -> 충청북도 충주시 4311000000
+# rdf.loc[rdf['법정동코드_mod'] == 2817000000, '법정동코드_mod'] = 2817700000
+# rdf.loc[rdf['법정동코드_mod'] == 4119500000, '법정동코드_mod'] = 4119000000
+# rdf.loc[rdf['법정동코드_mod'] == 4119700000, '법정동코드_mod'] = 4119000000
+# rdf.loc[rdf['법정동코드_mod'] == 4119900000, '법정동코드_mod'] = 4119000000
+# rdf.loc[rdf['법정동코드_mod'] == 4173000000, '법정동코드_mod'] = 4167000000
+# rdf.loc[rdf['법정동코드_mod'] == 4371000000, '법정동코드_mod'] = 4311000000
+# df = rdf.copy()
 
 ## 4등급 result 파일 참고하여 DPF유무 수정
 rdf = df.copy()
@@ -1181,6 +1353,7 @@ for f, y, cy, e in df1[['fuel', '제작일자', '차량연식', 'DPF_YN']].value
     else:
         grade_list.append('X')
 df1['Grade'] = grade_list
+
 STD_BD_GRD4_MLSFC_RSLT = df1[[
     '차대번호', 
     '제원관리번호',
@@ -1215,8 +1388,10 @@ STD_BD_GRD4_MLSFC_RSLT = STD_BD_GRD4_MLSFC_RSLT[[
     'Grade', 
     '법정동코드_mod',
     ]]
+
 # RH법정동코드 문자형으로 변환
 STD_BD_GRD4_MLSFC_RSLT['법정동코드_mod'] = STD_BD_GRD4_MLSFC_RSLT['법정동코드_mod'].astype('str')
+
 ch_col_dict = {
                 '테이블생성일자':'LOAD_DT',
                 '차대번호':'VIN', 
@@ -1235,32 +1410,36 @@ ch_col_dict = {
                 }
 STD_BD_GRD4_MLSFC_RSLT = STD_BD_GRD4_MLSFC_RSLT.rename(columns=ch_col_dict)
 
-## [출력] STD_BD_GRD4_MLSFC_RSLT
-expdf = STD_BD_GRD4_MLSFC_RSLT
-table_nm = 'STD_BD_GRD4_MLSFC_RSLT'.upper()
+# STD_BD_GRD4_MLSFC_RSLT.columns
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+### [출력] STD_BD_GRD4_MLSFC_RSLT
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# expdf = STD_BD_GRD4_MLSFC_RSLT
+# table_nm = 'STD_BD_GRD4_MLSFC_RSLT'.upper()
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_MLSFC_RSLT')
 
 ## 4등급 등급세분류
 dat_mlsfc = df1.copy()
@@ -1305,40 +1484,51 @@ cdict = {
 }
 STD_BD_DAT_GRD4_MLSFC = grp1.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD4_MLSFC
-expdf = STD_BD_DAT_GRD4_MLSFC
-table_nm = 'STD_BD_DAT_GRD4_MLSFC'.upper()
+### [출력] STD_BD_DAT_GRD4_MLSFC
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_DAT_GRD4_MLSFC
+# table_nm = 'STD_BD_DAT_GRD4_MLSFC'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD4_MLSFC')
 
 ## 4등급차량 상세정보
 cst = carr.merge(srcr, on='제원관리번호', how='left')
 csat = cst.merge(attr, on='차대번호', how='left')
+
+csat['법정동코드'] = csat['법정동코드'].astype('str')
+csat['법정동코드'] = csat['법정동코드'].str[:5] + '00000'
+csat['법정동코드'] = pd.to_numeric(csat['법정동코드'])
+
 csact = csat.merge(coder, on='법정동코드', how='left')
 
-# 경기도 양주시
-csact.loc[csact['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+# csact['시도'].isnull().sum()
+
+# # 경기도 양주시
+# csact.loc[csact['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+
+### 조기폐차 정보추가
 dft = csact.merge(elpm, on='차대번호', how='left')
 
 ### 4등급 result 파일 참고하여 DPF유무 수정
@@ -1348,10 +1538,38 @@ rdf1 = rdf.merge(rs, on='차대번호', how='left')
 rdf1.loc[(rdf1['DPF_YN'] == '유') | (rdf1['DPF유무_수정'] == '유'), 'DPF_YN'] = '유'
 rdf1.loc[(rdf1['DPF유무_수정'] == '무'), 'DPF_YN'] = '무'
 rdf1.loc[(rdf1['DPF유무_수정'] == '확인불가'), 'DPF_YN'] = '확인불가'
-
 dft = rdf1.drop('DPF유무_수정', axis=1)
+
+# 4등급 연월, 시도, 시군구별 차량대수
+## 등록 & 제원 정보 병합(말소 유지)
+csersr = carr.merge(srcr, on='제원관리번호', how='left')
+
+## 1\. 차량관리번호 기준 병합
+# 58.3s
+ersr = csersr.merge(hisr, on='차량관리번호', how='left')
+
+## 2\. 차량말소YN 만 추출
+errm = ersr[(ersr['차량말소YN_x'] == 'Y') & (ersr['차량말소YN_y'] == 'Y')].reset_index(drop=True)
+
+## 3\. 변경일자 최신으로 차대번호 중복 제거
+errm = errm.sort_values('변경일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+
+## 4\. 변경일자 2019.01.01 이상만 추출
+errm = errm[errm['변경일자'] >= 20190101].reset_index(drop=True)
+
+## 5\. 법정동 코드 정보 병합
+errm['법정동코드'] = errm['법정동코드'].astype('str')
+errm['법정동코드'] = errm['법정동코드'].str[:5] + '00000'
+errm['법정동코드'] = pd.to_numeric(errm['법정동코드'])
+errc = errm.merge(coder, on='법정동코드', how='left')
+
+# errc['시도'].isnull().sum()
+
 dfte = dft.merge(errc[['차대번호', '변경일자']], on='차대번호', how='left')
 dftem = dfte.merge(df1[['차대번호', 'Grade']], on='차대번호', how='left')
+
+# dftem.columns
+
 today_date = datetime.today().strftime("%Y%m%d")
 dftem['테이블생성일자'] = today_date
 STD_BD_DAT_GRD4_DTL_INFO = dftem[[
@@ -1387,52 +1605,58 @@ STD_BD_DAT_GRD4_DTL_INFO = dftem[[
     # '조기폐차최종승인YN',
 ]]
 
+cdict = {
+    '자동차등록번호':'VHRNO',
+    '차대번호':'VIN',
+    'Grade':'GRD4_MLSFC',
+    '차종':'VHCTY_CD',
+    '차종유형':'VHCTY_TY',
+    '용도':'PURPS_CD2',
+    '연료':'FUEL_CD',
+    '시도':'CTPV',
+    '시군구':'SGG',
+    '차량연식':'YRIDNW',
+    'DPF_YN':'DPF_MNTNG_YN',
+    '저감장치종류':'RDCDVC_KND',
+    '최초등록일자':'FRST_REG_YMD',
+    '조기폐차신청여부':'ELPDSRC_APLY_YN',
+    '조기폐차상태코드':'ELPDSRC_STTS_CD',
+    '변경일자':'CHNG_DE',
+    '차량말소YN':'VHCL_ERSR_YN',
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_DAT_GRD4_DTL_INFO = STD_BD_DAT_GRD4_DTL_INFO.rename(columns=cdict)
+
+# STD_BD_DAT_GRD4_DTL_INFO.columns
+
 ### [출력] STD_BD_DAT_GRD4_DTL_INFO
-expdf = STD_BD_DAT_GRD4_DTL_INFO
-table_nm = 'STD_BD_DAT_GRD4_DTL_INFO'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_DAT_GRD4_DTL_INFO
+# table_nm = 'STD_BD_DAT_GRD4_DTL_INFO'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
 
-# 4등급 연월, 시도, 시군구별 차량대수
-## 등록 & 제원 정보 병합(말소 유지)
-csersr = carr.merge(srcr[['제원관리번호', '연료']], on='제원관리번호', how='left')
-
-## 1\. 차량관리번호 기준 병합
-# 58.3s
-ersr = csersr.merge(hisr, on='차량관리번호', how='left')
-
-## 2\. 차량말소YN 만 추출
-errm = ersr[(ersr['차량말소YN_x'] == 'Y') & (ersr['차량말소YN_y'] == 'Y')].reset_index(drop=True)
-
-## 3\. 변경일자 최신으로 차대번호 중복 제거
-errm = errm.sort_values('변경일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
-
-## 4\. 변경일자 2019.01.01 이상만 추출
-errm = errm[errm['변경일자'] >= 20190101].reset_index(drop=True)
-
-## 5\. 법정동 코드 정보 병합
-errc = errm.merge(coder, on='법정동코드', how='left')
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD4_DTL_INFO')
 
 ## 시도, 연도별 차량 대수
 dfm = df.copy()
@@ -1440,6 +1664,8 @@ dfm['최초등록일자'] = dfm['최초등록일자'].astype('str')
 dfm['최초등록일자_년'] = dfm['최초등록일자'].str[:4]
 dfm['최초등록일자_월'] = dfm['최초등록일자'].str[4:6]
 dfm['최초등록일자_일'] = dfm['최초등록일자'].str[6:8]
+dfm['최초등록일자'] = dfm['최초등록일자_년'] + dfm['최초등록일자_월'] + dfm['최초등록일자_일']
+dfm['최초등록일자'] = pd.to_numeric(dfm['최초등록일자'], errors='coerce')
 
 ### 시군구명 앞쪽 지역명만 남기기(dfm)
 dfm['시군구_수정'] = dfm['시군구'].str.split(' ').str[0]
@@ -1447,9 +1673,18 @@ dfm['시군구_수정'] = dfm['시군구'].str.split(' ').str[0]
 ### 연료 지역별 차량대수
 num_car_by_local1 = dfm.groupby(['연료', '시도', '시군구_수정'], dropna=False)['차대번호'].count().reset_index()
 num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수'})
-max_date = dfm['최초등록일자'].max()
-max_year = max_date[:4]
-max_month = max_date[4:6]
+
+# max_date = str(dfm['최초등록일자'].max())
+# max_year = max_date[:4]
+# max_month = max_date[4:6]
+
+date = '20220601'
+max_year = '2022'
+max_month = '06'
+# date = today_date
+# max_year = today_date[:4]
+# max_month = today_date[4:6]
+
 num_car_by_local1[['연도', '월']] = [max_year, max_month]
 
 ### 연료 지역별 등록차량대수
@@ -1464,12 +1699,14 @@ errc['변경일자_일'] = errc['변경일자'].str[6:8]
 
 ### 시군구명 앞쪽 지역명만 남기기(errc)
 errc['시군구_수정'] = errc['시군구'].str.split(' ').str[0]
-grp_erase = errc.loc[errc['변경일자_년'] == dfm['최초등록일자_년'].max()].groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], as_index=False)['차대번호'].count()
+grp_erase = errc.loc[errc['변경일자_년'] == max_year].groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], as_index=False)['차대번호'].count()
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도', '변경일자_월':'월'})
 grp_erase = grp_erase.sort_values(['시도', '시군구_수정'])
 
-y_plist = list(pd.date_range(end=dfm['최초등록일자'].max(), periods=4, freq="MS").year)
-mth_plist = list(pd.date_range(end=dfm['최초등록일자'].max(), periods=4, freq="MS").month)
+y_plist = list(pd.date_range(end=date, periods=4, freq="MS").year)
+mth_plist = list(pd.date_range(end=date, periods=4, freq="MS").month)
+
+# y_plist, mth_plist
 
 yr_list = []
 mth_list = []
@@ -1523,38 +1760,42 @@ chc_col = {
 }
 STD_BD_GRD4_RGN_CURSTT = base4.rename(columns=chc_col)
 
+# STD_BD_GRD4_RGN_CURSTT.columns
+
 ### [출력] STD_BD_GRD4_RGN_CURSTT
-expdf = STD_BD_GRD4_RGN_CURSTT
-table_nm = 'STD_BD_GRD4_RGN_CURSTT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_RGN_CURSTT
+# table_nm = 'STD_BD_GRD4_RGN_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_RGN_CURSTT')
 
 ## 4등급 연도, 시도, 차종별 차량 대수
 ### 현재 차량 대수
 num_car_by_local1 = dfm.groupby(['시도', '차종'], dropna=False)['차대번호'].count().reset_index()
 num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수'})
-num_car_by_local1['연도'] = dfm['최초등록일자_년'].max()
+num_car_by_local1['연도'] = max_year
 
 ### 등록 차량 대수
 num_car_by_local2 = dfm.groupby(['시도', '차종', '최초등록일자_년'], as_index=False)['차대번호'].count()
@@ -1565,7 +1806,9 @@ grp_erase = errc.groupby(['변경일자_년', '시도', '차종'], as_index=Fals
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도'})
 grp_erase = grp_erase.sort_values(['시도'])
 
-y_plist = list(pd.date_range(end=dfm['최초등록일자'].max(), periods=4, freq="YS").year)
+y_plist = list(pd.date_range(end=date, periods=4, freq="YS").year)
+
+# y_plist
 
 yr_list = []
 fuel_list = []
@@ -1589,6 +1832,7 @@ n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소차량대수'] - base3.loc[(i+1)*n - (j-1), '등록차량대수']
+
 today_date = datetime.today().strftime("%Y%m%d")
 base3['테이블생성일자'] = today_date
 base4 = base3[[
@@ -1608,41 +1852,42 @@ chc_col = {
 STD_BD_GRD4_RGN_CURSTT_MOD = base4.rename(columns=chc_col)
 
 ### [출력] STD_BD_GRD4_RGN_CURSTT_MOD
-expdf = STD_BD_GRD4_RGN_CURSTT_MOD
-table_nm = 'STD_BD_GRD4_RGN_CURSTT_MOD'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_RGN_CURSTT_MOD
+# table_nm = 'STD_BD_GRD4_RGN_CURSTT_MOD'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_RGN_CURSTT_MOD')
 
 ## 4등급 차량현황(그룹)
-# code1
 # - 연도, 월, 시도, 시군구, 연료, 차종, 차종유형, 용도
 ### 현재 차량 대수
 # num_car_by_local1 = dfm.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False, as_index=False).agg({'차대번호':'count', 'DPF_YN':'count', '조기폐차최종승인YN':'count'})
 # num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수', 'DPF_YN':'저감장치부착대수', '조기폐차최종승인YN':'조기폐차대수'})
 # num_car_by_local1['저감장치미부착대수'] = num_car_by_local1['차량대수'] - num_car_by_local1['저감장치부착대수']
 
-# max_date = dfm['최초등록일자'].max()
+# max_date = str(dfm['최초등록일자'].max())
 # max_year = max_date[:4]
 # max_month = max_date[4:6]
 # num_car_by_local1[['연도', '월']] = [max_year, max_month]
@@ -1660,59 +1905,36 @@ print(f'data export : {table_nm}')
 # today_date = datetime.today().strftime("%Y%m%d")
 # num_car_by_local1['테이블생성일자'] = today_date
 
-# STD_BD_DAT_GRD4_CAR_CURSTT = num_car_by_local1[[
-#     '연도',
-#     '월',
-#     '시도',
-#     '시군구_수정',
-#     '연료',
-#     '차종',
-#     '차종유형', 
-#     '용도',
-#     '차량대수',
-#     '감소율',
-#     '저감장치부착대수',
-#     '저감장치미부착대수',
-#     '조기폐차대수',
-#     '테이블생성일자',
-# ]]
-# chc_col = {
-#     '연도':'YR',
-#     '월':'MM',
-#     '시도':'CTPV',
-#     '시군구_수정':'SGG',
-#     '연료':'FUEL_CD',
-#     '차종':'VHCTY_CD',
-#     '차종유형':'VHCTY_TY', 
-#     '용도':'PURPS_CD2',
-#     '차량대수':'VHCL_MKCNT',
-#     '감소율':'DEC_RT',
-#     '저감장치부착대수':'RDCDVC_EXTRNS_MKCNT',
-#     '저감장치미부착대수':'RDCDVC_UNAT_MKCNT',
-#     '조기폐차대수':'ELPDSRC_MKCNT',
-#     '테이블생성일자':'LOAD_DT', 
-# }
-# STD_BD_DAT_GRD4_CAR_CURSTT = STD_BD_DAT_GRD4_CAR_CURSTT.rename(columns=chc_col)
-
-code2
 cse = carr.merge(srcr, on='제원관리번호', how='left')
 ce = cse.merge(elpm, on='차대번호', how='left')
 cea = ce.merge(attr, on='차대번호', how='left')
+
+cea['법정동코드'] = cea['법정동코드'].astype('str')
+cea['법정동코드'] = cea['법정동코드'].str[:5] + '00000'
+cea['법정동코드'] = pd.to_numeric(cea['법정동코드'])
+
 dfe = cea.merge(coder, on='법정동코드', how='left')
-dfe.loc[dfe['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+
+# dfe['시도'].isnull().sum()
+
+# dfe.loc[dfe['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+
 dfe['시군구_수정'] = dfe['시군구'].str.split(' ').str[0]
 
 ere = errc.merge(elpm, on='차대번호', how='left')
 erea = ere.merge(attr, on='차대번호', how='left')
 
+# erea.columns
+
 rdf = dfe.copy()
 rs = rs.drop_duplicates('차대번호').reset_index(drop=True)
+
 rdf1 = rdf.merge(rs, on='차대번호', how='left')
 rdf1.loc[(rdf1['DPF_YN'] == '유') | (rdf1['DPF유무_수정'] == '유'), 'DPF_YN'] = '유'
 rdf1.loc[(rdf1['DPF유무_수정'] == '무'), 'DPF_YN'] = '무'
 rdf1.loc[(rdf1['DPF유무_수정'] == '확인불가'), 'DPF_YN'] = '확인불가'
-
 dfe = rdf1.drop('DPF유무_수정', axis=1)
+
 dfe['연도'] = max_year
 dfe['월'] = max_month
 
@@ -1720,12 +1942,15 @@ dfe['최초등록일자'] = dfe['최초등록일자'].astype('str')
 dfe['최초등록일자_년'] = dfe['최초등록일자'].str[:4]
 dfe['최초등록일자_월'] = dfe['최초등록일자'].str[4:6]
 dfe['최초등록일자_일'] = dfe['최초등록일자'].str[6:8]
+
 dfe.loc[dfe['DPF_YN'] == '유', '저감장치부착유무'] = 'Y'
 erea.loc[erea['DPF_YN'] == '유', '저감장치부착유무'] = 'Y'
+
 dfe['말소일자'] = dfe['말소일자'].astype('str')
 dfe['말소일자_년'] = dfe['말소일자'].str[:4]
 dfe['말소일자_월'] = dfe['말소일자'].str[4:6]
 dfe['말소일자_일'] = dfe['말소일자'].str[6:8]
+
 erea['말소일자'] = erea['말소일자'].astype('str')
 erea['말소일자_년'] = erea['말소일자'].str[:4]
 erea['말소일자_월'] = erea['말소일자'].str[4:6]
@@ -1749,9 +1974,10 @@ grp4 = grp4.rename(columns={'말소일자_년':'연도', '말소일자_월':'월
 
 y_plist = list(pd.date_range(end=date, periods=4, freq="MS").year)
 mth_plist = list(pd.date_range(end=date, periods=4, freq="MS").month)
-ctpv_sgg = grp1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
 
-# 18s
+# y_plist, mth_plist
+
+# 
 # 4개월 차량 통계 기본 데이터셋
 ctpv_list, sgg_list, fuel_list, vhcty_list, ty_list, purps_list, yr_list, month_list = [], [], [], [], [], [], [], []
 ctpv_sgg = grp1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
@@ -1770,10 +1996,12 @@ for ctpv, sgg in ctpv_sgg[['시도', '시군구_수정']].values:
                         yr_list.append(str(yr))
                         month_list.append(f'{month:0>2}')
 base = pd.DataFrame({'연도':yr_list, '월':month_list, '시도':ctpv_list, '시군구_수정':sgg_list, '연료':fuel_list, '차종':vhcty_list, '차종유형':ty_list, '용도':purps_list})
+
 base1 = base.merge(grp1, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], how='left')
 base2 = base1.merge(grp2, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], how='left')
 base3 = base2.merge(grp3, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], how='left')
 base4 = base3.merge(grp4, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], how='left')
+
 base4[['차량대수', '조기폐차', '저감대수', '등록대수', '등록저감대수', '말소대수', '말소저감대수']] = base4[['차량대수', '조기폐차', '저감대수', '등록대수', '등록저감대수', '말소대수', '말소저감대수']].fillna(0)
 base4[['차량대수_1', '등록대수_1', '말소대수_1', '저감대수_1', '등록저감대수_1', '말소저감대수_1']] = base4[['차량대수', '등록대수', '말소대수', '저감대수', '등록저감대수', '말소저감대수']].shift(-1)
 base4.loc[[x for x in range(3, base4.shape[0], 4)], ['차량대수_1', '저감대수_1']]  = base4.loc[[x for x in range(3, base4.shape[0], 4)], ['차량대수', '저감대수']].values
@@ -1790,9 +2018,11 @@ base5['저감장치미부착대수'] = base5['차량대수'] - base5['저감대�
 base5.loc[base5['차량대수'] < 0, '차량대수'] = 0
 base5.loc[base5['저감장치미부착대수'] < 0, '저감장치미부착대수'] = 0
 base5.loc[[x for x in range(0, base5.shape[0], 4)], '감소율'] = 0
-
-base5['테이블생성일자'] = today_date
 base5 = base5.rename(columns={'조기폐차':'조기폐차대수', '저감대수':'저감장치부착대수'})
+
+today_date = datetime.today().strftime("%Y%m%d")
+base5['테이블생성일자'] = today_date
+
 STD_BD_DAT_GRD4_CAR_CURSTT = base5[[
     '연도',
     '월',
@@ -1825,59 +2055,83 @@ chc_col = {
     '조기폐차대수':'ELPDSRC_MKCNT',
     '테이블생성일자':'LOAD_DT', 
 }
+STD_BD_DAT_GRD4_CAR_CURSTT = STD_BD_DAT_GRD4_CAR_CURSTT.rename(columns=chc_col)
 
-## [출력] STD_BD_DAT_GRD4_CAR_CURSTT
-expdf = STD_BD_DAT_GRD4_CAR_CURSTT
-table_nm = 'STD_BD_DAT_GRD4_CAR_CURSTT'.upper()
+# STD_BD_DAT_GRD4_CAR_CURSTT.columns
 
+### [출력] STD_BD_DAT_GRD4_CAR_CURSTT
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_DAT_GRD4_CAR_CURSTT
+# table_nm = 'STD_BD_DAT_GRD4_CAR_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
 
-################################################################### 1-2 4등급 통계 code end
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD4_CAR_CURSTT')
+
+## 1-2 code end ##################################################################
+
+## 1-3 start
 
 ## 지역정보 병합
 df = csi.merge(coder, on='법정동코드', how='left')
-df.loc[df['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
 
-### rh 법정동코드 참고하여 법정동코드 수정
-rdf = df.copy()
-rdf['법정동코드'] = rdf['법정동코드'].astype('str')
-rdf['법정동코드_mod'] = rdf['법정동코드'].str[:5] + '00000'
-rdf['법정동코드_mod'] = pd.to_numeric(rdf['법정동코드_mod'])
-# 2817000000 인천광역시 남구 -> 인천광역시 미추홀구 2817700000
-# 4119500000 경기도 부천시 원미구 -> 경기도 부천시 4119000000
-# 4119700000 경기도 부천시 소사구 -> 경기도 부천시 4119000000
-# 4119900000 경기도 부천시 오정구 -> 경기도 부천시 4119000000
-# 4173000000 경기도 여주군 -> 경기도 여주시 4167000000
-# 4371000000 충청북도 청원군 -> 충청북도 충주시 4311000000
-rdf.loc[rdf['법정동코드_mod'] == 2817000000, '법정동코드_mod'] = 2817700000
-rdf.loc[rdf['법정동코드_mod'] == 4119500000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4119700000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4119900000, '법정동코드_mod'] = 4119000000
-rdf.loc[rdf['법정동코드_mod'] == 4173000000, '법정동코드_mod'] = 4167000000
-rdf.loc[rdf['법정동코드_mod'] == 4371000000, '법정동코드_mod'] = 4311000000
-df = rdf.copy()
+# df['시도'].isnull().sum()
+
+# df.loc[df['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시']
+
+# ### rh 법정동코드 참고하여 법정동코드 수정
+# rdf = df.copy()
+# rdf['법정동코드'] = rdf['법정동코드'].astype('str')
+# rdf['법정동코드_mod'] = rdf['법정동코드'].str[:5] + '00000'
+# rdf['법정동코드_mod'] = pd.to_numeric(rdf['법정동코드_mod'])
+# # 2817000000 인천광역시 남구 -> 인천광역시 미추홀구 2817700000
+# # 4119500000 경기도 부천시 원미구 -> 경기도 부천시 4119000000
+# # 4119700000 경기도 부천시 소사구 -> 경기도 부천시 4119000000
+# # 4119900000 경기도 부천시 오정구 -> 경기도 부천시 4119000000
+# # 4173000000 경기도 여주군 -> 경기도 여주시 4167000000
+# # 4371000000 충청북도 청원군 -> 충청북도 충주시 4311000000
+# rdf.loc[rdf['법정동코드_mod'] == 2817000000, '법정동코드_mod'] = 2817700000
+# rdf.loc[rdf['법정동코드_mod'] == 4119500000, '법정동코드_mod'] = 4119000000
+# rdf.loc[rdf['법정동코드_mod'] == 4119700000, '법정동코드_mod'] = 4119000000
+# rdf.loc[rdf['법정동코드_mod'] == 4119900000, '법정동코드_mod'] = 4119000000
+# rdf.loc[rdf['법정동코드_mod'] == 4173000000, '법정동코드_mod'] = 4167000000
+# rdf.loc[rdf['법정동코드_mod'] == 4371000000, '법정동코드_mod'] = 4311000000
+# df = rdf.copy()
+
+df['법정동코드_mod'] = df['법정동코드'].copy()
+
+# rdf = df.copy()
+# rdf['법정동코드'] = rdf['법정동코드'].astype('str')
+# rdf.loc[rdf['시도'].isnull() == True, '법정동코드'] = rdf.loc[rdf['시도'].isnull() == True, '법정동코드'].str[:5] + '00000'
+# rdf['법정동코드'] = pd.to_numeric(rdf['법정동코드'])
+
+# rdfy = rdf[rdf['시도'].isnull() == False]
+# rdfn = rdf[rdf['시도'].isnull() == True]
+
+# rdfn = rdfn.drop(['시도', '시군구'], axis=1)
+# rdfnm = rdfn.merge(coder, on='법정동코드', how='left')
+
+# df = pd.concat([rdfy, rdfnm], ignore_index=False)
 
 ## 일일평균주행거리 계산
 df['검사일자'] = df['검사일자'].fillna(0)
@@ -1907,8 +2161,13 @@ df2nm = df2n.merge(kosisr.drop_duplicates(['시도', '차종'])[['시도', '차�
 
 df3y = df2nm[df2nm['일일평균주행거리'].isnull() == False]
 df3n = df2nm[df2nm['일일평균주행거리'].isnull() == True]
+
 for ctpv, sgg, cd in df3n.loc[df3n['일일평균주행거리'].isnull() == True, ['시도', '시군구', '차종']].values:
-        df3n.loc[(df3n['일일평균주행거리'].isnull() == True) & (df3n['시도'] == ctpv) & (df3n['시군구'] == sgg), '일일평균주행거리'] = kosisr.loc[(kosisr['시도'] == ctpv) & (kosisr['시군구'] == '소계') & (kosisr['차종'] == '합계'), '일일평균주행거리'].values
+    try:
+        df3n.loc[(df3n['일일평균주행거리'].isnull() == True) & (df3n['시도'] == ctpv) & (df3n['시군구'] == sgg), '일일평균주행거리'] = kosisr.loc[(kosisr['시도'] == ctpv) & (kosisr['시군구'] == '소계') & (kosisr['차종'] == '합계'), '일일평균주행거리'].values[0]
+    except:
+        df3n.loc[(df3n['일일평균주행거리'].isnull() == True) & (df3n['시도'].isnull() == True) & (df3n['시군구'].isnull() == True), '일일평균주행거리'] = kosisr.loc[(kosisr['시도'] == '서울특별시') & (kosisr['시군구'] == '소계') & (kosisr['차종'] == '합계'), '일일평균주행거리'].values[0]
+
 df2nm = pd.concat([df3y, df3n], ignore_index=True)
 df1nm = pd.concat([df2y, df2nm], ignore_index=True)
 df = pd.concat([df1y, df1nm], ignore_index=True)
@@ -1958,7 +2217,6 @@ df2['VKT'] = df2['일일평균주행거리'] * 365
 #     - 승합 대형 = 화물 대형
 
 DF_col = ['연료', '차종', '차종유형', '차량연식', '차령']
-df2[DF_col].values[0]
 
 ### ❗ DF(열화계수) 코드
 # - 연료, 차종, 차종유형 설정에 해당되지 않는 차량의 열화계수 값 설정
@@ -4878,6 +5136,7 @@ t_min = 7.5 # 평균 최저 온도
 t_max = 17.9
 t_a = (t_min + t_max) / 2
 t_rise = 12.4 # 평균 상승 온도
+
 df2.loc[df2['차량연식'] < 1991, 'e_d'] = 9.1 * np.exp( 0.0158 * (RVP - 61.2) + 0.0574 * (t_min - 22.5) + 0.0614 * (t_rise - 11.7) )
 df2.loc[df2['차량연식'] >= 1991, 'e_d'] = 0.2 * (9.1 * np.exp( 0.0158 * (RVP - 61.2) + 0.0574 * (t_min - 22.5) + 0.0614 * (t_rise - 11.7) ))
 
@@ -4960,7 +5219,6 @@ df2['S_c'] = (1-q) * (p * (df2['VKT'] / (365 * l_trip)) * df2['e_SHOT'] + w * (d
 # - $S^{fi}$ : Fuel injection 휘발유 차량의 일중 hot and warm soak 배출량(g/day-대)
 # - $R$ : Running loss에 의한 휘발유 차량의 연중 배출량(g/yr)
 df2['E_EVA_VOC'] = 365 * (df2['e_d'] + df2['S_c'] + df2['S_fi']) + df2['R']
-df2['E_EVA_VOC'].isnull().sum()
 
 # 배출량 합계
 # $E_{total}(kg) = E_{HOT}(kg) + E_{COLD}(g) + E_{EVAP}(g)$
@@ -4981,12 +5239,14 @@ df2.loc[df2['연료'] == fuel, 'E_HC_total'] = df2.loc[df2['연료'] == fuel , '
 df2.loc[df2['연료'] == fuel, 'E_NOx_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_NOx'] + df2.loc[df2['연료'] == fuel , 'E_COLD_NOx']
 df2.loc[df2['연료'] == fuel, 'E_PM10_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_PM10'] + df2.loc[df2['연료'] == fuel , 'E_COLD_PM10']
 df2.loc[df2['연료'] == fuel, 'E_PM2_5_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_PM2_5'] + df2.loc[df2['연료'] == fuel , 'E_COLD_PM2_5']
+
 fuel = '경유'
 df2.loc[df2['연료'] == fuel, 'E_CO_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_CO'] + df2.loc[df2['연료'] == fuel , 'E_COLD_CO']
 df2.loc[df2['연료'] == fuel, 'E_HC_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_HC'] + df2.loc[df2['연료'] == fuel , 'E_COLD_HC']
 df2.loc[df2['연료'] == fuel, 'E_NOx_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_NOx'] + df2.loc[df2['연료'] == fuel , 'E_COLD_NOx']
 df2.loc[df2['연료'] == fuel, 'E_PM10_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_PM10'] + df2.loc[df2['연료'] == fuel , 'E_COLD_PM10']
 df2.loc[df2['연료'] == fuel, 'E_PM2_5_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_PM2_5'] + df2.loc[df2['연료'] == fuel , 'E_COLD_PM2_5']
+
 fuel = 'LPG(액화석유가스)'
 df2.loc[df2['연료'] == fuel, 'E_CO_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_CO'] + df2.loc[df2['연료'] == fuel , 'E_COLD_CO']
 df2.loc[df2['연료'] == fuel, 'E_HC_total'] = df2.loc[df2['연료'] == fuel , 'E_HOT_HC'] + df2.loc[df2['연료'] == fuel , 'E_COLD_HC']
@@ -5007,7 +5267,6 @@ today_date = datetime.today().strftime("%Y%m%d")
 # grp1['연도'] = today_date[:4]
 grp1['연도'] = '2022' # 하드코딩
 grp1 = grp1[['연도', '시도', '시군구_수정', 'E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2_5_total']]
-
 grp1['테이블생성일자'] = today_date
 
 # 기준연월 추가
@@ -5026,35 +5285,42 @@ chc_dict = {
     'E_PM2_5_total':'PM2_5_EXHST_MSS', 
 }
 STD_BD_GRD4_EXHST_GAS_MSS_TOT = grp1.rename(columns=chc_dict)
+
+# STD_BD_GRD4_EXHST_GAS_MSS_TOT.columns
+
 ### [출력] STD_BD_GRD4_EXHST_GAS_MSS_TOT
-expdf = STD_BD_GRD4_EXHST_GAS_MSS_TOT
-table_nm = 'STD_BD_GRD4_EXHST_GAS_MSS_TOT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_EXHST_GAS_MSS_TOT
+# table_nm = 'STD_BD_GRD4_EXHST_GAS_MSS_TOT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_EXHST_GAS_MSS_TOT')
 
 ## 출력(4등급)
 STD_BD_GRD4_EXHST_GAS_MSS = df2[[
     '차대번호',
-    '차량번호',
+    '자동차등록번호',
     '제원관리번호',
     '차종', 
     '용도', 
@@ -5088,6 +5354,8 @@ STD_BD_GRD4_EXHST_GAS_MSS = df2[[
     'E_PM2_5_total', 
     '법정동코드_mod',
     ]]
+
+# 날짜 설정
 STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = '2022.12'
 today_date = datetime.today().strftime("%Y%m%d")
 # STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = today_date[:4] + '.' + today_date[4:6]
@@ -5100,7 +5368,7 @@ STD_BD_GRD4_EXHST_GAS_MSS = STD_BD_GRD4_EXHST_GAS_MSS[[
     '테이블생성일자', 
     '기준연월', 
     '차대번호',
-    '차량번호',
+    '자동차등록번호',
     '제원관리번호',
     '차종', 
     '용도', 
@@ -5138,7 +5406,7 @@ ch_col_dict = {
                 '테이블생성일자':'LOAD_DT', 
                 '기준연월':'CRTR_YM',
                 '차대번호':'VIN', 
-                '차량번호':'VHRNO', 
+                '자동차등록번호':'VHRNO', 
                 '제원관리번호':'MANG_MNG_NO', 
                 '차종':'VHCTY_CD', 
                 '용도':'PURPS_CD2', 
@@ -5176,32 +5444,36 @@ ch_col_dict = {
                 
 STD_BD_GRD4_EXHST_GAS_MSS = STD_BD_GRD4_EXHST_GAS_MSS.rename(columns=ch_col_dict)
 
+# STD_BD_GRD4_EXHST_GAS_MSS.columns
+
 ### [출력] STD_BD_GRD4_EXHST_GAS_MSS
-expdf = STD_BD_GRD4_EXHST_GAS_MSS
-table_nm = 'STD_BD_GRD4_EXHST_GAS_MSS'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_EXHST_GAS_MSS
+# table_nm = 'STD_BD_GRD4_EXHST_GAS_MSS'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 13s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 13s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_EXHST_GAS_MSS')
 
 ## 배출량 현황
 grp2 = df2.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'E_CO_total':'sum', 'E_HC_total':'sum', 'E_NOx_total':'sum', 'E_PM10_total':'sum', 'E_PM2_5_total':'sum'}).reset_index()
@@ -5245,32 +5517,36 @@ cdict = {
 }
 STD_BD_DAT_GRD4_EXHST_MSS_CURSTT = STD_BD_DAT_GRD4_EXHST_MSS_CURSTT.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD4_EXHST_MSS_CURSTT
-expdf = STD_BD_DAT_GRD4_EXHST_MSS_CURSTT
-table_nm = 'STD_BD_DAT_GRD4_EXHST_MSS_CURSTT'.upper()
+# STD_BD_DAT_GRD4_EXHST_MSS_CURSTT.columns
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+### [출력] STD_BD_DAT_GRD4_EXHST_MSS_CURSTT
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# expdf = STD_BD_DAT_GRD4_EXHST_MSS_CURSTT
+# table_nm = 'STD_BD_DAT_GRD4_EXHST_MSS_CURSTT'.upper()
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-# 데이터 추가
-# 30.7s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+
+# # 데이터 추가
+# # 30.7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD4_EXHST_MSS_CURSTT')
 
 ## 측정치 현황
 grp3 = df2.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'E_CO_total':'mean', 'E_HC_total':'mean', 'E_NOx_total':'mean', 'E_PM10_total':'mean', 'E_PM2_5_total':'mean'}).reset_index()
@@ -5313,34 +5589,40 @@ cdict = {
 }
 STD_BD_DAT_GRD4_MEVLU = STD_BD_DAT_GRD4_MEVLU.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD4_MEVLU
-expdf = STD_BD_DAT_GRD4_MEVLU
-table_nm = 'STD_BD_DAT_GRD4_MEVLU'.upper()
+# STD_BD_DAT_GRD4_MEVLU.columns
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+### [출력] STD_BD_DAT_GRD4_MEVLU
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# expdf = STD_BD_DAT_GRD4_MEVLU
+# table_nm = 'STD_BD_DAT_GRD4_MEVLU'.upper()
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-# 데이터 추가
-# 30.7s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-################################################################### 1-3 code end
+# # 데이터 추가
+# # 30.7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD4_MEVLU')
+
+## 1-3 code end ##################################################################
+
+## 3-1 start
 
 ## 전체 등록정보(STD_CEG_CAR_MIG)
 # exasol db
@@ -5404,27 +5686,54 @@ carm = carr[carr['차량말소YN'] == 'N'].reset_index(drop=True)
 ## 등록&제원 병합
 # 19.4s
 cs = carm.merge(srcr, on='제원관리번호', how='left')
-cs.shape
+
+# cs.shape
+
+cs['법정동코드'] = cs['법정동코드'].astype('str')
+cs['법정동코드'] = cs['법정동코드'].str[:5] + '00000'
+cs['법정동코드'] = pd.to_numeric(cs['법정동코드'])
 
 ## 등록&제원&법정동코드 병합(df)
 df = cs.merge(coder, on='법정동코드', how='left')
 
-### 매칭 안되는 지역 처리
-df.loc[df['시도'].isnull() == True, ['법정동코드', '시도', '시군구']]
-# 주소 수정
-df.loc[df['법정동코드'] == 4161011600, ['시도', '시군구']] = ['경기도', '광주시'] # 경기도 광주시 능평동
-df.loc[df['법정동코드'] == 4161012000, ['시도', '시군구']] = ['경기도', '광주시'] # 경기도 광주시 양벌동
-df.loc[df['법정동코드'] == 4161011800, ['시도', '시군구']] = ['경기도', '광주시'] # 경기도 광주시 추자동
-df.loc[df['법정동코드'] == 4161011500, ['시도', '시군구']] = ['경기도', '광주시'] # 경기도 광주시 신현동
-df.loc[df['법정동코드'] == 4161011900, ['시도', '시군구']] = ['경기도', '광주시'] # 경기도 광주시 매산동
-df.loc[df['법정동코드'] == 4161011700, ['시도', '시군구']] = ['경기도', '광주시'] # 경기도 광주시 문형동
-df.loc[df['법정동코드'] == 4161011400, ['시도', '시군구']] = ['경기도', '광주시'] # 경기도 광주시 고산동
-df.loc[df['법정동코드'] == 4165052000, ['시도', '시군구']] = ['경기도', '포천시'] # 경기도 포천시 선단동
-df.loc[df['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
+# df['시도'].isnull().sum()
+
+# ### 매칭 안되는 지역 처리
+# # 주소 수정
+# df.loc[df['법정동코드'] == 5172035031, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 강원특별자치도 홍천군
+# df.loc[df['법정동코드'] == 5180031023, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# df.loc[df['법정동코드'] == 5180031031, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# df.loc[df['법정동코드'] == 5172035030, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# df.loc[df['법정동코드'] == 5180031028, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+
+# df.loc[df['법정동코드'] == 5172035021, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# df.loc[df['법정동코드'] == 5180031025, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# df.loc[df['법정동코드'] == 4165052000, ['시도', '시군구']] = ['경기도', '포천시'] # 경기도 포천시 선단동
+# df.loc[df['법정동코드'] == 5172035023, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# df.loc[df['법정동코드'] == 5180031027, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+
+# df.loc[df['법정동코드'] == 5172035024, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# df.loc[df['법정동코드'] == 5175037022, ['시도', '시군구']] = ['강원특별자치도', '영월군'] # 
+# df.loc[df['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
+# df.loc[df['법정동코드'] == 5180031033, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 경기도 양주시 회천3동
+
+# rdf = df.copy()
+# rdf['법정동코드'] = rdf['법정동코드'].astype('str')
+# rdf.loc[rdf['시도'].isnull() == True, '법정동코드'] = rdf.loc[rdf['시도'].isnull() == True, '법정동코드'].str[:5] + '00000'
+# rdf['법정동코드'] = pd.to_numeric(rdf['법정동코드'])
+
+# rdfy = rdf[rdf['시도'].isnull() == False]
+# rdfn = rdf[rdf['시도'].isnull() == True]
+
+# rdfn = rdfn.drop(['시도', '시군구'], axis=1)
+# rdfnm = rdfn.merge(coder, on='법정동코드', how='left')
+
+# df = pd.concat([rdfy, rdfnm], ignore_index=False)
 
 ## 등록(말소 유지) & 제원 병합
 # 10.3s
 cse = carr.merge(srcr, on='제원관리번호', how='left')
+
 ## 등록&제원&이력 병합
 # 2m 6.0s
 ersr = cse.merge(hisr, on='차량관리번호', how='left')
@@ -5438,9 +5747,15 @@ ersr = ersr.sort_values('변경일자', ascending=False).drop_duplicates('차대
 # 3. 변경일자 2019.01.01 이후만 추출
 ersr = ersr[ersr['변경일자'] >= 20190101].reset_index(drop=True)
 
+ersr['법정동코드'] = ersr['법정동코드'].astype('str')
+ersr['법정동코드'] = ersr['법정동코드'].str[:5] + '00000'
+ersr['법정동코드'] = pd.to_numeric(ersr['법정동코드'])
+
 ## 등록&제원&이력&법정동코드 병합(errc)
 # 매칭 후 '시도' 빈값 없음
 errc = ersr.merge(coder, on='법정동코드', how='left')
+
+# errc['시도'].isnull().sum()
 
 # 분석
 ## 연료 하이브리드 수정
@@ -5503,6 +5818,7 @@ errc.loc[errc['연료'].isnull() == True, 'fuel2'] = '기타'
 # 비수도권 : 수도권 외
 df.loc[(df['시도'] == '서울특별시') | (df['시도'] == '인천광역시') | (df['시도'] == '경기도'), '지역'] = '수도권'
 df['지역'] = df['지역'].fillna('비수도권')
+
 dfm = df.copy()
 dfm['최초등록일자'] = dfm['최초등록일자'].astype('str')
 dfm['최초등록일자_년'] = dfm['최초등록일자'].str[:4]
@@ -5596,27 +5912,31 @@ cdict = {
 }
 STD_BD_CAR_CURSTT_MOD = df1.rename(columns=cdict)
 
+# STD_BD_CAR_CURSTT_MOD.columns
+
 ### [출력] STD_BD_CAR_CURSTT_MOD
-expdf = STD_BD_CAR_CURSTT_MOD
-table_nm = 'STD_BD_CAR_CURSTT_MOD'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_CAR_CURSTT_MOD
+# table_nm = 'STD_BD_CAR_CURSTT_MOD'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_CAR_CURSTT_MOD')
 
 ## 등급, 연료별 차량현황
 # 2022년 차량 대수
@@ -5653,8 +5973,12 @@ n = len(base3['연도'].unique())
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
+
 df2 = base3[['연도', 'fuel2', '배출가스등급', '차량대수']]
 df2 = df2.rename(columns={'fuel2':'연료'})
+
+# df2['배출가스등급'] = df2['배출가스등급'].map({'1':'1', '2':'2', '3':'3', '4':'4', '5':'5', 'X':'미분류'})
+
 df2['기준연월'] = df2['연도'] + '12'
 today_date = datetime.today().strftime("%Y%m%d")
 df2['테이블생성일자'] = today_date
@@ -5669,27 +5993,31 @@ cdict = {
 }
 STD_BD_CAR_CURSTT_MOD2 = df2.rename(columns=cdict)
 
+# STD_BD_CAR_CURSTT_MOD2.columns
+
 ### [출력] STD_BD_CAR_CURSTT_MOD2
-expdf = STD_BD_CAR_CURSTT_MOD2
-table_nm = 'STD_BD_CAR_CURSTT_MOD2'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_CAR_CURSTT_MOD2
+# table_nm = 'STD_BD_CAR_CURSTT_MOD2'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_CAR_CURSTT_MOD2')
 
 ## 전체 차량 현황(등급, 차종, 지역별 차량현황)
 today_date = datetime.today().strftime("%Y%m%d")
@@ -5724,32 +6052,36 @@ cdict = {
 }
 STD_BD_CAR_CURSTT = df3.rename(columns=cdict)
 
+# STD_BD_CAR_CURSTT.columns
+
 ### [출력] STD_BD_CAR_CURSTT
-expdf = STD_BD_CAR_CURSTT
-table_nm = 'STD_BD_CAR_CURSTT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_CAR_CURSTT
+# table_nm = 'STD_BD_CAR_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 3m 51.1s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 3m 51.1s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_CAR_CURSTT')
 
 ## 지역, 연료, 연도별 차량 현황 분석
 # 2022년 차량 대수
@@ -5790,6 +6122,7 @@ for i in range(base3.shape[0] // n):
 
 gp = base3.groupby(['연도', '시도', 'fuel'], as_index=False)['차량대수'].sum()
 gp['연료비율'] = round((gp['차량대수'] / gp.groupby(['연도', '시도'])['차량대수'].transform('sum')), 2)
+
 today_date = datetime.today().strftime("%Y%m%d")
 gp['테이블생성일자'] = today_date
 gp1 = gp[['테이블생성일자', '연도', 'fuel', '시도', '차량대수', '연료비율']]
@@ -5803,29 +6136,31 @@ cdict = {
 }
 STD_BD_CAR_REG_MKCNT = gp1.rename(columns=cdict)
 
+# STD_BD_CAR_REG_MKCNT.columns
+
 ### [출력] STD_BD_CAR_REG_MKCNT
-expdf = STD_BD_CAR_REG_MKCNT
-table_nm = 'STD_BD_CAR_REG_MKCNT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_CAR_REG_MKCNT
+# table_nm = 'STD_BD_CAR_REG_MKCNT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
 
-print(f'data export : {table_nm}')
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_CAR_REG_MKCNT')
 
 ## 내연차 연료, 연도별 차량 현황 예측
 # - 경유, 휘발유, LPG
@@ -5866,7 +6201,7 @@ for i in range(base3.shape[0] // n):
 
 die = base3.loc[base3['연료'] == '경유', ['연도', '연료', '차량대수']].reset_index(drop=True)
 gas = base3.loc[base3['연료'] == '휘발유', ['연도', '연료', '차량대수']].reset_index(drop=True)
-lpg = base3.loc[base3['연료'] == 'LPG(액화석유가스)', ['연도', 'fuel', '차량대수']].reset_index(drop=True)
+lpg = base3.loc[base3['연료'] == 'LPG(액화석유가스)', ['연도', '연료', '차량대수']].reset_index(drop=True)
 
 die['연도'] = die['연도'].astype('int')
 gas['연도'] = gas['연도'].astype('int')
@@ -5994,27 +6329,31 @@ cdict = {
 }
 STD_BD_CAR_PRET = df5.rename(columns=cdict)
 
+# STD_BD_CAR_PRET.columns
+
 ### [출력] STD_BD_CAR_PRET
-expdf = STD_BD_CAR_PRET
-table_nm = 'STD_BD_CAR_PRET'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_CAR_PRET
+# table_nm = 'STD_BD_CAR_PRET'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_CAR_PRET')
 
 ## 하이브리드 연료, 연도별 차량 현황 예측
 # - 경유 하이브리드, 휘발유 하이브리드, LPG 하이브리드
@@ -6068,38 +6407,66 @@ a1, b1 = fit1
 a2, b2 = fit2
 a3, b3 = fit3
 
+# BSpline 예측
+spl1 = intp.BSpline(die['연도'], die['차량대수'], 1, extrapolate=True)
+spl2 = intp.BSpline(gas['연도'], gas['차량대수'], 1, extrapolate=True)
+spl3 = intp.BSpline(lpg['연도'], lpg['차량대수'], 1, extrapolate=True)
+spl1pred = spl1(range(year + 1, 2036))
+spl2pred = spl2(range(year + 1, 2036))
+spl3pred = spl3(range(year + 1, 2036))
+
+# akima 예측
+aki1 = intp.Akima1DInterpolator(die['연도'], die['차량대수'])
+aki2 = intp.Akima1DInterpolator(gas['연도'], gas['차량대수'])
+aki3 = intp.Akima1DInterpolator(lpg['연도'], lpg['차량대수'])
+aki1pred = aki1([x for x in range(year + 1, 2036)], extrapolate=True)
+aki2pred = aki2([x for x in range(year + 1, 2036)], extrapolate=True)
+aki3pred = aki3([x for x in range(year + 1, 2036)], extrapolate=True)
+
 yr_list = []
 fuel_list = []
 pred_list = []
-fuel = '경유 하이브리드'
+fuel = '경유_하이브리드'
 for yr in range(year + 1, 2036):
     pred = a1 * yr + b1
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
-die_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, '경유_하이브리드_예측':pred_list})
+die_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, f'{fuel}_예측':pred_list})
+die_pred[f'{fuel}_예측_BSpline'] = spl1pred
+die_pred[f'{fuel}_예측_Akima'] = aki1pred
+
+# die_pred.columns
 
 yr_list = []
 fuel_list = []
 pred_list = []
-fuel = '휘발유 하이브리드'
+fuel = '휘발유_하이브리드'
 for yr in range(year + 1, 2036):
     pred = a2 * yr + b2
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
-gas_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, '휘발유_하이브리드_예측':pred_list})
+gas_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, f'{fuel}_예측':pred_list})
+gas_pred[f'{fuel}_예측_BSpline'] = spl2pred
+gas_pred[f'{fuel}_예측_Akima'] = aki2pred
+
+# gas_pred.columns
 
 yr_list = []
 fuel_list = []
 pred_list = []
-fuel = 'LPG 하이브리드'
+fuel = 'LPG_하이브리드'
 for yr in range(year + 1, 2036):
     pred = a3 * yr + b3
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
-lpg_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, 'LPG_하이브리드_예측':pred_list})
+lpg_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, f'{fuel}_예측':pred_list})
+lpg_pred[f'{fuel}_예측_BSpline'] = spl3pred
+lpg_pred[f'{fuel}_예측_Akima'] = aki3pred
+
+# lpg_pred.columns
 
 die_t = pd.concat([die, die_pred], ignore_index=True)
 gas_t = pd.concat([gas, gas_pred], ignore_index=True)
@@ -6108,10 +6475,66 @@ die_t = die_t.rename(columns={'차량대수':'경유_하이브리드_대수'})
 gas_t = gas_t.rename(columns={'차량대수':'휘발유_하이브리드_대수'})
 lpg_t = lpg_t.rename(columns={'차량대수':'LPG_하이브리드_대수'})
 
-df5 = pd.concat([die_t[['연도', '경유_하이브리드_대수', '경유_하이브리드_예측']], gas_t[['휘발유_하이브리드_대수', '휘발유_하이브리드_예측']], lpg_t[['LPG_하이브리드_대수', 'LPG_하이브리드_예측']]], axis=1)
+# die_t.columns
+
+die_t = die_t.drop('연료', axis=1)
+gas_t = gas_t.drop(['연도', '연료'], axis=1)
+lpg_t = lpg_t.drop(['연도', '연료'], axis=1)
+
+df5 = pd.concat([die_t, gas_t, lpg_t], axis=1)
+
+# df5.columns
+
+# df5.head()
+
+# df5.iloc[:, 1:].head()
+
+# # 음수 확인
+# print(df5.loc[df5['경유_하이브리드_대수'] < 0, '경유_하이브리드_대수'].shape)
+# print(df5.loc[df5['경유_하이브리드_예측'] < 0, '경유_하이브리드_예측'].shape)
+# print(df5.loc[df5['경유_하이브리드_예측_BSpline'] < 0, '경유_하이브리드_예측_BSpline'].shape)
+# print(df5.loc[df5['경유_하이브리드_예측_Akima'] < 0, '경유_하이브리드_예측_Akima'].shape)
+# print(df5.loc[df5['휘발유_하이브리드_대수'] < 0, '휘발유_하이브리드_대수'].shape)
+# print(df5.loc[df5['휘발유_하이브리드_예측'] < 0, '휘발유_하이브리드_예측'].shape)
+# print(df5.loc[df5['휘발유_하이브리드_예측_BSpline'] < 0, '휘발유_하이브리드_예측_BSpline'].shape)
+# print(df5.loc[df5['휘발유_하이브리드_예측_Akima'] < 0, '휘발유_하이브리드_예측_Akima'].shape)
+# print(df5.loc[df5['LPG_하이브리드_대수'] < 0, 'LPG_하이브리드_대수'].shape)
+# print(df5.loc[df5['LPG_하이브리드_예측'] < 0, 'LPG_하이브리드_예측'].shape)
+# print(df5.loc[df5['LPG_하이브리드_예측_BSpline'] < 0, 'LPG_하이브리드_예측_BSpline'].shape)
+# print(df5.loc[df5['LPG_하이브리드_예측_Akima'] < 0, 'LPG_하이브리드_예측_Akima'].shape)
+
+# 음수 0으로 처리
+df5.loc[df5['경유_하이브리드_대수'] < 0, '경유_하이브리드_대수'] = 0
+df5.loc[df5['경유_하이브리드_예측'] < 0, '경유_하이브리드_예측'] = 0
+df5.loc[df5['경유_하이브리드_예측_BSpline'] < 0, '경유_하이브리드_예측_BSpline'] = 0
+df5.loc[df5['경유_하이브리드_예측_Akima'] < 0, '경유_하이브리드_예측_Akima'] = 0
+df5.loc[df5['휘발유_하이브리드_대수'] < 0, '휘발유_하이브리드_대수'] = 0
+df5.loc[df5['휘발유_하이브리드_예측'] < 0, '휘발유_하이브리드_예측'] = 0
+df5.loc[df5['휘발유_하이브리드_예측_BSpline'] < 0, '휘발유_하이브리드_예측_BSpline'] = 0
+df5.loc[df5['휘발유_하이브리드_예측_Akima'] < 0, '휘발유_하이브리드_예측_Akima'] = 0
+df5.loc[df5['LPG_하이브리드_대수'] < 0, 'LPG_하이브리드_대수'] = 0
+df5.loc[df5['LPG_하이브리드_예측'] < 0, 'LPG_하이브리드_예측'] = 0
+df5.loc[df5['LPG_하이브리드_예측_BSpline'] < 0, 'LPG_하이브리드_예측_BSpline'] = 0
+df5.loc[df5['LPG_하이브리드_예측_Akima'] < 0, 'LPG_하이브리드_예측_Akima'] = 0
+
+# # 음수 확인
+# print(df5.loc[df5['경유_하이브리드_대수'] < 0, '경유_하이브리드_대수'].shape)
+# print(df5.loc[df5['경유_하이브리드_예측'] < 0, '경유_하이브리드_예측'].shape)
+# print(df5.loc[df5['경유_하이브리드_예측_BSpline'] < 0, '경유_하이브리드_예측_BSpline'].shape)
+# print(df5.loc[df5['경유_하이브리드_예측_Akima'] < 0, '경유_하이브리드_예측_Akima'].shape)
+# print(df5.loc[df5['휘발유_하이브리드_대수'] < 0, '휘발유_하이브리드_대수'].shape)
+# print(df5.loc[df5['휘발유_하이브리드_예측'] < 0, '휘발유_하이브리드_예측'].shape)
+# print(df5.loc[df5['휘발유_하이브리드_예측_BSpline'] < 0, '휘발유_하이브리드_예측_BSpline'].shape)
+# print(df5.loc[df5['휘발유_하이브리드_예측_Akima'] < 0, '휘발유_하이브리드_예측_Akima'].shape)
+# print(df5.loc[df5['LPG_하이브리드_대수'] < 0, 'LPG_하이브리드_대수'].shape)
+# print(df5.loc[df5['LPG_하이브리드_예측'] < 0, 'LPG_하이브리드_예측'].shape)
+# print(df5.loc[df5['LPG_하이브리드_예측_BSpline'] < 0, 'LPG_하이브리드_예측_BSpline'].shape)
+# print(df5.loc[df5['LPG_하이브리드_예측_Akima'] < 0, 'LPG_하이브리드_예측_Akima'].shape)
 
 # 첫째자리까지 반올림
-df5[['경유_하이브리드_대수', '경유_하이브리드_예측', '휘발유_하이브리드_대수', '휘발유_하이브리드_예측', 'LPG_하이브리드_대수', 'LPG_하이브리드_예측']] = df5[['경유_하이브리드_대수', '경유_하이브리드_예측', '휘발유_하이브리드_대수', '휘발유_하이브리드_예측', 'LPG_하이브리드_대수', 'LPG_하이브리드_예측']].round(0)
+df5.iloc[:, 1:] = df5.iloc[:, 1:].round(0)
+
+# df5.head()
 
 today_date = datetime.today().strftime("%Y%m%d")
 df5['테이블생성일자'] = today_date
@@ -6120,50 +6543,66 @@ df5 = df5[[
     '테이블생성일자', 
     '연도', 
     '휘발유_하이브리드_대수', 
+    '휘발유_하이브리드_예측',
+    '휘발유_하이브리드_예측_BSpline',
+    '휘발유_하이브리드_예측_Akima',
     '경유_하이브리드_대수', 
+    '경유_하이브리드_예측',
+    '경유_하이브리드_예측_BSpline',
+    '경유_하이브리드_예측_Akima',
     'LPG_하이브리드_대수', 
-    '휘발유_하이브리드_예측', 
-    '경유_하이브리드_예측', 
-    'LPG_하이브리드_예측'
+    'LPG_하이브리드_예측',
+    'LPG_하이브리드_예측_BSpline', 
+    'LPG_하이브리드_예측_Akima', 
     ]]
 cdict = {
     '테이블생성일자':'LOAD_DT', 
     '연도':'YR', 
     '휘발유_하이브리드_대수':'GSLH', 
-    '경유_하이브리드_대수':'DSLH', 
-    'LPG_하이브리드_대수':'LPGH', 
     '휘발유_하이브리드_예측':'GSLH_PRET', 
+    '휘발유_하이브리드_예측_BSpline':'GSLH_PRET_BSPLN', 
+    '휘발유_하이브리드_예측_Akima':'GSLH_PRET_AKM', 
+    '경유_하이브리드_대수':'DSLH', 
     '경유_하이브리드_예측':'DSLH_PRET', 
+    '경유_하이브리드_예측_BSpline':'DSLH_PRET_BSPLN', 
+    '경유_하이브리드_예측_Akima':'DSLH_PRET_AKM', 
+    'LPG_하이브리드_대수':'LPGH', 
     'LPG_하이브리드_예측':'LPGH_PRET',
+    'LPG_하이브리드_예측_BSpline':'LPGH_PRET_BSPLN',
+    'LPG_하이브리드_예측_Akima':'LPGH_PRET_AKM',
 }
 STD_BD_HYBRD_CAR_PRET = df5.rename(columns=cdict)
 
+# STD_BD_HYBRD_CAR_PRET.columns
+
 ### [출력] STD_BD_HYBRD_CAR_PRET
-expdf = STD_BD_HYBRD_CAR_PRET
-table_nm = 'STD_BD_HYBRD_CAR_PRET'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_HYBRD_CAR_PRET
+# table_nm = 'STD_BD_HYBRD_CAR_PRET'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_HYBRD_CAR_PRET')
 
 ## 내연차 연료, 등급, 연도별 차량 현황 예측
 # - 경유, 휘발유, LPG
@@ -6205,6 +6644,7 @@ for i in range(base3.shape[0] // n):
 die = base3.loc[base3['fuel'] == '경유', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
 gas = base3.loc[base3['fuel'] == '휘발유', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
 lpg = base3.loc[base3['fuel'] == 'LPG', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
+
 die['연도'] = die['연도'].astype('int')
 gas['연도'] = gas['연도'].astype('int')
 lpg['연도'] = lpg['연도'].astype('int')
@@ -6327,6 +6767,7 @@ for yr in range(year + 1, 2036):
     grd_list.append(grd)
     pred_list.append(pred)
 die5_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
+
 # 휘발유 1등급 예측
 yr_list = []
 fuel_list = []
@@ -6397,6 +6838,7 @@ for yr in range(year + 1, 2036):
     grd_list.append(grd)
     pred_list.append(pred)
 gas5_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
+
 # LPG 1등급 예측
 yr_list = []
 fuel_list = []
@@ -6496,26 +6938,28 @@ cdict = {
 STD_BD_FUEL_GRD_VHCL_CURSTT_PRET = df6.rename(columns=cdict)
 
 ### [출력] STD_BD_FUEL_GRD_VHCL_CURSTT_PRET
-expdf = STD_BD_FUEL_GRD_VHCL_CURSTT_PRET
-table_nm = 'STD_BD_FUEL_GRD_VHCL_CURSTT_PRET'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_FUEL_GRD_VHCL_CURSTT_PRET
+# table_nm = 'STD_BD_FUEL_GRD_VHCL_CURSTT_PRET'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_FUEL_GRD_VHCL_CURSTT_PRET')
 
 ## 무공해차 연료, 연도별 차량 현황 예측
 # - 전기, 수소
@@ -6565,6 +7009,20 @@ fit2 = np.polyfit(hy['연도'], hy['차량대수'], 1)
 a1, b1 = fit1
 a2, b2 = fit2
 
+
+
+# BSpline 예측
+spl1 = intp.BSpline(bt['연도'], bt['차량대수'], 1, extrapolate=True)
+spl2 = intp.BSpline(hy['연도'], hy['차량대수'], 1, extrapolate=True)
+spl1pred = spl1(range(year + 1, 2036))
+spl2pred = spl2(range(year + 1, 2036))
+
+# akima 예측
+aki1 = intp.Akima1DInterpolator(bt['연도'], bt['차량대수'])
+aki2 = intp.Akima1DInterpolator(hy['연도'], hy['차량대수'])
+aki1pred = aki1([x for x in range(year + 1, 2036)], extrapolate=True)
+aki2pred = aki2([x for x in range(year + 1, 2036)], extrapolate=True)
+
 yr_list = []
 fuel_list = []
 pred_list = []
@@ -6574,7 +7032,11 @@ for yr in range(year + 1, 2036):
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
-bt_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '전기_예측':pred_list})
+bt_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, f'{fuel}_예측':pred_list})
+bt_pred[f'{fuel}_예측_BSpline'] = spl1pred
+bt_pred[f'{fuel}_예측_Akima'] = aki1pred
+
+# bt_pred.columns
 
 yr_list = []
 fuel_list = []
@@ -6585,15 +7047,60 @@ for yr in range(year + 1, 2036):
     yr_list.append(yr)
     fuel_list.append(fuel)
     pred_list.append(pred)
-hy_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '수소_예측':pred_list})
+hy_pred = pd.DataFrame({'연도':yr_list, '연료':fuel_list, f'{fuel}_예측':pred_list})
+hy_pred[f'{fuel}_예측_BSpline'] = spl2pred
+hy_pred[f'{fuel}_예측_Akima'] = aki2pred
+
+# hy_pred.columns
+
 bt_t = pd.concat([bt, bt_pred], ignore_index=True)
 hy_t = pd.concat([hy, hy_pred], ignore_index=True)
 bt_t = bt_t.rename(columns={'차량대수':'전기_대수'})
 hy_t = hy_t.rename(columns={'차량대수':'수소_대수'})
-df7 = pd.concat([ bt_t[['연도', '전기_대수', '전기_예측']], hy_t[['수소_대수', '수소_예측']] ], axis=1)
+
+bt_t = bt_t.drop('연료', axis=1)
+hy_t = hy_t.drop(['연료', '연도'], axis=1)
+
+df7 = pd.concat([bt_t, hy_t], axis=1)
+
+# df7.columns
+
+# df7.head()
+
+# # 음수 확인
+# print(df7.loc[df7['전기_대수'] < 0, '전기_대수'].shape)
+# print(df7.loc[df7['전기_예측'] < 0, '전기_예측'].shape)
+# print(df7.loc[df7['전기_예측_BSpline'] < 0, '전기_예측_BSpline'].shape)
+# print(df7.loc[df7['전기_예측_Akima'] < 0, '전기_예측_Akima'].shape)
+# print(df7.loc[df7['수소_대수'] < 0, '수소_대수'].shape)
+# print(df7.loc[df7['수소_예측'] < 0, '수소_예측'].shape)
+# print(df7.loc[df7['수소_예측_BSpline'] < 0, '수소_예측_BSpline'].shape)
+# print(df7.loc[df7['수소_예측_Akima'] < 0, '수소_예측_Akima'].shape)
+
+# 음수 0으로 처리
+df7.loc[df7['전기_대수'] < 0, '전기_대수'] = 0
+df7.loc[df7['전기_예측'] < 0, '전기_예측'] = 0
+df7.loc[df7['전기_예측_BSpline'] < 0, '전기_예측_BSpline'] = 0
+df7.loc[df7['전기_예측_Akima'] < 0, '전기_예측_Akima'] = 0
+df7.loc[df7['수소_대수'] < 0, '수소_대수'] = 0
+df7.loc[df7['수소_예측'] < 0, '수소_예측'] = 0
+df7.loc[df7['수소_예측_BSpline'] < 0, '수소_예측_BSpline'] = 0
+df7.loc[df7['수소_예측_Akima'] < 0, '수소_예측_Akima'] = 0
+
+# # 음수 확인
+# print(df7.loc[df7['전기_대수'] < 0, '전기_대수'].shape)
+# print(df7.loc[df7['전기_예측'] < 0, '전기_예측'].shape)
+# print(df7.loc[df7['전기_예측_BSpline'] < 0, '전기_예측_BSpline'].shape)
+# print(df7.loc[df7['전기_예측_Akima'] < 0, '전기_예측_Akima'].shape)
+# print(df7.loc[df7['수소_대수'] < 0, '수소_대수'].shape)
+# print(df7.loc[df7['수소_예측'] < 0, '수소_예측'].shape)
+# print(df7.loc[df7['수소_예측_BSpline'] < 0, '수소_예측_BSpline'].shape)
+# print(df7.loc[df7['수소_예측_Akima'] < 0, '수소_예측_Akima'].shape)
 
 # 첫째자리까지 반올림
-df7[['전기_대수', '전기_예측', '수소_대수', '수소_예측']] = df7[['전기_대수', '전기_예측', '수소_대수', '수소_예측']].round(0)
+df7.iloc[:, 1:] = df7.iloc[:, 1:].round(0)
+
+# df7.head()
 
 today_date = datetime.today().strftime("%Y%m%d")
 df7['테이블생성일자'] = today_date
@@ -6601,49 +7108,62 @@ df7 = df7[[
     '테이블생성일자', 
     '연도', 
     '전기_대수', 
-    '수소_대수', 
     '전기_예측',
-    '수소_예측', 
+    '전기_예측_BSpline',
+    '전기_예측_Akima',
+    '수소_대수', 
+    '수소_예측',
+    '수소_예측_BSpline',
+    '수소_예측_Akima',
     ]]
 cdict = {
     '테이블생성일자':'LOAD_DT', 
     '연도':'YR', 
     '전기_대수':'BTYCR', 
-    '수소_대수':'HY', 
     '전기_예측':'BTYCR_PRET',
+    '전기_예측_BSpline':'BTYCR_PRET_BSPLN',
+    '전기_예측_Akima':'BTYCR_PRET_AKM',
+    '수소_대수':'HY', 
     '수소_예측':'HY_PRET',
+    '수소_예측_BSpline':'HY_PRET_BSPLN',
+    '수소_예측_Akima':'HY_PRET_AKM',    
 }
 STD_BD_ECO_CAR_PRET = df7.rename(columns=cdict)
 
+# STD_BD_ECO_CAR_PRET.columns
+
 ### [출력] STD_BD_ECO_CAR_PRET
-expdf = STD_BD_ECO_CAR_PRET
-table_nm = 'STD_BD_ECO_CAR_PRET'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_ECO_CAR_PRET
+# table_nm = 'STD_BD_ECO_CAR_PRET'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_ECO_CAR_PRET')
 
 ## 지역, 등급별 말소 차량 현황
 errc2['배출가스등급'] = errc2['배출가스등급'].map({'1':'1.0', '2':'2.0', '3':'3.0', '4':'4.0', '5':'5.0', 'X':'X'})
+
 today_date = datetime.today().strftime("%Y%m%d")
 errc2['테이블생성일자'] = today_date
 df8 = errc2[[
@@ -6667,32 +7187,37 @@ chc_col = {
     '연료':'FUEL_CD', 
 }
 STD_BD_ERSR_RSLT = df8.rename(columns=chc_col)
+
+# STD_BD_ERSR_RSLT.columns
+
 ### [출력] STD_BD_ERSR_RSLT
-expdf = STD_BD_ERSR_RSLT
-table_nm = 'STD_BD_ERSR_RSLT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_ERSR_RSLT
+# table_nm = 'STD_BD_ERSR_RSLT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 7s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_ERSR_RSLT')
 
 ## 등급별현황 테이블
 # - 시도, 연도, 월, 등급, 연료, 차종, 차량유형, 용도별 / 차량대수, 말소차량대수, 차량 비율
@@ -6716,24 +7241,29 @@ date_date = '20221231'
 # date_date = datetime.today().strftime("%Y%m%d")
 # 37.5s
 
+y_plist = list(pd.date_range(end=date_date, periods=4, freq="MS").year)
+mth_plist = list(pd.date_range(end=date_date, periods=4, freq="MS").month)
+
+# y_plist, mth_plist
+
+# 37.5s
 # 차량 통계 기본 데이터셋
 ctpv_list, yr_list, month_list, grd_list, fuel_list, vhcty_list, ty_list, purps_list = [], [], [], [], [], [], [], []
 for ctpv in grp1['시도'].unique():
-    for yr in grp1['연도'].unique():
-        for month in list(pd.date_range(end='20221231', periods=4, freq='MS').month):
-            for grd in grp1['배출가스등급'].unique():
-                for fuel in grp1['연료'].unique():
-                    for vhcty in grp1['차종'].unique():
-                        for ty in grp1['차종유형'].unique():
-                            for purps in grp1['용도'].unique():
-                                ctpv_list.append(ctpv)
-                                yr_list.append(str(yr))
-                                month_list.append(f'{month:0>2}')
-                                grd_list.append(grd)
-                                fuel_list.append(fuel)
-                                vhcty_list.append(vhcty)
-                                ty_list.append(ty)
-                                purps_list.append(purps)
+    for yr, month in zip(y_plist, mth_plist):
+        for grd in grp1['배출가스등급'].unique():
+            for fuel in grp1['연료'].unique():
+                for vhcty in grp1['차종'].unique():
+                    for ty in grp1['차종유형'].unique():
+                        for purps in grp1['용도'].unique():
+                            ctpv_list.append(ctpv)
+                            yr_list.append(str(yr))
+                            month_list.append(f'{month:0>2}')
+                            grd_list.append(grd)
+                            fuel_list.append(fuel)
+                            vhcty_list.append(vhcty)
+                            ty_list.append(ty)
+                            purps_list.append(purps)
 base = pd.DataFrame({
     '시도':ctpv_list, 
     '연도':yr_list, 
@@ -6803,39 +7333,43 @@ cdict = {
 }
 STD_BD_DAT_GRD_CURSTT = STD_BD_DAT_GRD_CURSTT.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD_CURSTT
-expdf = STD_BD_DAT_GRD_CURSTT
-table_nm = 'STD_BD_DAT_GRD_CURSTT'.upper()
+# STD_BD_DAT_GRD_CURSTT.columns
 
-# 테이블 생성
-try:
-    sql = 'create table ' + table_nm + '( \n'
+### [출력] STD_BD_DAT_GRD_CURSTT
 
-    for idx,column in enumerate(expdf.columns):
-        if 'float' in expdf[column].dtype.name:
-            sql += column + ' float'
-        elif 'int' in expdf[column].dtype.name:
-            sql += column + ' number'
-        else:
-            sql += column + ' varchar(255)'
+# expdf = STD_BD_DAT_GRD_CURSTT
+# table_nm = 'STD_BD_DAT_GRD_CURSTT'.upper()
 
-        if len(expdf.columns) - 1 != idx:
-            sql += ','
-        sql += '\n'
-    sql += ')'    
-    we.execute(sql)
-    # 데이터 추가
-    we.import_from_pandas(expdf, table_nm)
-except:
-    # 데이터 추가
-    we.import_from_pandas(expdf, table_nm)
+# # 테이블 생성
+# try:
+#     sql = 'create table ' + table_nm + '( \n'
 
-print(f'data export : {table_nm}')
+#     for idx,column in enumerate(expdf.columns):
+#         # if 'float' in expdf[column].dtype.name:
+#         #     sql += column + ' float'
+#         # elif 'int' in expdf[column].dtype.name:
+#         #     sql += column + ' number'
+#         # else:
+#         sql += column + ' varchar(255)'
+
+#         if len(expdf.columns) - 1 != idx:
+#             sql += ','
+#         sql += '\n'
+#     sql += ')'    
+#     we.execute(sql)
+#     # 데이터 추가
+#     we.import_from_pandas(expdf, table_nm)
+# except:
+#     # 데이터 추가
+#     we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD_CURSTT')
 
 ## 내연기관차 감소추이
-
 grp1 = dfm2dgl.groupby(['배출가스등급', '연료'])['차대번호'].count().reset_index()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
+
 year = '2022'
 month = '12'
 today_date = datetime.today().strftime("%Y%m%d")
@@ -6905,6 +7439,10 @@ for fuel in total_base['연료'].unique():
         future[f'{fuel_mod}_예측_Akima'] = aki(future['index'], extrapolate=True)
         temp2 = pd.concat([present, future], ignore_index=True)
         total_pred_df = pd.concat([total_pred_df, temp2], ignore_index=True)       
+
+# total_pred_df.head()
+
+# total_pred_df.tail()
 
 df5 = total_pred_df[[
     '연도',
@@ -6988,39 +7526,49 @@ cdict = {
 }
 STD_BD_DAT_FUEL_CAR_DEC = df6.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_FUEL_CAR_DEC
-expdf = STD_BD_DAT_FUEL_CAR_DEC
-table_nm = 'STD_BD_DAT_FUEL_CAR_DEC'.upper()
+# STD_BD_DAT_FUEL_CAR_DEC.columns
 
-# 테이블 생성
-try:
-    sql = 'create or replace table ' + table_nm + '( \n'
+### [출력] STD_BD_DAT_FUEL_CAR_DEC
 
-    for idx,column in enumerate(expdf.columns):
-        if 'float' in expdf[column].dtype.name:
-            sql += column + ' float'
-        elif 'int' in expdf[column].dtype.name:
-            sql += column + ' number'
-        else:
-            sql += column + ' varchar(255)'
+# expdf = STD_BD_DAT_FUEL_CAR_DEC
+# table_nm = 'STD_BD_DAT_FUEL_CAR_DEC'.upper()
 
-        if len(expdf.columns) - 1 != idx:
-            sql += ','
-        sql += '\n'
-    sql += ')'    
-    we.execute(sql)
-    we.import_from_pandas(expdf, table_nm)
-except:
-    # 데이터 추가
-    # 7s
-    we.import_from_pandas(expdf, table_nm)
+# # 테이블 생성
+# try:
+#     sql = 'create or replace table ' + table_nm + '( \n'
 
-################################################################### 3-1 code end
+#     for idx,column in enumerate(expdf.columns):
+#         # if 'float' in expdf[column].dtype.name:
+#         #     sql += column + ' float'
+#         # elif 'int' in expdf[column].dtype.name:
+#         #     sql += column + ' number'
+#         # else:
+#         sql += column + ' varchar(255)'
+
+#         if len(expdf.columns) - 1 != idx:
+#             sql += ','
+#         sql += '\n'
+#     sql += ')'    
+#     we.execute(sql)
+#     we.import_from_pandas(expdf, table_nm)
+# except:
+#     # 데이터 추가
+#     # 7s
+#     we.import_from_pandas(expdf, table_nm)
+    
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_FUEL_CAR_DEC')
+
+## 3-1 code end ##################################################################
+
+## 3-2 start
 
 ## 등록정보(STD_CEG_CAR_MIG) 5등급만
 # 8.6s
 car = wd.export_to_pandas("SELECT VIN, BSPL_STDG_CD, VHCL_ERSR_YN, MANP_MNG_NO, YRIDNW, VHCTY_CD, PURPS_CD2, FRST_REG_YMD, VHCL_FBCTN_YMD, VHCL_MNG_NO FROM STD_CEG_CAR_MIG WHERE EXHST_GAS_GRD_CD = 'A0505' OR EXHST_GAS_GRD_CD = 'A05T5';")
-car.info()
+
+# car.info()
+
 car_ch_col = {
     'VIN':'차대번호', 
     'BSPL_STDG_CD':'법정동코드', 
@@ -7068,11 +7616,33 @@ cs = carm.merge(srcr, on='제원관리번호', how='left')
 # 1.7s
 csa = cs.merge(attr[['차대번호', 'DPF_YN']], on='차대번호', how='left')
 
+csa['법정동코드'] = csa['법정동코드'].astype('str')
+csa['법정동코드'] = csa['법정동코드'].str[:5] + '00000'
+csa['법정동코드'] = pd.to_numeric(csa['법정동코드'])
+
 ## 지역정보 병합
 csac = csa.merge(coder, on='법정동코드', how='left')
 
-### 매칭 안되는 지역 처리
-csac.loc[csac['법정동코드'] == 4165052000, ['시도', '시군구']] = ['경기도', '포천시'] # 경기도 포천시 선단동
+# csac['시도'].isnull().sum()
+
+# ### 매칭 안되는 지역 처리
+# # 주소 수정
+# csac.loc[csac['법정동코드'] == 5172035031, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 강원특별자치도 홍천군
+# csac.loc[csac['법정동코드'] == 5180031023, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csac.loc[csac['법정동코드'] == 5180031031, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csac.loc[csac['법정동코드'] == 5172035030, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csac.loc[csac['법정동코드'] == 5180031028, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+
+# csac.loc[csac['법정동코드'] == 5172035021, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csac.loc[csac['법정동코드'] == 5180031025, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csac.loc[csac['법정동코드'] == 4165052000, ['시도', '시군구']] = ['경기도', '포천시'] # 경기도 포천시 선단동
+# csac.loc[csac['법정동코드'] == 5172035023, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csac.loc[csac['법정동코드'] == 5180031027, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+
+# csac.loc[csac['법정동코드'] == 5172035024, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csac.loc[csac['법정동코드'] == 5175037022, ['시도', '시군구']] = ['강원특별자치도', '영월군'] # 
+# csac.loc[csac['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
+# csac.loc[csac['법정동코드'] == 5180031033, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 경기도 양주시 회천3동
 
 ## 조기폐차 정보들 병합
 elp = pd.concat([aear, lgvr], ignore_index=True)
@@ -7091,6 +7661,8 @@ isdpi = isdp.merge(isisr, on='발령번호', how='left')
 
 ### 지역정보 추가
 coder_dup = coder.sort_values('법정동코드', ascending=True).drop_duplicates(['시도코드', '시군구코드']).reset_index(drop=True)
+
+# isdpi.columns
 
 # 28.4s
 is_total1 = isdpi.merge(coder_dup[['시도코드', '시군구코드', '시도', '시군구']], left_on=['등록시도코드', '등록시군구코드'], right_on=['시도코드', '시군구코드'], how='left')
@@ -7135,18 +7707,31 @@ ersr = ersr.sort_values('변경일자', ascending=False).drop_duplicates('차대
 # 3. 변경일자 2019.01.01 이후만 추출
 ersr = ersr[ersr['변경일자'] >= 20190101].reset_index(drop=True)
 
+ersr['법정동코드'] = ersr['법정동코드'].astype('str')
+ersr['법정동코드'] = ersr['법정동코드'].str[:5] + '00000'
+ersr['법정동코드'] = pd.to_numeric(ersr['법정동코드'])
+
 ## 등록&제원&이력&법정동코드 병합(errc)
 # 매칭 후 '시도' 빈값 없음
 errc = ersr.merge(coder, on='법정동코드', how='left')
 
-# Load
-## 5등급 지역별 조기폐차(STD_BD_GRD5_ELPDSRC_CURSTT)(한글파일 내용 입력)
-# 8.6s
+# errc['시도'].isnull().sum()
+
+## Load
+
+### 5등급 지역별 조기폐차(STD_BD_GRD5_ELPDSRC_CURSTT)(한글파일 내용 입력)
+
+# 0s
 df1 = we.export_to_pandas("SELECT * FROM STD_BD_GRD5_ELPDSRC;")
 
-## 5등급 저공해 미조치(STD_BD_GRD5_LEM_N)(한글파일 내용 입력)
-# 8.6s
+# df1.info()
+
+### 5등급 저공해 미조치(STD_BD_GRD5_LEM_N_MOD)(한글파일 내용 입력)
+
+# 0s
 no_dpf = we.export_to_pandas("SELECT * FROM STD_BD_GRD5_LEM_N;")
+
+# no_dpf.info()
 
 # 분석
 ## 5등급 지역별 조기폐차 현황
@@ -7213,32 +7798,36 @@ today_date = datetime.today().strftime("%Y%m%d")
 df1['LOAD_DT'] = today_date
 STD_BD_GRD5_ELPDSRC_CURSTT = df1.copy()
 
+# STD_BD_GRD5_ELPDSRC_CURSTT.columns
+
 ### [출력] [D] STD_BD_GRD5_ELPDSRC_CURSTT
-expdf = STD_BD_GRD5_ELPDSRC_CURSTT
-table_nm = 'STD_BD_GRD5_ELPDSRC_CURSTT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD5_ELPDSRC_CURSTT
+# table_nm = 'STD_BD_GRD5_ELPDSRC_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD5_ELPDSRC_CURSTT')
 
 ## 5등급 지역별 저공해미조치 차량현황
 today_date = datetime.today().strftime("%Y%m%d")
@@ -7251,32 +7840,36 @@ cdict = {
 }
 STD_BD_GRD5_LEM_N_MOD = no_dpf.rename(columns=cdict)
 
+# STD_BD_GRD5_LEM_N_MOD.columns
+
 ### [출력] [D] STD_BD_GRD5_LEM_N_MOD
-expdf = STD_BD_GRD5_LEM_N_MOD
-table_nm = 'STD_BD_GRD5_LEM_N_MOD'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD5_LEM_N_MOD
+# table_nm = 'STD_BD_GRD5_LEM_N_MOD'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD5_LEM_N_MOD')
 
 ## 차대번호별 운행제한 적발 현황
 # DNSTY_STDR_ID(농도기준아이디) : 실발령(C011), 모의발령(C012)
@@ -7339,27 +7932,31 @@ for one in limit_season_rename_dict.values():
     cdict[one] = one.replace('계절제', 'SEASON').replace('차', 'ODR_CRDN_NOCS')
 STD_BD_SEASON_CRDN_NOCS_CURSTT = season.rename(columns=cdict)
 
+# STD_BD_SEASON_CRDN_NOCS_CURSTT.columns
+
 ### [출력] STD_BD_SEASON_CRDN_NOCS_CURSTT
-expdf = STD_BD_SEASON_CRDN_NOCS_CURSTT
-table_nm = 'STD_BD_SEASON_CRDN_NOCS_CURSTT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_SEASON_CRDN_NOCS_CURSTT
+# table_nm = 'STD_BD_SEASON_CRDN_NOCS_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_SEASON_CRDN_NOCS_CURSTT')
 
 ## 계절제별 적발건수
 season_tot = lmt1[[x + '_일평균' for x in limit_season_rename_dict.values()]].sum().reset_index()
@@ -7374,32 +7971,36 @@ cdict = {
     }
 STD_BD_SEASON_DY_AVRG_CRDN_NOCS = season_tot.rename(columns=cdict)
 
-## [출력] STD_BD_SEASON_DY_AVRG_CRDN_NOCS
-expdf = STD_BD_SEASON_DY_AVRG_CRDN_NOCS
-table_nm = 'STD_BD_SEASON_DY_AVRG_CRDN_NOCS'.upper()
+# STD_BD_SEASON_DY_AVRG_CRDN_NOCS.columns
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+### [출력] STD_BD_SEASON_DY_AVRG_CRDN_NOCS
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# expdf = STD_BD_SEASON_DY_AVRG_CRDN_NOCS
+# table_nm = 'STD_BD_SEASON_DY_AVRG_CRDN_NOCS'.upper()
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_SEASON_DY_AVRG_CRDN_NOCS')
 
 ## 지역별 상시운행제한 단속 현황
 us_total2 = us_total.merge(limit_alw, on='차대번호', how='left')
@@ -7431,32 +8032,36 @@ cdict = {
 }
 STD_BD_ORDITM_DSCL_CURSTT = orditm.rename(columns=cdict)
 
+# STD_BD_ORDITM_DSCL_CURSTT.columns
+
 ### [출력] STD_BD_ORDITM_DSCL_CURSTT
-expdf = STD_BD_ORDITM_DSCL_CURSTT
-table_nm = 'STD_BD_ORDITM_DSCL_CURSTT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_ORDITM_DSCL_CURSTT
+# table_nm = 'STD_BD_ORDITM_DSCL_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_ORDITM_DSCL_CURSTT')
 
 ## 적발지역별 계절제 단속 현황 출력
 is_season2 = is_season.sort_values(['적발시도', '적발시군구']).drop_duplicates(['차대번호', '적발시도', '적발시군구']).reset_index(drop=True)
@@ -7503,32 +8108,36 @@ cdict = {
 }
 STD_BD_SEASON_DSCL_RGN_CURSTT = slimit.rename(columns=cdict)
 
+# STD_BD_SEASON_DSCL_RGN_CURSTT.columns
+
 ### [출력] STD_BD_SEASON_DSCL_RGN_CURSTT
-expdf = STD_BD_SEASON_DSCL_RGN_CURSTT
-table_nm = 'STD_BD_SEASON_DSCL_RGN_CURSTT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_SEASON_DSCL_RGN_CURSTT
+# table_nm = 'STD_BD_SEASON_DSCL_RGN_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_SEASON_DSCL_RGN_CURSTT')
 
 ## 5등급 저감사업
 ce = carr.merge(elpm, on='차대번호', how='left')
@@ -7555,6 +8164,7 @@ year = '2022'
 # year = today_date[:4]
 
 dfe['연도'] = year
+
 def knd1(x):
     if '1종' in x.unique():
         return x.value_counts()['1종']
@@ -7630,34 +8240,38 @@ cdict = {
 }
 STD_BD_DAT_GRD5_REDUC_BIZ = base5.rename(columns=cdict)
 
-## [출력] STD_BD_DAT_GRD5_REDUC_BIZ
-expdf = STD_BD_DAT_GRD5_REDUC_BIZ
-table_nm = 'STD_BD_DAT_GRD5_REDUC_BIZ'.upper()
+# STD_BD_DAT_GRD5_REDUC_BIZ.columns
 
-# 테이블 생성ㄴ
-try:
-    sql = 'create table ' + table_nm + '( \n'
+### [출력] STD_BD_DAT_GRD5_REDUC_BIZ
 
-    for idx,column in enumerate(expdf.columns):
-        if 'float' in expdf[column].dtype.name:
-            sql += column + ' float'
-        elif 'int' in expdf[column].dtype.name:
-            sql += column + ' number'
-        else:
-            sql += column + ' varchar(255)'
+# expdf = STD_BD_DAT_GRD5_REDUC_BIZ
+# table_nm = 'STD_BD_DAT_GRD5_REDUC_BIZ'.upper()
 
-        if len(expdf.columns) - 1 != idx:
-            sql += ','
-        sql += '\n'
-    sql += ')'    
-    we.execute(sql)
-    we.import_from_pandas(expdf, table_nm)
-except:
-    # 데이터 추가
-    # 5s
-    we.import_from_pandas(expdf, table_nm)
+# # 테이블 생성
+# try:
+#     sql = 'create table ' + table_nm + '( \n'
 
-print(f'data export : {table_nm}')
+#     for idx,column in enumerate(expdf.columns):
+#         # if 'float' in expdf[column].dtype.name:
+#         #     sql += column + ' float'
+#         # elif 'int' in expdf[column].dtype.name:
+#         #     sql += column + ' number'
+#         # else:
+#         sql += column + ' varchar(255)'
+
+#         if len(expdf.columns) - 1 != idx:
+#             sql += ','
+#         sql += '\n'
+#     sql += ')'    
+#     we.execute(sql)
+#     we.import_from_pandas(expdf, table_nm)
+# except:
+#     # 데이터 추가
+#     # 5s
+#     we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_GRD5_REDUC_BIZ')
 
 ## 운행제한현황
 run_lmt1 = lmt1.copy()
@@ -7704,36 +8318,42 @@ cdict = {
 }
 STD_BD_DAT_RUN_LMT_CURSTT = total_grp_lmt.rename(columns=cdict)
 
+# STD_BD_DAT_RUN_LMT_CURSTT.columns
+
 ### [출력] STD_BD_DAT_RUN_LMT_CURSTT
-expdf = STD_BD_DAT_RUN_LMT_CURSTT
-table_nm = 'STD_BD_DAT_RUN_LMT_CURSTT'.upper()
 
-# 테이블 생성
-try:
-    sql = 'create table ' + table_nm + '( \n'
+# expdf = STD_BD_DAT_RUN_LMT_CURSTT
+# table_nm = 'STD_BD_DAT_RUN_LMT_CURSTT'.upper()
 
-    for idx,column in enumerate(expdf.columns):
-        if 'float' in expdf[column].dtype.name:
-            sql += column + ' float'
-        elif 'int' in expdf[column].dtype.name:
-            sql += column + ' number'
-        else:
-            sql += column + ' varchar(255)'
+# # 테이블 생성
+# try:
+#     sql = 'create table ' + table_nm + '( \n'
 
-        if len(expdf.columns) - 1 != idx:
-            sql += ','
-        sql += '\n'
-    sql += ')'    
-    we.execute(sql)
-    we.import_from_pandas(expdf, table_nm)
-except:
-    # 데이터 추가
-    # 5s
-    we.import_from_pandas(expdf, table_nm)
+#     for idx,column in enumerate(expdf.columns):
+#         # if 'float' in expdf[column].dtype.name:
+#         #     sql += column + ' float'
+#         # elif 'int' in expdf[column].dtype.name:
+#         #     sql += column + ' number'
+#         # else:
+#         sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#         if len(expdf.columns) - 1 != idx:
+#             sql += ','
+#         sql += '\n'
+#     sql += ')'    
+#     we.execute(sql)
+#     we.import_from_pandas(expdf, table_nm)
+# except:
+#     # 데이터 추가
+#     # 5s
+#     we.import_from_pandas(expdf, table_nm)
 
-################################################################### 3-2 code end
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_RUN_LMT_CURSTT')
+
+## 3-2 code end ##################################################################
+
+## 3-3 start
 
 ## 등록정보(STD_CEG_CAR_MIG) 4, 5등급만
 # 20.2s
@@ -7801,12 +8421,32 @@ cs = carm.merge(srcr, on='제원관리번호', how='left')
 # 2m 0.5s
 csi = cs.merge(insm, on='차대번호', how='left')
 
+csi['법정동코드'] = csi['법정동코드'].astype('str')
+csi['법정동코드'] = csi['법정동코드'].str[:5] + '00000'
+csi['법정동코드'] = pd.to_numeric(csi['법정동코드'])
+
 ## 등록&제원&정기&정밀&법정동 병합
 csic = csi.merge(coder, on='법정동코드', how='left')
 
-# 주소 수정
-csic.loc[csic['법정동코드'] == 4165052000, ['시도', '시군구']] = ['경기도', '포천시'] # 경기도 포천시 선단동
-csic.loc[csic['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
+# csic['시도'].isnull().sum()
+
+# # 주소 수정
+# csic.loc[csic['법정동코드'] == 5172035031, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 강원특별자치도 홍천군
+# csic.loc[csic['법정동코드'] == 5180031023, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csic.loc[csic['법정동코드'] == 5180031031, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csic.loc[csic['법정동코드'] == 5172035030, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csic.loc[csic['법정동코드'] == 5180031028, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+
+# csic.loc[csic['법정동코드'] == 5172035021, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csic.loc[csic['법정동코드'] == 5180031025, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+# csic.loc[csic['법정동코드'] == 4165052000, ['시도', '시군구']] = ['경기도', '포천시'] # 경기도 포천시 선단동
+# csic.loc[csic['법정동코드'] == 5172035023, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csic.loc[csic['법정동코드'] == 5180031027, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 
+
+# csic.loc[csic['법정동코드'] == 5172035024, ['시도', '시군구']] = ['강원특별자치도', '홍천군'] # 
+# csic.loc[csic['법정동코드'] == 5175037022, ['시도', '시군구']] = ['강원특별자치도', '영월군'] # 
+# csic.loc[csic['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
+# csic.loc[csic['법정동코드'] == 5180031033, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 경기도 양주시 회천3동
 
 ## 등록&제원&정기&정밀&법정동&저감 병합
 attr = attr.drop_duplicates('차대번호').reset_index(drop=True)
@@ -7832,6 +8472,7 @@ df = rdf1.drop('DPF유무_수정', axis=1)
 ## 일일평균주행거리 계산
 df['최초등록일자'] = pd.to_datetime(df['최초등록일자'], format="%Y%m%d", errors='coerce')
 df['검사일자'] = pd.to_datetime(df['검사일자'], format="%Y%m%d", errors='coerce')
+
 today_date = datetime.today().strftime("%Y-%m-%d")
 df['현재날짜'] = today_date
 df['현재날짜'] = pd.to_datetime(df['현재날짜'], format='%Y-%m-%d', errors='coerce')
@@ -7862,7 +8503,10 @@ df3y = df2nm[df2nm['일일평균주행거리'].isnull() == False]
 df3n = df2nm[df2nm['일일평균주행거리'].isnull() == True]
 
 for ctpv, sgg, cd in df3n.loc[df3n['일일평균주행거리'].isnull() == True, ['시도', '시군구', '차종']].values:
+    try:
         df3n.loc[(df3n['일일평균주행거리'].isnull() == True) & (df3n['시도'] == ctpv) & (df3n['시군구'] == sgg), '일일평균주행거리'] = kosisr.loc[(kosisr['시도'] == ctpv) & (kosisr['시군구'] == '소계') & (kosisr['차종'] == '합계'), '일일평균주행거리'].values[0]
+    except:
+        df3n.loc[(df3n['일일평균주행거리'].isnull() == True) & (df3n['시도'].isnull() == True) & (df3n['시군구'].isnull() == True), '일일평균주행거리'] = kosisr.loc[(kosisr['시도'] == '서울특별시') & (kosisr['시군구'] == '소계') & (kosisr['차종'] == '합계'), '일일평균주행거리'].values[0]
 
 df2nm = pd.concat([df3y, df3n], ignore_index=True)
 df1nm = pd.concat([df2y, df2nm], ignore_index=True)
@@ -7871,6 +8515,8 @@ df = pd.concat([df1y, df1nm], ignore_index=True)
 ## 4, 5등급 분리
 g4 = df.loc[df['배출가스등급'] == '4'].reset_index(drop=True)
 g5 = df.loc[df['배출가스등급'] == '5'].reset_index(drop=True)
+
+# g4.loc[g4['차량번호'] == '31고7134', '연료']
 
 ### 코란KJ 연료 휘발유로 수정
 # - 차량번호 : 31고7134
@@ -8003,32 +8649,36 @@ chc_col = {
 }
 STD_BD_GRD4_DS_CRRLTN_CFFCNT = t4.rename(columns=chc_col)
 
+# STD_BD_GRD4_DS_CRRLTN_CFFCNT.columns
+
 ##### [출력] STD_BD_GRD4_DS_CRRLTN_CFFCNT
-expdf = STD_BD_GRD4_DS_CRRLTN_CFFCNT
-table_nm = 'STD_BD_GRD4_DS_CRRLTN_CFFCNT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_DS_CRRLTN_CFFCNT
+# table_nm = 'STD_BD_GRD4_DS_CRRLTN_CFFCNT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_DS_CRRLTN_CFFCNT')
 
 c1, c2, c3, c4 = gm4di_corr.sum()[col]
 sc1 = c1 + c2 + c3 + c4 
@@ -8083,27 +8733,31 @@ chc_col = {
 }
 STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT = STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT.rename(columns=chc_col)
 
+# STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT.columns
+
 ##### [출력] STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT
-expdf = STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT
-table_nm = 'STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT
+# table_nm = 'STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD4_LEM_PRIO_ORD_SELCT_CURSTT')
 
 #### 5등급 경유 C급
 ###### 조기폐차 선별포인트
@@ -8112,6 +8766,7 @@ col = ['무부하매연측정치1', '일일평균주행거리', '최근검사경
 # nan 값 0으로 채우기
 gm5di[col] = gm5di[col].fillna(0)
 gm5di_corr = gm5di[col].corr()
+
 ###### 5등급 경유차 선별조건 상관계수
 t5 = pd.concat([gm5di_corr, gm5di_corr.sum()], axis=1)
 t5 = t5.rename(columns={0:'합계'})
@@ -8130,32 +8785,36 @@ chc_col = {
 }
 STD_BD_GRD5_DS_CRRLTN_CFFCNT = t5.rename(columns=chc_col)
 
+# STD_BD_GRD5_DS_CRRLTN_CFFCNT.columns
+
 ##### [출력] STD_BD_GRD5_DS_CRRLTN_CFFCNT
-expdf = STD_BD_GRD5_DS_CRRLTN_CFFCNT
-table_nm = 'STD_BD_GRD5_DS_CRRLTN_CFFCNT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_GRD5_DS_CRRLTN_CFFCNT
+# table_nm = 'STD_BD_GRD5_DS_CRRLTN_CFFCNT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD5_DS_CRRLTN_CFFCNT')
 
 c1, c2, c3, c4 = gm5di_corr.sum()[col]
 sc1 = c1 + c2 + c3 + c4
@@ -8168,6 +8827,7 @@ gm5da['선별포인트'] = np.nan
 gm5db['선별포인트'] = np.nan
 
 total5d = pd.concat([gm5da, gm5db, gm5di], ignore_index=True)
+
 today_date = datetime.today().strftime("%Y%m%d")
 total5d['테이블생성일자'] = today_date
 STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT = total5d[[
@@ -8210,31 +8870,54 @@ chc_col = {
 }
 STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT = STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT.rename(columns=chc_col)
 
-expdf = STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT
-table_nm = 'STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT'.upper()
+# STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT.columns
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+##### [출력] STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT
 
-for idx,column in enumerate(expdf.columns):
-    sql += column + ' varchar(255)'
+# expdf = STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT
+# table_nm = 'STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT'.upper()
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+# for idx,column in enumerate(expdf.columns):
+#     sql += column + ' varchar(255)'
 
-print(f'data export : {table_nm}')
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_GRD5_LEM_PRIO_ORD_SELCT_CURSTT')
 
 ## 저공해조치선별
-lem4d = total4d.merge(coder[['법정동코드', '시도']], on='법정동코드', how='left')
-lem5d = total5d.merge(coder[['법정동코드', '시도']], on='법정동코드', how='left')
-lem5d.loc[lem5d['법정동코드'] == 4165052000, '시도'] = '경기도' # 경기도 포천시 선단동
+# lem4d = total4d.merge(coder[['법정동코드', '시도']], on='법정동코드', how='left')
+# lem5d = total5d.merge(coder[['법정동코드', '시도']], on='법정동코드', how='left')
+lem4d = total4d.copy()
+lem5d = total5d.copy()
+
+# lem4d['시도'].isnull().sum(), lem5d['시도'].isnull().sum()
+
+# lem4d.loc[lem4d['법정동코드'] == 5180031023, '시도'] = '강원특별자치도' # 강원특별자치도 양구군 남면 야촌리
+# lem4d.loc[lem4d['법정동코드'] == 5172035030, '시도'] = '강원특별자치도' # 강원특별자치도 홍천군 동면 노천리
+# lem4d.loc[lem4d['법정동코드'] == 5172035021, '시도'] = '강원특별자치도' # 강원특별자치도 홍천군 동면 속초리
+
+# # lem5d.loc[lem5d['법정동코드'] == 4165052000, '시도'] = '경기도' # 경기도 포천시 선단동
+# lem5d.loc[lem5d['법정동코드'] == 5180031023, '시도'] = '강원특별자치도' # 강원특별자치도 양구군 남면 야촌리
+# lem5d.loc[lem5d['법정동코드'] == 5180031027, '시도'] = '강원특별자치도' # 강원특별자치도 양구군 남면 황강리
+# lem5d.loc[lem5d['법정동코드'] == 5180031025, '시도'] = '강원특별자치도' # 강원특별자치도 양구군 남면 청리
+# lem5d.loc[lem5d['법정동코드'] == 5180031028, '시도'] = '강원특별자치도' # 강원특별자치도 양구군 남면 창리
+# lem5d.loc[lem5d['법정동코드'] == 5172035023, '시도'] = '강원특별자치도' # 강원특별자치도 홍천군 동면 덕치리
+# lem5d.loc[lem5d['법정동코드'] == 5180031031, '시도'] = '강원특별자치도' # 강원특별자치도 양구군 남면 죽리
+# lem5d.loc[lem5d['법정동코드'] == 5175037022, '시도'] = '강원특별자치도' # 강원특별자치도 홍천군 서면 어유포리
+# lem5d.loc[lem5d['법정동코드'] == 5180031033, '시도'] = '강원특별자치도' # 강원특별자치도 양구군 남면 원리
+
 lem4d['배출가스등급'] = '4'
 lem5d['배출가스등급'] = '5'
 lem = pd.concat([lem4d, lem5d], ignore_index=True)
@@ -8272,32 +8955,36 @@ cdict = {
 }
 STD_BD_DAT_LEM_SELCT = grp.rename(columns=cdict)
 
+# STD_BD_DAT_LEM_SELCT.columns
+
 ### [출력] STD_BD_DAT_LEM_SELCT
-expdf = STD_BD_DAT_LEM_SELCT
-table_nm = 'STD_BD_DAT_LEM_SELCT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_DAT_LEM_SELCT
+# table_nm = 'STD_BD_DAT_LEM_SELCT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
+
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_LEM_SELCT')
 
 ## 선별포인트현황
 for n in range(0, 350, 50):
@@ -8324,35 +9011,39 @@ cdict = {
 }
 STD_BD_DAT_SELCT_PNT_CURSTT = stat.rename(columns=cdict)
 
+# STD_BD_DAT_SELCT_PNT_CURSTT.columns
+
 ### [출력] STD_BD_DAT_SELCT_PNT_CURSTT
-expdf = STD_BD_DAT_SELCT_PNT_CURSTT
-table_nm = 'STD_BD_DAT_SELCT_PNT_CURSTT'.upper()
 
-# 테이블 생성
-sql = 'create or replace table ' + table_nm + '( \n'
+# expdf = STD_BD_DAT_SELCT_PNT_CURSTT
+# table_nm = 'STD_BD_DAT_SELCT_PNT_CURSTT'.upper()
 
-for idx,column in enumerate(expdf.columns):
-    if 'float' in expdf[column].dtype.name:
-        sql += column + ' float'
-    elif 'int' in expdf[column].dtype.name:
-        sql += column + ' number'
-    else:
-        sql += column + ' varchar(255)'
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
 
-    if len(expdf.columns) - 1 != idx:
-        sql += ','
-    sql += '\n'
-sql += ')'    
-we.execute(sql)
+# for idx,column in enumerate(expdf.columns):
+#     # if 'float' in expdf[column].dtype.name:
+#     #     sql += column + ' float'
+#     # elif 'int' in expdf[column].dtype.name:
+#     #     sql += column + ' number'
+#     # else:
+#     sql += column + ' varchar(255)'
 
-# 데이터 추가
-# 5s
-we.import_from_pandas(expdf, table_nm)
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
 
-print(f'data export : {table_nm}')
+# # 데이터 추가
+# # 5s
+# we.import_from_pandas(expdf, table_nm)
 
-################################################################### 3-3 code end
+# print(f'data export : {table_nm}')
+print('data export : STD_BD_DAT_SELCT_PNT_CURSTT')
+
+## 3-3 code end ##################################################################
 
 print('code end')
-
-################################################################### code end
+print(time.time() - start_time)
+# code end ##################################################################
