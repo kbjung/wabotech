@@ -1070,7 +1070,7 @@ cdict = {
     '배출가스인증번호':'EXHST_GAS_CERT_NO',
     '검사방법':'INSP_MTHD',
     '검토구분':'RVW_SE',
-    '대표제작사명':'RPRS_VHCNM',
+    '대표제작사명':'RPRS_MNFCTR_NM',
     '대표차명':'RPRS_VHCNM', 
     '제원관리번호':'MANG_MNG_NO',
     'q1':'LOWR_QRT',
