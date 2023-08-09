@@ -1244,7 +1244,7 @@ chc_dict = {
     '시도':'CTPV', 
     '시군구':'SGG', 
     '조기폐차상태코드':'ELPDSRC_STTS_CD',
-    '조기폐차최종승인YN':'ELPDSRC_LST_APRV_YN', 
+    '조기폐차최종승인YN':'ELPDSRC_LAST_APRV_YN', 
     '테이블생성일자':'LOAD_DT', 
 }
 STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT.rename(columns=chc_dict)
