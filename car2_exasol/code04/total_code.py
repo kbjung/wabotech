@@ -6641,295 +6641,323 @@ for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
 
-die = base3.loc[base3['fuel'] == '경유', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
-gas = base3.loc[base3['fuel'] == '휘발유', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
-lpg = base3.loc[base3['fuel'] == 'LPG', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
+# die = base3.loc[base3['fuel'] == '경유', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
+# gas = base3.loc[base3['fuel'] == '휘발유', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
+# lpg = base3.loc[base3['fuel'] == 'LPG', ['연도', 'fuel', '배출가스등급', '차량대수']].reset_index(drop=True)
 
-die['연도'] = die['연도'].astype('int')
-gas['연도'] = gas['연도'].astype('int')
-lpg['연도'] = lpg['연도'].astype('int')
+# die['연도'] = die['연도'].astype('int')
+# gas['연도'] = gas['연도'].astype('int')
+# lpg['연도'] = lpg['연도'].astype('int')
 
-die1 = die.loc[die['배출가스등급'] == '1'].reset_index(drop=True)
-die2 = die.loc[die['배출가스등급'] == '2'].reset_index(drop=True)
-die3 = die.loc[die['배출가스등급'] == '3'].reset_index(drop=True)
-die4 = die.loc[die['배출가스등급'] == '4'].reset_index(drop=True)
-die5 = die.loc[die['배출가스등급'] == '5'].reset_index(drop=True)
-gas1 = gas.loc[gas['배출가스등급'] == '1'].reset_index(drop=True)
-gas2 = gas.loc[gas['배출가스등급'] == '2'].reset_index(drop=True)
-gas3 = gas.loc[gas['배출가스등급'] == '3'].reset_index(drop=True)
-gas4 = gas.loc[gas['배출가스등급'] == '4'].reset_index(drop=True)
-gas5 = gas.loc[gas['배출가스등급'] == '5'].reset_index(drop=True)
-lpg1 = lpg.loc[lpg['배출가스등급'] == '1'].reset_index(drop=True)
-lpg2 = lpg.loc[lpg['배출가스등급'] == '2'].reset_index(drop=True)
-lpg3 = lpg.loc[lpg['배출가스등급'] == '3'].reset_index(drop=True)
-lpg4 = lpg.loc[lpg['배출가스등급'] == '4'].reset_index(drop=True)
-lpg5 = lpg.loc[lpg['배출가스등급'] == '5'].reset_index(drop=True)
+# die1 = die.loc[die['배출가스등급'] == '1'].reset_index(drop=True)
+# die2 = die.loc[die['배출가스등급'] == '2'].reset_index(drop=True)
+# die3 = die.loc[die['배출가스등급'] == '3'].reset_index(drop=True)
+# die4 = die.loc[die['배출가스등급'] == '4'].reset_index(drop=True)
+# die5 = die.loc[die['배출가스등급'] == '5'].reset_index(drop=True)
+# gas1 = gas.loc[gas['배출가스등급'] == '1'].reset_index(drop=True)
+# gas2 = gas.loc[gas['배출가스등급'] == '2'].reset_index(drop=True)
+# gas3 = gas.loc[gas['배출가스등급'] == '3'].reset_index(drop=True)
+# gas4 = gas.loc[gas['배출가스등급'] == '4'].reset_index(drop=True)
+# gas5 = gas.loc[gas['배출가스등급'] == '5'].reset_index(drop=True)
+# lpg1 = lpg.loc[lpg['배출가스등급'] == '1'].reset_index(drop=True)
+# lpg2 = lpg.loc[lpg['배출가스등급'] == '2'].reset_index(drop=True)
+# lpg3 = lpg.loc[lpg['배출가스등급'] == '3'].reset_index(drop=True)
+# lpg4 = lpg.loc[lpg['배출가스등급'] == '4'].reset_index(drop=True)
+# lpg5 = lpg.loc[lpg['배출가스등급'] == '5'].reset_index(drop=True)
 
-fit_d1 = np.polyfit(die1['연도'], die1['차량대수'], 1)
-fit_d2 = np.polyfit(die2['연도'], die2['차량대수'], 1)
-fit_d3 = np.polyfit(die3['연도'], die3['차량대수'], 1)
-fit_d4 = np.polyfit(die4['연도'], die4['차량대수'], 1)
-fit_d5 = np.polyfit(die5['연도'], die5['차량대수'], 1)
-fit_g1 = np.polyfit(gas1['연도'], gas1['차량대수'], 1)
-fit_g2 = np.polyfit(gas2['연도'], gas2['차량대수'], 1)
-fit_g3 = np.polyfit(gas3['연도'], gas3['차량대수'], 1)
-fit_g4 = np.polyfit(gas4['연도'], gas4['차량대수'], 1)
-fit_g5 = np.polyfit(gas5['연도'], gas5['차량대수'], 1)
-fit_l1 = np.polyfit(lpg1['연도'], lpg1['차량대수'], 1)
-fit_l2 = np.polyfit(lpg2['연도'], lpg2['차량대수'], 1)
-fit_l3 = np.polyfit(lpg3['연도'], lpg3['차량대수'], 1)
-fit_l4 = np.polyfit(lpg4['연도'], lpg4['차량대수'], 1)
-fit_l5 = np.polyfit(lpg5['연도'], lpg5['차량대수'], 1)
+# fit_d1 = np.polyfit(die1['연도'], die1['차량대수'], 1)
+# fit_d2 = np.polyfit(die2['연도'], die2['차량대수'], 1)
+# fit_d3 = np.polyfit(die3['연도'], die3['차량대수'], 1)
+# fit_d4 = np.polyfit(die4['연도'], die4['차량대수'], 1)
+# fit_d5 = np.polyfit(die5['연도'], die5['차량대수'], 1)
+# fit_g1 = np.polyfit(gas1['연도'], gas1['차량대수'], 1)
+# fit_g2 = np.polyfit(gas2['연도'], gas2['차량대수'], 1)
+# fit_g3 = np.polyfit(gas3['연도'], gas3['차량대수'], 1)
+# fit_g4 = np.polyfit(gas4['연도'], gas4['차량대수'], 1)
+# fit_g5 = np.polyfit(gas5['연도'], gas5['차량대수'], 1)
+# fit_l1 = np.polyfit(lpg1['연도'], lpg1['차량대수'], 1)
+# fit_l2 = np.polyfit(lpg2['연도'], lpg2['차량대수'], 1)
+# fit_l3 = np.polyfit(lpg3['연도'], lpg3['차량대수'], 1)
+# fit_l4 = np.polyfit(lpg4['연도'], lpg4['차량대수'], 1)
+# fit_l5 = np.polyfit(lpg5['연도'], lpg5['차량대수'], 1)
 
-ad1, bd1 = fit_d1
-ad2, bd2 = fit_d2
-ad3, bd3 = fit_d3
-ad4, bd4 = fit_d4
-ad5, bd5 = fit_d5
-ag1, bg1 = fit_g1
-ag2, bg2 = fit_g2
-ag3, bg3 = fit_g3
-ag4, bg4 = fit_g4
-ag5, bg5 = fit_g5
-al1, bl1 = fit_l1
-al2, bl2 = fit_l2
-al3, bl3 = fit_l3
-al4, bl4 = fit_l4
-al5, bl5 = fit_l5
+# ad1, bd1 = fit_d1
+# ad2, bd2 = fit_d2
+# ad3, bd3 = fit_d3
+# ad4, bd4 = fit_d4
+# ad5, bd5 = fit_d5
+# ag1, bg1 = fit_g1
+# ag2, bg2 = fit_g2
+# ag3, bg3 = fit_g3
+# ag4, bg4 = fit_g4
+# ag5, bg5 = fit_g5
+# al1, bl1 = fit_l1
+# al2, bl2 = fit_l2
+# al3, bl3 = fit_l3
+# al4, bl4 = fit_l4
+# al5, bl5 = fit_l5
 
-# 경유 1등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '경유'
-grd = '1'
-for yr in range(year + 1, 2036):
-    pred = ad1 * yr + bd1
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-die1_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
-# 경유 2등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '경유'
-grd = '2'
-for yr in range(year + 1, 2036):
-    pred = ad2 * yr + bd2
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-die2_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
-# 경유 3등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '경유'
-grd = '3'
-for yr in range(year + 1, 2036):
-    pred = ad3 * yr + bd3
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-die3_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
-# 경유 4등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '경유'
-grd = '4'
-for yr in range(year + 1, 2036):
-    pred = ad4 * yr + bd4
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-die4_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
-# 경유 5등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '경유'
-grd = '5'
-for yr in range(year + 1, 2036):
-    pred = ad5 * yr + bd5
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-die5_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
+# # 경유 1등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '경유'
+# grd = '1'
+# for yr in range(year + 1, 2036):
+#     pred = ad1 * yr + bd1
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# die1_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
+# # 경유 2등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '경유'
+# grd = '2'
+# for yr in range(year + 1, 2036):
+#     pred = ad2 * yr + bd2
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# die2_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
+# # 경유 3등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '경유'
+# grd = '3'
+# for yr in range(year + 1, 2036):
+#     pred = ad3 * yr + bd3
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# die3_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
+# # 경유 4등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '경유'
+# grd = '4'
+# for yr in range(year + 1, 2036):
+#     pred = ad4 * yr + bd4
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# die4_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
+# # 경유 5등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '경유'
+# grd = '5'
+# for yr in range(year + 1, 2036):
+#     pred = ad5 * yr + bd5
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# die5_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'경유_예측':pred_list})
 
-# 휘발유 1등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '휘발유'
-grd = '1'
-for yr in range(year + 1, 2036):
-    pred = ag1 * yr + bg1
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-gas1_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
-# 휘발유 2등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '휘발유'
-grd = '2'
-for yr in range(year + 1, 2036):
-    pred = ag2 * yr + bg2
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-gas2_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
-# 휘발유 3등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '휘발유'
-grd = '3'
-for yr in range(year + 1, 2036):
-    pred = ag3 * yr + bg3
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-gas3_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
-# 휘발유 4등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '휘발유'
-grd = '4'
-for yr in range(year + 1, 2036):
-    pred = ag4 * yr + bg4
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-gas4_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
-# 휘발유 5등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = '휘발유'
-grd = '5'
-for yr in range(year + 1, 2036):
-    pred = ag5 * yr + bg5
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-gas5_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
+# # 휘발유 1등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '휘발유'
+# grd = '1'
+# for yr in range(year + 1, 2036):
+#     pred = ag1 * yr + bg1
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# gas1_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
+# # 휘발유 2등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '휘발유'
+# grd = '2'
+# for yr in range(year + 1, 2036):
+#     pred = ag2 * yr + bg2
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# gas2_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
+# # 휘발유 3등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '휘발유'
+# grd = '3'
+# for yr in range(year + 1, 2036):
+#     pred = ag3 * yr + bg3
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# gas3_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
+# # 휘발유 4등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '휘발유'
+# grd = '4'
+# for yr in range(year + 1, 2036):
+#     pred = ag4 * yr + bg4
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# gas4_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
+# # 휘발유 5등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = '휘발유'
+# grd = '5'
+# for yr in range(year + 1, 2036):
+#     pred = ag5 * yr + bg5
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# gas5_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'휘발유_예측':pred_list})
 
-# LPG 1등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = 'LPG'
-grd = '1'
-for yr in range(year + 1, 2036):
-    pred = al1 * yr + bl1
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-lpg1_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
-# LPG 2등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = 'LPG'
-grd = '2'
-for yr in range(year + 1, 2036):
-    pred = al2 * yr + bl2
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-lpg2_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
-# LPG 3등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = 'LPG'
-grd = '3'
-for yr in range(year + 1, 2036):
-    pred = al3 * yr + bl3
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-lpg3_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
-# LPG 4등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = 'LPG'
-grd = '4'
-for yr in range(year + 1, 2036):
-    pred = al4 * yr + bl4
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-lpg4_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
-# LPG 5등급 예측
-yr_list = []
-fuel_list = []
-grd_list = []
-pred_list = []
-fuel = 'LPG'
-grd = '5'
-for yr in range(year + 1, 2036):
-    pred = al5 * yr + bl5
-    yr_list.append(yr)
-    fuel_list.append(fuel)
-    grd_list.append(grd)
-    pred_list.append(pred)
-lpg5_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
+# # LPG 1등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = 'LPG'
+# grd = '1'
+# for yr in range(year + 1, 2036):
+#     pred = al1 * yr + bl1
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# lpg1_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
+# # LPG 2등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = 'LPG'
+# grd = '2'
+# for yr in range(year + 1, 2036):
+#     pred = al2 * yr + bl2
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# lpg2_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
+# # LPG 3등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = 'LPG'
+# grd = '3'
+# for yr in range(year + 1, 2036):
+#     pred = al3 * yr + bl3
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# lpg3_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
+# # LPG 4등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = 'LPG'
+# grd = '4'
+# for yr in range(year + 1, 2036):
+#     pred = al4 * yr + bl4
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# lpg4_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
+# # LPG 5등급 예측
+# yr_list = []
+# fuel_list = []
+# grd_list = []
+# pred_list = []
+# fuel = 'LPG'
+# grd = '5'
+# for yr in range(year + 1, 2036):
+#     pred = al5 * yr + bl5
+#     yr_list.append(yr)
+#     fuel_list.append(fuel)
+#     grd_list.append(grd)
+#     pred_list.append(pred)
+# lpg5_pred = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '배출가스등급':grd_list,'LPG_예측':pred_list})
 
-die_t = pd.concat([die1, die1_pred, die2, die2_pred, die3, die3_pred, die4, die4_pred, die5, die5_pred], ignore_index=True)
-gas_t = pd.concat([gas1, gas1_pred, gas2, gas2_pred, gas3, gas3_pred, gas4, gas4_pred, gas5, gas5_pred], ignore_index=True)
-lpg_t = pd.concat([lpg1, lpg1_pred, lpg2, lpg2_pred, lpg3, lpg3_pred, lpg4, lpg4_pred, lpg5, lpg5_pred], ignore_index=True)
-die_t = die_t.rename(columns={'경유_예측':'차량예측'})
-gas_t = gas_t.rename(columns={'휘발유_예측':'차량예측'})
-lpg_t = lpg_t.rename(columns={'LPG_예측':'차량예측'})
+# die_t = pd.concat([die1, die1_pred, die2, die2_pred, die3, die3_pred, die4, die4_pred, die5, die5_pred], ignore_index=True)
+# gas_t = pd.concat([gas1, gas1_pred, gas2, gas2_pred, gas3, gas3_pred, gas4, gas4_pred, gas5, gas5_pred], ignore_index=True)
+# lpg_t = pd.concat([lpg1, lpg1_pred, lpg2, lpg2_pred, lpg3, lpg3_pred, lpg4, lpg4_pred, lpg5, lpg5_pred], ignore_index=True)
+# die_t = die_t.rename(columns={'경유_예측':'차량예측'})
+# gas_t = gas_t.rename(columns={'휘발유_예측':'차량예측'})
+# lpg_t = lpg_t.rename(columns={'LPG_예측':'차량예측'})
 
-df6 = pd.concat([die_t, gas_t, lpg_t], ignore_index=True)
+# df6 = pd.concat([die_t, gas_t, lpg_t], ignore_index=True)
+
+# # 음수 차량 대수 수정
+# df6.loc[df6['차량예측'] < 0, '차량예측'] = 0
+
+# # 첫째자리까지 반올림
+# df6[['차량대수', '차량예측']] = df6[['차량대수', '차량예측']].round(0)
+
+base3['연도'] = base3['연도'].astype('int')
+
+total = pd.DataFrame()
+for ctpv in base3['시도'].unique():
+    for fuel in base3['fuel'].unique():
+        for grd in base3['배출가스등급'].unique():
+            temp = base3.loc[(base3['시도'] == ctpv) & (base3['fuel'] == fuel) & (base3['배출가스등급'] == grd)].reset_index(drop=True)
+            a, b = np.polyfit(temp['연도'], temp['차량대수'], 1)
+            yr_list, ctpv_list, fuel_list, grd_list, pred_list = [], [], [], [], []
+            for yr in range(year + 1, 2036):
+                pred = a * yr + b
+                yr_list.append(yr)
+                ctpv_list.append(ctpv)
+                fuel_list.append(fuel)
+                grd_list.append(grd)
+                pred_list.append(pred)
+            temp_pred = pd.DataFrame({'연도':yr_list, '시도':ctpv_list, 'fuel':fuel_list, '배출가스등급':grd_list, '차량예측':pred_list})
+            ttemp = pd.concat([temp, temp_pred], ignore_index=True)
+            total = pd.concat([total, ttemp], ignore_index=True)
 
 # 음수 차량 대수 수정
-df6.loc[df6['차량예측'] < 0, '차량예측'] = 0
-
+total.loc[total['차량예측'] < 0, '차량예측'] = 0            
 # 첫째자리까지 반올림
-df6[['차량대수', '차량예측']] = df6[['차량대수', '차량예측']].round(0)
+total[['차량대수', '차량예측']] = total[['차량대수', '차량예측']].round(0)
+
+df6 = total[['연도', '시도', 'fuel', '배출가스등급', '차량대수', '차량예측']]
 
 today_date = datetime.today().strftime("%Y%m%d")
 df6['테이블생성일자'] = today_date
 cdict = {
     '테이블생성일자':'LOAD_DT', 
     '연도':'YR', 
+    '시도':'CTPV', 
     'fuel':'FUEL_CD', 
     '배출가스등급':'EXHST_GAS_GRD_CD', 
     '차량대수':'VHCL_MKCNT', 
@@ -8068,10 +8096,12 @@ is_season2 = is_season.sort_values(['적발시도', '적발시군구']).drop_dup
 is_lmt = is_season2.merge(limit_season, on='차대번호', how='left')
 is_lmt.loc[(is_lmt['적발시도'] == '서울특별시') | (is_lmt['적발시도'] == '경기도') | (is_lmt['적발시도'] == '인천광역시'), '적발지역'] = '수도권'
 is_lmt['적발지역'] = is_lmt['적발지역'].fillna('수도권외')
+is_lmt.loc[is_lmt['등록시도'] == '강원도', '등록시도'] = '강원특별자치도'
 
-is_lmt = is_lmt[[
+is_lmt2 = is_lmt[[
     '적발지역',
     '적발시도', 
+    '등록시도', 
     '차대번호', 
     '계절제_1차', 
     '계절제_2차', 
@@ -8081,7 +8111,7 @@ is_lmt = is_lmt[[
 
 dfm = df.sort_values('최초등록일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
-slimit = is_lmt.merge(dfm[['차대번호', '차종', '차종유형']], on='차대번호', how='left')
+slimit = is_lmt2.merge(dfm[['차대번호', '차종', '차종유형']], on='차대번호', how='left')
 today_date = datetime.today().strftime("%Y%m%d")
 
 # 시도명 2글자로 수정
@@ -8098,6 +8128,7 @@ cdict = {
     '테이블생성일자':'LOAD_DT', 
     '적발지역':'DSCL_RGN', 
     '적발시도':'DSCL_CTPV', 
+    '등록시도':'REG_CTPV', 
     '차대번호':'VIN', 
     '계절제_1차':'SEASON_1ODR_CRDN_NOCS', 
     '계절제_2차':'SEASON_2ODR_CRDN_NOCS', 
