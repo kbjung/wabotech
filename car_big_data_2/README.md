@@ -24,20 +24,16 @@
 ### 전처리 & 분석
 #### 과제1 "4등급차 조기폐차 및 운행제한 확대 대비 정책자료 생성"
 - item 1 : 배출가스 인증번호 및 등급오류 검증
-  - 배출가스인증번호별 매연 통계 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD1%5D%5Bitem1%5D%EB%B0%B0%EB%B2%88%EB%B3%84_%EB%A7%A4%EC%97%B0(4%EB%93%B1%EA%B8%89_%EA%B2%BD%EC%9C%A0).ipynb)
+  - 배출가스인증번호별 매연 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD1%5D%5Bitem1%5DGRD4_EXHST_GAS_CERT_NO.ipynb)
 - item 2 : 4등급차 세분류
-  - Emission Grade(이하 EG) [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD1%5D%5Bitem2%5D4%EB%93%B1%EA%B8%89%EC%B0%A8_%EC%84%B8%EB%B6%84%EB%A5%98_result.ipynb)
-  - 말소현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD1%5D%5Bitem2%5D%EB%A7%90%EC%86%8C%ED%98%84%ED%99%A9.ipynb)
+  - 4등급 통계 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD1%5D%5Bitem2%5DGRD4_STATISTICS.ipynb)
 - item 3 : 운행제한 규제지역 설정에 유용한 데이터 발굴
-  - CAPSS [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD1%5D%5Bitem3%5DCAPSS.ipynb)
-  - 4등급 말소차량 CAPSS [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD1%5D%5Bitem3%5D4%EB%93%B1%EA%B8%89_%EB%A7%90%EC%86%8C%EC%B0%A8%EB%9F%89_CAPSS.ipynb)
+  - CAPSS [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD1%5D%5Bitem3%5DGRD4_CAPSS.ipynb)
 
 #### 과제3 "무공해차 전환 가속화 및 내연기관차 퇴출 시나리오 도출"
 - item 1 : 내연기관차 감축추이 및 감소량 예측 분석
-  - 내연차_현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD3%5D%5Bitem1%5D%EB%82%B4%EC%97%B0%EC%B0%A8_%ED%98%84%ED%99%A9.ipynb)
-  - 말소현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD3%5D%5Bitem1%5D%EB%A7%90%EC%86%8C%ED%98%84%ED%99%A9.ipynb)
-  - 내연차 사용기간 분석 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD3%5D%5Bitem1%5D%EB%82%B4%EC%97%B0%EC%B0%A8_%EC%82%AC%EC%9A%A9%EA%B8%B0%EA%B0%84_%EB%B6%84%EC%84%9D.ipynb)
+  - 내연차_현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD3%5D%5Bitem1%5DGAS_CAR_CURSTT.ipynb)
 - item 2 : 내연기관차 운행제한 현황 분석
-  - 내연기관차 운행제한 현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD3%5D%5Bitem2%5D%EB%82%B4%EC%97%B0%EC%B0%A8_%EC%9A%B4%ED%96%89%EC%A0%9C%ED%95%9C_%ED%98%84%ED%99%A9.ipynb)
+  - 내연기관차 운행제한 현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD3%5D%5Bitem2%5DGAS_CAR_RUN_LMT_CURSTT.ipynb)
 - item 3 : 무공해차 전환 및 저공해조치 우선차량 선별
-  - 저공해조치 우선차량선별 [ipynb](https://github.com/kbjung/wabotech/blob/main/car_big_data_2/%5BBD3%5D%5Bitem3%5D%EC%A0%80%EA%B3%B5%ED%95%B4%EC%A1%B0%EC%B9%98_%EC%9A%B0%EC%84%A0%EC%B0%A8%EB%9F%89%EC%84%A0%EB%B3%84.ipynb)
+  - 저공해조치 우선차량선별 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD3%5D%5Bitem3%5DLEM_PRIO_CURSTT.ipynb)
