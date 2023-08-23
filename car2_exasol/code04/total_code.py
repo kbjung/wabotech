@@ -1678,12 +1678,12 @@ num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대�
 # max_year = max_date[:4]
 # max_month = max_date[4:6]
 
-date = '20220601'
-max_year = '2022'
-max_month = '06'
-# date = today_date
-# max_year = today_date[:4]
-# max_month = today_date[4:6]
+# date = '20220601'
+# max_year = '2022'
+# max_month = '06'
+date = today_date # !!! 수정(2023.08.23)
+max_year = today_date[:4] # !!! 수정(2023.08.23)
+max_month = today_date[4:6] # !!! 수정(2023.08.23)
 
 num_car_by_local1[['연도', '월']] = [max_year, max_month]
 
@@ -1699,20 +1699,17 @@ errc['변경일자_일'] = errc['변경일자'].str[6:8]
 
 ### 시군구명 앞쪽 지역명만 남기기(errc)
 errc['시군구_수정'] = errc['시군구'].str.split(' ').str[0]
-grp_erase = errc.loc[errc['변경일자_년'] == max_year].groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], as_index=False)['차대번호'].count()
+grp_erase = errc.groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], as_index=False)['차대번호'].count() # !!! 수정(2023.08.23)
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도', '변경일자_월':'월'})
 grp_erase = grp_erase.sort_values(['시도', '시군구_수정'])
 
-y_plist = list(pd.date_range(end=date, periods=4, freq="MS").year)
-mth_plist = list(pd.date_range(end=date, periods=4, freq="MS").month)
+periods = 12 # !!! 수정(2023.08.23)
+y_plist = list(pd.date_range(end=date, periods=periods, freq="MS").year) # !!! 수정(2023.08.23)
+mth_plist = list(pd.date_range(end=date, periods=periods, freq="MS").month) # !!! 수정(2023.08.23)
 
 # y_plist, mth_plist
 
-yr_list = []
-mth_list = []
-fuel_list = []
-ctpv_list = []
-sgg_list = []
+yr_list, mth_list, fuel_list, ctpv_list, sgg_list = [], [], [], [], [] # !!! 수정(2023.08.23)
 sl = num_car_by_local1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
 for ctpv, sgg in sl[['시도', '시군구_수정']].values:
     for fuel in sl['연료'].unique():
@@ -1730,7 +1727,7 @@ base2 = base1.merge(num_car_by_local2, on=['연도', '월', '연료', '시도', 
 base3 = base2.merge(grp_erase, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
 base3[['차량대수', '등록차량대수', '말소차량대수']] = base3[['차량대수', '등록차량대수', '말소차량대수']].fillna(0)
 
-n = len(base3['월'].unique())
+n = periods # !!! 수정(2023.08.23)
 for i in range(base3.shape[0] // n):
     for j in range(2, n+1):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소차량대수'] - base3.loc[(i+1)*n - (j-1), '등록차량대수']
