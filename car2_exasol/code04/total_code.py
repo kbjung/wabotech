@@ -785,54 +785,116 @@ STD_BD_GRD4_CAR_CURSTT = STD_BD_GRD4_CAR_CURSTT.rename(columns=ch_col_dict)
 # print(f'data export : {table_nm}')
 print('data export : STD_BD_GRD4_CAR_CURSTT')
 
-## 경유차만 추출
-df2 = df1[df1['연료'] == '경유'].reset_index(drop=True)
 
-## 차대번호 10자리 연식
+
+
+## !!! 수정 시작(2023.08.24) 
+## 1\. 경유차만 추출
+df2 = df1[df1['연료'] == '경유'].reset_index(drop=True)
+### 차대번호 10자리 연식
 df2['vin10'] = df2['차대번호'].str[9]
 vin10_dict = {'J':1988, 'K':1989, 'L':1990, 'M':1991, 'N':1992, 'P':1993, 'R':1994, 'S':1995, 'T':1996, 'V':1997, 'W':1998, 'X':1999, 'Y':2000, '1':2001, '2':2002, '3':2003, '4':2004, '5':2005, '6':2006, '7':2007, '8':2008, '9':2009, 'A':2010, 'B':2011, 'C':2012, 'D':2013, 'E':2014, 'F':2015, 'G':2016, 'H':2017}
 df2['vin10_year'] = df2['vin10'].map(vin10_dict, na_action='ignore')
-
-## 배인번호_수정 문자 타입으로 변경
+### 배인번호_수정 문자 타입으로 변경
 df2['배출가스인증번호'] = df2['배출가스인증번호'].astype('str')
 
-## 차대번호 17자리 샘플
+## 2\. 차대번호 17자리 샘플
 df2y = df2.loc[df2['차대번호'].str.len() == 17].reset_index(drop=True)
 df2n = df2.loc[df2['차대번호'].str.len() != 17].reset_index(drop=True)
 
-## 차대번호 연식과 연식 동일한 샘플
+## 3\. 차대번호 연식과 연식 동일한 샘플
 df3y = df2y.loc[df2y['vin10_year'] == df2y['차량연식']].reset_index(drop=True)
 df3n = df2y.loc[df2y['vin10_year'] != df2y['차량연식']].reset_index(drop=True)
 
-# 배인번호별 분석
-def flat_cols(df):
-    df.columns = ['/'.join(x) for x in df.columns.to_flat_index()]
-    return df
-# about 31.3s
-# 최적화 24m 51s -> 30.0s
-total_g_df = pd.DataFrame()
-groupby_col1 = ['제작사명', '배출가스인증번호', '제원관리번호', '자동차형식', '엔진형식', '검사종류', '검사방법', '검사판정']
-groupby_col2 = ['제작사명', '배출가스인증번호', '제원관리번호', '자동차형식', '엔진형식', '검사종류', '검사방법']
-for one in df3y['배출가스인증번호'].unique():
-    # 배인번호별 df
-    gas_df = df3y.loc[df3y['배출가스인증번호'] == str(one)].reset_index(drop=True)
+## 4\. 배번, 제번, 제작사명, 차명, 검사방법별 그룹화 and 100대 초과 추출
+### 검사판정 Y만 활용
+grp4 = df3y[df3y['검사판정'] == 'Y'].groupby(['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호']).agg({'차대번호':'count'}).reset_index()
+grp4 = grp4.rename(columns={'차대번호':'차량대수'})
+grp4 = grp4[grp4['배출가스인증번호'] != 'nan'].reset_index(drop=True)
+### 100대 초과 샘플만 활용
+df4 = grp4[grp4['차량대수'] > 100].reset_index(drop=True)
 
-    if gas_df.shape[0] != 0:
-        # 제번별, 차형식별, 엔진형식별, 검사판정별 무부하매연측정치1 통계
-        g = gas_df.groupby(groupby_col1).agg({'차대번호':'count', '무부하매연측정치1':['mean', 'min', 'max']}).pipe(flat_cols).round(2).reset_index()
-        g = g.rename(columns={'배출가스인증번호':'배출가스인증번호', '차대번호/count':'대수', '무부하매연측정치1/mean':'mean', '무부하매연측정치1/min':'min', '무부하매연측정치1/max':'max'})
-        # 하나의 배인번호에서 제번별 엔진형식별 비율 계산
-        g['합격률(%)'] = round(g['대수'] / g.groupby(groupby_col2)['대수'].transform('sum') * 100, 2)
-        # 종합 - 통계
-        total_g_df = pd.concat([total_g_df, g], ignore_index=True)
-    else:
-        print(f'오류 배인번호 : {one}')
-        pass
+## 5\. 4번 조건에 해당되는 샘플만 추출
+# 7m 43s
+df5 = pd.DataFrame()
+for one, two, three, four, five in df4[['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법']].values:
+    temp = df3y[(df3y['검사판정'] == 'Y') & (df3y['배출가스인증번호'] == one) & (df3y['제원관리번호'] == two) & (df3y['제작사명'] == three) & (df3y['차명'] == four) & (df3y['검사방법'] == five)].reset_index(drop=True)
+    df5 = pd.concat([df5, temp], ignore_index=True)
 
-# 분석
-## 열화계수(SI) 지수 계산
-# - SI = 측정치 / 허용치
-sidf = df3y[[
+## 6\. 5번 데이터셋에서 KPI, 그리드(표), SI(산점도)용 테이블 생성
+grp6 = df5.groupby(['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호']).agg({'무부하매연측정치1':[lambda x:x.describe()['25%'], lambda x:x.describe()['50%'], lambda x:x.describe()['75%']], '차대번호':'count'}).reset_index()
+grp6.columns = ['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호', 'q1', 'q2', 'q3', '차량대수']
+
+today_date = datetime.today().strftime("%Y%m%d")
+grp6['테이블생성일자'] = today_date
+
+STD_BD_GRD4_CAR_CURSTT_TOT = grp6[[
+    '테이블생성일자',
+    '차명',
+    '제작사명', 
+    '제원관리번호', 
+    '배출가스인증번호', 
+    '검사방법', 
+    'q1', 
+    'q2', 
+    'q3',
+    '차량대수',
+    ]]
+chc_dict = {
+    '테이블생성일자':'LOAD_DT', 
+    '차명':'VHCNM',
+    '제작사명':'MNFCTR_NM', 
+    '제원관리번호':'MANG_MNG_NO', 
+    '배출가스인증번호':'EXHST_GAS_CERT_NO_MOD', 
+    '검사방법':'INSP_MTHD', 
+    '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
+    'q1':'LOWR_QRT',
+    'q2':'MID_QRT',
+    'q3':'UP_QRT',
+    '차량대수':'VHCL_MKCNT',
+
+    # '차종':'VHCTY_CD', 
+    # '용도':'PURPS_CD2', 
+    # '차종유형':'CHCTY_TY', 
+    # '법정동코드':'STDG_CD', 
+    # '검사종류':'INSP_KND', 
+    # '검사판정':'INSP_JGMT', 
+    # '무부하매연판정1':'NOLOD_SMO_JGMT_YN1',
+    # '차대번호':'VIN', 
+    # '등급_수정':'EXHST_GAS_GRD_CD_MOD', 
+    # 'DPF유무_수정':'DPF_MNTNG_YN', 
+    # '시도명':'CTPV_NM', 
+    # '시군구명':'SGG_NM', 
+    # '차종분류':'VHCTY_CL_CD', 
+    }
+STD_BD_GRD4_CAR_CURSTT_TOT = STD_BD_GRD4_CAR_CURSTT_TOT.rename(columns=chc_dict)
+
+### [출력] STD_BD_GRD4_CAR_CURSTT_TOT
+# expdf = STD_BD_GRD4_CAR_CURSTT_TOT
+# table_nm = 'STD_BD_GRD4_CAR_CURSTT_TOT'.upper()
+
+# # 테이블 생성
+# sql = 'create or replace table ' + table_nm + '( \n'
+
+# for idx,column in enumerate(expdf.columns):
+#     if 'float' in expdf[column].dtype.name:
+#         sql += column + ' float'
+#     elif 'int' in expdf[column].dtype.name:
+#         sql += column + ' number'
+#     else:
+#         sql += column + ' varchar(255)'
+
+#     if len(expdf.columns) - 1 != idx:
+#         sql += ','
+#     sql += '\n'
+# sql += ')'    
+# we.execute(sql)
+
+# # 데이터 추가
+# # 1s
+# we.import_from_pandas(expdf, table_nm)
+
+sidf = df5[[
     '차대번호', 
     '제원관리번호', 
     '차종', 
@@ -856,11 +918,9 @@ current_yr = int(datetime.today().strftime("%Y"))
 sidf['차령'] = current_yr - sidf['차량연식']
 sidf['SI'] = sidf['무부하매연측정치1'] / sidf['무부하매연허용치1']
 
-### 경유만 추출
-today_date = datetime.today().strftime("%Y%m%d")
 sidf['테이블생성일자'] = today_date
 sidf1 = sidf[[
-    '테이블생성일자',
+    '테이블생성일자', 
     '차대번호', 
     '제원관리번호', 
     '차명', 
@@ -875,29 +935,27 @@ chc_dict = {
     '테이블생성일자':'LOAD_DT',
     '차대번호':'VIN', 
     '제원관리번호':'MANG_MNG_NO', 
-    '차종':'VHCTY_CD', 
-    '연식':'YRIDNW', 
     '차명':'VHCNM',
     '제작사명':'MNFCTR_NM', 
-    '차종유형':'VHCTY_TY', 
-    '연료':'FUEL_CD',
-    '법정동코드':'STDG_CD', 
     '배출가스인증번호':'EXHST_GAS_CERT_NO_MOD', 
     '검사방법':'INSP_MTHD', 
-    '검사종류':'INSP_KND', 
-    '검사판정':'INSP_JGMT', 
     '주행거리':'DRVNG_DSTNC',
-    '무부하매연판정1':'NOLOD_SMO_JGMT_YN1',
-    '무부하매연허용치1':'NOLOD_SMO_PRMT_VAL1',
-    '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
     '차령':'VHCAG',
+    
+    # '차종':'VHCTY_CD', 
+    # '연식':'YRIDNW', 
+    # '차종유형':'VHCTY_TY', 
+    # '연료':'FUEL_CD',
+    # '법정동코드':'STDG_CD', 
+    # '검사종류':'INSP_KND', 
+    # '검사판정':'INSP_JGMT', 
+    # '무부하매연판정1':'NOLOD_SMO_JGMT_YN1',
+    # '무부하매연허용치1':'NOLOD_SMO_PRMT_VAL1',
+    # '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
     }
 STD_BD_GRD4_SI = sidf1.rename(columns=chc_dict)
 
-# STD_BD_GRD4_SI.columns
-
-### [출력] SI 지수 정보(STD_BD_GRD4_SI)
-
+### [출력] STD_BD_GRD4_SI
 # expdf = STD_BD_GRD4_SI
 # table_nm = 'STD_BD_GRD4_SI'.upper()
 
@@ -917,149 +975,25 @@ STD_BD_GRD4_SI = sidf1.rename(columns=chc_dict)
 #     sql += '\n'
 # sql += ')'    
 # we.execute(sql)
+
 # # 데이터 추가
 # # 6s
 # we.import_from_pandas(expdf, table_nm)
 
-# print(f'data export : {table_nm}')
-print('data export : STD_BD_GRD4_SI')
+## 7\. 5번 데이터셋에서 DAT용 (검토구분 계산) 테이블 생성
+### 검토구분(양호/주의 판정) 
+# grp6 : df5.groupby(['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호'])
+grp7 = grp6.copy()
+grp7['q2_mean'] = grp7.groupby(['배출가스인증번호', '제작사명', '차명', '검사방법'])['q2'].transform('mean')
+grp7.loc[(grp7['q2'] > grp7['q2_mean']*5) | (grp7['q2'] < grp7['q2_mean']/5), '검토구분'] = '주의'
+grp7['검토구분'] = grp7['검토구분'].fillna('양호')
 
-## 동일 배번에서 제번별 매연 boxplot
-total_g_df1 = total_g_df.loc[(total_g_df['배출가스인증번호'] != '확인불가') | (total_g_df['배출가스인증번호'] != 'nan')]
-sample01 = total_g_df1.loc[total_g_df1['대수'] > 100].reset_index(drop=True)
-
-### quantile
-# 4m 11.2s
-boxplot_df = pd.DataFrame()
-quantile_df = pd.DataFrame()
-for one in sample01['배출가스인증번호'].unique(): # 통계에서 100대 초과인 배인번호만 추출
-    temp_one = df3y.loc[(df3y['배출가스인증번호'] == one) & (df3y['검사판정'] == 'Y')].reset_index(drop=True) # 해당 배인번호 중 검사판정이 'Y'인 샘플만 추출
-    if temp_one.shape[0] > 100: # 100대 초과면 진행
-        for two in temp_one['검사종류'].unique(): # 검사종류별 샘플 추출
-            temp_two = temp_one.loc[temp_one['검사종류'] == two].reset_index(drop=True)
-            if temp_two.shape[0] > 100:
-                for three in temp_two['검사방법'].unique(): # 검사방법별 샘플 추출
-                    temp_three = temp_two.loc[temp_two['검사방법'] == three].reset_index(drop=True)
-                    boxplot_df = pd.concat([boxplot_df, temp_three], ignore_index=True) # 해당 샘플만 추출하여 쌓기
-                    if temp_three.shape[0] > 100:
-                        xticks_list= []
-                        data_list = []
-                        for four in temp_three['제원관리번호'].unique():
-                            temp_four = temp_three.loc[temp_three['제원관리번호'] == four].reset_index(drop=True).dropna(subset=['무부하매연측정치1'])
-                            if temp_four.shape[0] > 100:
-                                xticks_list.append(four)
-                                data_list.append(temp_four['무부하매연측정치1'])
-                                temp_four['q1'] = temp_four['무부하매연측정치1'].describe()['25%']
-                                temp_four['q2'] = temp_four['무부하매연측정치1'].describe()['50%']
-                                temp_four['q3'] = temp_four['무부하매연측정치1'].describe()['75%']
-                                temp_four['차량대수'] = temp_four.shape[0]
-                                quantile_df = pd.concat([quantile_df, temp_four], ignore_index=True) # 제번별 4분위 값 df형태로 저장
-quantile_df1 = quantile_df.drop_duplicates(['배출가스인증번호', '제원관리번호', '검사방법', '검사종류'])
-today_date = datetime.today().strftime("%Y%m%d")
-quantile_df1['테이블생성일자'] = today_date
-
-STD_BD_GRD4_CAR_CURSTT_TOT = quantile_df1[[
-    '테이블생성일자',
-    '차명',
-    '제작사명', 
-    '제원관리번호', 
-    '배출가스인증번호', 
-    '검사방법', 
-    'q1', 
-    'q2', 
-    'q3',
-    '차량대수',
-    ]]
-chc_dict = {
-                '테이블생성일자':'LOAD_DT', 
-                '차대번호':'VIN', 
-                '제원관리번호':'MANG_MNG_NO', 
-                '차명':'VHCNM',
-                '제작사명':'MNFCTR_NM', 
-                '차종':'VHCTY_CD', 
-                '용도':'PURPS_CD2', 
-                '차종유형':'CHCTY_TY', 
-                '법정동코드':'STDG_CD', 
-                '배출가스인증번호':'EXHST_GAS_CERT_NO_MOD', 
-                '검사방법':'INSP_MTHD', 
-                '검사종류':'INSP_KND', 
-                '검사판정':'INSP_JGMT', 
-                '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
-                '무부하매연판정1':'NOLOD_SMO_JGMT_YN1',
-                'q1':'LOWR_QRT',
-                'q2':'MID_QRT',
-                'q3':'UP_QRT',
-                '차량대수':'VHCL_MKCNT',
-                }
-# '등급_수정':'EXHST_GAS_GRD_CD_MOD', 
-# 'DPF유무_수정':'DPF_MNTNG_YN', 
-# '시도명':'CTPV_NM', 
-# '시군구명':'SGG_NM', 
-# '차종분류':'VHCTY_CL_CD', 
-STD_BD_GRD4_CAR_CURSTT_TOT = STD_BD_GRD4_CAR_CURSTT_TOT.rename(columns=chc_dict)
-
-# STD_BD_GRD4_CAR_CURSTT_TOT.columns
-
-### [출력] 제번별 4분위 값 df(STD_BD_GRD4_CAR_CURSTT_TOT)
-
-# expdf = STD_BD_GRD4_CAR_CURSTT_TOT
-# table_nm = 'STD_BD_GRD4_CAR_CURSTT_TOT'.upper()
-
-# # 테이블 생성
-# sql = 'create or replace table ' + table_nm + '( \n'
-
-# for idx,column in enumerate(expdf.columns):
-#     # if 'float' in expdf[column].dtype.name:
-#     #     sql += column + ' float'
-#     # elif 'int' in expdf[column].dtype.name:
-#     #     sql += column + ' number'
-#     # else:
-#     sql += column + ' varchar(255)'
-
-#     if len(expdf.columns) - 1 != idx:
-#         sql += ','
-#     sql += '\n'
-# sql += ')'    
-# we.execute(sql)
-
-# # 데이터 추가
-# # 1s
-# we.import_from_pandas(expdf, table_nm)
-
-# print(f'data export : {table_nm}')
-print('data export : STD_BD_GRD4_CAR_CURSTT_TOT')
-
-## 인증번호검토
-cert_df1 = quantile_df1[[
-    '테이블생성일자',
-    '차명',
-    '제작사명', 
-    '제원관리번호', 
-    '배출가스인증번호', 
-    '검사방법', 
-    'q1', 
-    'q2', 
-    'q3',
-    '차량대수',
-    ]].reset_index(drop=True)
-cert_df1['q2_mean'] = cert_df1.groupby(['배출가스인증번호', '검사방법'])['q2'].transform('mean')
-cert_df1.loc[(cert_df1['q2'] >= cert_df1['q2_mean']*5) | (cert_df1['q2'] <= cert_df1['q2_mean']/5), '검토구분'] = '주의'
-cert_df1['검토구분'] = cert_df1['검토구분'].fillna('양호')
-
-grp1 = cert_df1.groupby(['배출가스인증번호', '검사방법', '검토구분', '제작사명', '차명', '제원관리번호'])['차량대수'].sum().reset_index().sort_values('차량대수', ascending=False)
-grp1 = grp1.drop_duplicates(['배출가스인증번호', '검사방법', '검토구분', '제원관리번호']).reset_index(drop=True)
-grp1 = grp1.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명'})
-grp1 = grp1.drop('차량대수', axis=1)
-
-cg1 = cert_df1.merge(grp1, on=['배출가스인증번호', '검사방법', '검토구분', '제원관리번호'], how='left')
-cg2 = cg1.drop_duplicates(['배출가스인증번호', '검사방법', '검토구분', '대표제작사명', '대표차명', '제원관리번호']).reset_index(drop=True)
-
-STD_BD_DAT_GRD4_CERT_NO_RVW = cg2[[
+STD_BD_DAT_GRD4_CERT_NO_RVW = grp7[[
     '배출가스인증번호',
     '검사방법',
     '검토구분',
-    '대표제작사명',
-    '대표차명',
+    '제작사명',
+    '차명',
     '제원관리번호',
     'q1',
     'q2',
@@ -1070,8 +1004,8 @@ cdict = {
     '배출가스인증번호':'EXHST_GAS_CERT_NO',
     '검사방법':'INSP_MTHD',
     '검토구분':'RVW_SE',
-    '대표제작사명':'RPRS_MNFCTR_NM',
-    '대표차명':'RPRS_VHCNM', 
+    '제작사명':'RPRS_MNFCTR_NM',
+    '차명':'RPRS_VHCNM', 
     '제원관리번호':'MANG_MNG_NO',
     'q1':'LOWR_QRT',
     'q2':'MID_QRT',
@@ -1081,7 +1015,6 @@ cdict = {
 STD_BD_DAT_GRD4_CERT_NO_RVW = STD_BD_DAT_GRD4_CERT_NO_RVW.rename(columns=cdict)
 
 ### [출력] STD_BD_DAT_GRD4_CERT_NO_RVW
-
 # expdf = STD_BD_DAT_GRD4_CERT_NO_RVW
 # table_nm = 'STD_BD_DAT_GRD4_CERT_NO_RVW'.upper()
 
@@ -1089,12 +1022,12 @@ STD_BD_DAT_GRD4_CERT_NO_RVW = STD_BD_DAT_GRD4_CERT_NO_RVW.rename(columns=cdict)
 # sql = 'create or replace table ' + table_nm + '( \n'
 
 # for idx,column in enumerate(expdf.columns):
-#     # if 'float' in expdf[column].dtype.name:
-#     #     sql += column + ' float'
-#     # elif 'int' in expdf[column].dtype.name:
-#     #     sql += column + ' number'
-#     # else:
-#     sql += column + ' varchar(255)'
+#     if 'float' in expdf[column].dtype.name:
+#         sql += column + ' float'
+#     elif 'int' in expdf[column].dtype.name:
+#         sql += column + ' number'
+#     else:
+#         sql += column + ' varchar(255)'
 
 #     if len(expdf.columns) - 1 != idx:
 #         sql += ','
@@ -1106,33 +1039,52 @@ STD_BD_DAT_GRD4_CERT_NO_RVW = STD_BD_DAT_GRD4_CERT_NO_RVW.rename(columns=cdict)
 # # 1s
 # we.import_from_pandas(expdf, table_nm)
 
-# print(f'data export : {table_nm}')
-print('data export : STD_BD_DAT_GRD4_CERT_NO_RVW')
-
-## 열화도 테이블
-sidf.groupby(['배출가스인증번호', '검사방법']).agg({'차량연식':lambda x : x.nsmallest(1)}).reset_index()
-grp2 = sidf.groupby(['배출가스인증번호', '검사방법']).agg({'제작사명':lambda x:x.value_counts().index[0], '차명':lambda x:x.value_counts().index[0], '차종':lambda x:x.value_counts().index[0], '연료':lambda x:x.value_counts().index[0], '차량연식':lambda x : x.nsmallest(1), 'SI':'mean'}).reset_index()
-grp2 = grp2.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명', '차종':'대표차종', '연료':'대표차연료', '차량연식':'최초연식', 'SI':'열화도'})
-today_date = datetime.today().strftime("%Y%m%d")
-grp2['테이블생성일자'] = today_date
-
+# 조건에 맞는 샘플 df에 '검토구분' 정보 추가
+# sidf.merge(grp7, on=['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법'])
+grp_sidf = sidf.groupby(['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호']).agg({'차종':lambda x:x.value_counts().index[0], '연료':lambda x:x.value_counts().index[0], '차량연식':lambda x : x.nsmallest(1), 'SI':'mean'}).reset_index()
+grp_sidf = grp_sidf.rename(columns={'차량연식':'최초연식', 'SI':'열화도'})
+df71 = grp_sidf.merge(grp7[['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법', '검토구분']], on=['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법'], how='left')
+df71['검토구분'].value_counts(dropna=False)
+df71['테이블생성일자'] = today_date
+STD_BD_DAT_GRD4_SI = df71[[
+    '배출가스인증번호',
+    '검사방법', 
+    '검토구분',
+    '제작사명',
+    '차명',
+    '차종', 
+    '연료',
+    '최초연식',
+    '열화도',
+    '테이블생성일자'
+]]
+# cdict = {
+#     '배출가스인증번호':'EXHST_GAS_CERT_NO', 
+#     '검토구분':'RVW_SE', 
+#     '대표제작사명':'RPRS_MNFCTR_NM', 
+#     '대표차명':'RPRS_VHCNM', 
+#     '대표차종':'RPRS_VHCTY_CD', 
+#     '대표차연료':'RPRS_FUEL', 
+#     '최초연식':'FRST_YRIDNW', 
+#     '열화도':'SI', 
+#     '테이블생성일자':'LOAD_DT', 
+#     # '검사방법':'INSP_MTHD', 
+# }
 cdict = {
     '배출가스인증번호':'EXHST_GAS_CERT_NO', 
     '검사방법':'INSP_MTHD', 
-    '대표제작사명':'RPRS_MNFCTR_NM', 
-    '대표차명':'RPRS_VHCNM', 
-    '대표차종':'RPRS_VHCTY_CD', 
-    '대표차연료':'RPRS_FUEL', 
+    '검토구분':'RVW_SE', 
+    '제작사명':'RPRS_MNFCTR_NM', 
+    '차명':'RPRS_VHCNM', 
+    '차종':'RPRS_VHCTY_CD', 
+    '연료':'RPRS_FUEL', 
     '최초연식':'FRST_YRIDNW', 
     '열화도':'SI', 
     '테이블생성일자':'LOAD_DT', 
 }
-STD_BD_DAT_GRD4_SI = grp2.rename(columns=cdict)
-
-# STD_BD_DAT_GRD4_SI.columns
+STD_BD_DAT_GRD4_SI = STD_BD_DAT_GRD4_SI.rename(columns=cdict)
 
 ### [출력] STD_BD_DAT_GRD4_SI
-
 # expdf = STD_BD_DAT_GRD4_SI
 # table_nm = 'STD_BD_DAT_GRD4_SI'.upper()
 
@@ -1140,12 +1092,12 @@ STD_BD_DAT_GRD4_SI = grp2.rename(columns=cdict)
 # sql = 'create or replace table ' + table_nm + '( \n'
 
 # for idx,column in enumerate(expdf.columns):
-#     # if 'float' in expdf[column].dtype.name:
-#     #     sql += column + ' float'
-#     # elif 'int' in expdf[column].dtype.name:
-#     #     sql += column + ' number'
-#     # else:
-#     sql += column + ' varchar(255)'
+#     if 'float' in expdf[column].dtype.name:
+#         sql += column + ' float'
+#     elif 'int' in expdf[column].dtype.name:
+#         sql += column + ' number'
+#     else:
+#         sql += column + ' varchar(255)'
 
 #     if len(expdf.columns) - 1 != idx:
 #         sql += ','
@@ -1157,8 +1109,9 @@ STD_BD_DAT_GRD4_SI = grp2.rename(columns=cdict)
 # # 1s
 # we.import_from_pandas(expdf, table_nm)
 
-# print(f'data export : {table_nm}')
-print('data export : STD_BD_DAT_GRD4_SI')
+## !!! 수정 끝(2023.08.24)
+
+
 
 ## 1-1 code end ##################################################################
 
