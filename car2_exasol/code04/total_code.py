@@ -7727,6 +7727,8 @@ no_dpf = we.export_to_pandas("SELECT * FROM STD_BD_GRD5_LEM_N;")
 # # 2022년 차량 대수
 # grp1 = dfm.groupby(['시도'], as_index=False)['차대번호'].count()
 # grp1 = grp1.rename(columns={'차대번호':'차량대수'})
+# year = 2022
+# year = int(datetime.today().strftime("%Y"))
 # grp1['연도'] = f'{year}'
 # grp1 = grp1[['연도', '시도', '차량대수']]
 
@@ -7734,7 +7736,7 @@ no_dpf = we.export_to_pandas("SELECT * FROM STD_BD_GRD5_LEM_N;")
 # yr_list = []
 # ctpv_list = []
 # for ctpv in grp1['시도'].unique():
-#     for yr in range(2019, year + 1):
+#     for yr in range(year - 3, year + 1): # !!! 수정(2023.08.31)
 #         yr_list.append(str(yr))
 #         ctpv_list.append(ctpv)
 # base = pd.DataFrame({'연도':yr_list, '시도':ctpv_list})
@@ -7854,6 +7856,11 @@ print('data export : STD_BD_GRD5_LEM_N_MOD')
 # TY_STDR_ID(유형기준아이디) : 비상시(T001), 계절제(T002)
 is_season = is_total.loc[(is_total['농도기준아이디'] == 'C011') & (is_total['유형기준아이디'] == 'T002')].reset_index(drop=True)
 today_date = datetime.today().strftime("%Y%m%d")
+
+# 계절제 1차(2019.12 ~ 2020.3)
+# 계절제 2차(2020.12 ~ 2021.3)
+# 계절제 3차(2021.12 ~ 2022.3)
+# 계절제 4차(2022.12 ~ 2023.3)
 for yr in range(2019, int(today_date[:4])):
     start_date = f'{yr}1130'
     end_date = f'{yr+1}0401'
@@ -8175,7 +8182,7 @@ grp4 = grp4.rename(columns={'말소일자_년':'연도', '조기폐차최종승�
 
 # 4년간 차량 통계 기본 데이터셋
 yr_list = []
-for yr in range(2019, int(year) + 1):
+for yr in range(int(year) - 3, int(year) + 1): # !!! 수정(2023.08.31)
     yr_list.append(str(yr))
 base = pd.DataFrame({'연도':yr_list})
 
