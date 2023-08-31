@@ -7657,7 +7657,7 @@ is_total1[['적발시도코드', '적발시군구코드']] = is_total1[['적발�
 is_total = is_total1.merge(coder_dup[['시도코드', '시군구코드', '시도', '시군구']], left_on=['적발시도코드', '적발시군구코드'], right_on=['시도코드', '시군구코드'], how='left')
 
 # 1m 12.8s
-is_total = is_total.drop(['적발시도코드', '적발시군구코드', '시도코드', '시군구코드'], axis=1)
+is_total = is_total.drop(['시도코드', '시군구코드'], axis=1)
 is_total = is_total.rename(columns={'시도':'적발시도', '시군구':'적발시군구'})
 
 ## 상시 병합
