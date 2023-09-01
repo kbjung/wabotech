@@ -22,6 +22,11 @@
 + 활용 라이브러리 : pandas, numpy, os, datetime
 - 자동차 현황(연료, 배출가스등급별) [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/low_gas_vehicle/%5B%ED%86%B5%EA%B3%84%5D%EC%97%B0%EB%A3%8C%EB%B3%84_%EB%93%B1%EA%B8%89%EB%B3%84_%EB%8C%80%EA%B8%B0%EA%B4%80%EB%A6%AC%EA%B6%8C%EC%97%AD%EB%B3%84.ipynb)
 
+## [서울 연구원] 배출가스 배출량 계산 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/seoul_lab#readme)
+- 활용 라이브러리 : pandas, numpy, os, datetime
++ 계산 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/seoul_lab/CAPSS.ipynb)
+  - 전 등급 차량 배출가스 배출량 계산(CAPSS식 적용)
+
 ## 	[KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/multi_road#readme)
 - 라이브러리 : pandas, numpy, os, datetime, time, matplotlib.pyplot
 + 분석 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/multi_road/analysis.ipynb)
