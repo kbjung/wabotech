@@ -7660,13 +7660,37 @@ is_total = is_total1.merge(coder_dup[['시도코드', '시군구코드', '시도
 is_total = is_total.drop(['시도코드', '시군구코드'], axis=1)
 is_total = is_total.rename(columns={'시도':'적발시도', '시군구':'적발시군구'})
 
+# !!! 수정(2023.09.01)
+# 30s
+is_total.loc[(is_total['적발시도'] == '서울특별시') | (is_total['적발시도'] == '경기도') | (is_total['적발시도'] == '인천광역시'), '적발지역'] = '수도권'
+is_total.loc[is_total['적발지역'].isnull(), '적발지역'] = '수도권외'
+
 ## 상시 병합
 # 1s
 usdp = usdisr.merge(usper, on='번호', how='left')
 
 ### 지역정보 추가
-us_total = usdp.merge(coder_dup, left_on=['등록시도코드', '등록시군구코드'], right_on=['시도코드', '시군구코드'], how='left')
+us_total1 = usdp.merge(coder_dup, left_on=['등록시도코드', '등록시군구코드'], right_on=['시도코드', '시군구코드'], how='left')
+us_total1 = us_total1.drop(['시도코드', '시군구코드'], axis=1) # !!! 수정(2023.09.01)
+us_total1 = us_total1.rename(columns={'시도':'등록시도', '시군구':'등록시군구'}) # !!! 수정(2023.09.01)
+
+# !!! 수정(2023.09.01)
+# 4s
+us_total1['단속지역코드'] = us_total1['단속지역코드'].astype('str')
+us_total1['단속시도코드'] = us_total1['단속지역코드'].str[:2]
+us_total1['단속시군구코드'] = us_total1['단속지역코드'].str[2:5]
+us_total1[['단속시도코드', '단속시군구코드']] = us_total1[['단속시도코드', '단속시군구코드']].astype('int')
+
+# !!! 수정(2023.09.01)
+# 2s
+us_total = us_total1.merge(coder_dup[['시도코드', '시군구코드', '시도', '시군구']], left_on=['단속시도코드', '단속시군구코드'], right_on=['시도코드', '시군구코드'], how='left')
 us_total = us_total.drop(['시도코드', '시군구코드'], axis=1)
+us_total = us_total.rename(columns={'시도':'단속시도', '시군구':'단속시군구'})
+
+# !!! 수정(2023.09.01)
+# 1s
+us_total.loc[(us_total['단속시도'] == '서울특별시') | (us_total['단속시도'] == '경기도') | (us_total['단속시도'] == '인천광역시'), '단속지역'] = '수도권'
+# us_total.loc[us_total['단속지역'].isnull(), '단속지역'] = '수도권외'
 
 ## 등록(말소 유지) & 제원 병합
 # 10.3s
@@ -7901,20 +7925,41 @@ for one in [x for x in limit_season_rename_dict.values()]:
 
 today_date = datetime.today().strftime("%Y%m%d")
 lmt1['테이블생성일자'] = today_date
-season_col = ['테이블생성일자', '차대번호'] + ['지역', '시도', 'DPF_YN', '차종', '차종유형'] + [x for x in limit_season_rename_dict.values()]
-lmt1[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]] = lmt1[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]].fillna(0)
-season = lmt1[season_col]
+
+# season_col = ['테이블생성일자', '차대번호'] + ['지역', '시도', 'DPF_YN', '차종', '차종유형'] + [x for x in limit_season_rename_dict.values()]
+# lmt1[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]] = lmt1[[x for x in limit_season_rename_dict.values()] + [x + '_일평균' for x in limit_season_rename_dict.values()]].fillna(0)
+# season = lmt1[season_col]
+# cdict = {
+#     '테이블생성일자':'LOAD_DT', 
+#     '차대번호':'VIN', 
+#     '지역':'RGN', 
+#     '시도':'CTPV', 
+#     'DPF_YN':'DPF_EXTRNS_YN', 
+#     '차종':'VHCTY_CD', 
+#     '차종유형':'VHCTY_TY', 
+# }
+# for one in limit_season_rename_dict.values():
+#     cdict[one] = one.replace('계절제', 'SEASON').replace('차', 'ODR_CRDN_NOCS')
+
+# !!! 수정(2023.09.01)
+ss_df = is_season.merge(df, on='차대번호', how='left')
+ss_df['DPF_YN'] = ss_df['DPF_YN'].fillna('무')
+ss_df['DPF_YN'].value_counts(dropna=False)
+ss_df['테이블생성일자'] = today_date
+season_col = ['테이블생성일자', '차대번호'] + ['적발지역', '적발시도', 'DPF_YN', '차종', '차종유형'] + [x for x in limit_season_rename_dict.keys()]
+season = ss_df[season_col]
 cdict = {
     '테이블생성일자':'LOAD_DT', 
     '차대번호':'VIN', 
-    '지역':'RGN', 
-    '시도':'CTPV', 
+    '적발지역':'DSCL_RGN', # !!! 수정(2023.09.01)
+    '적발시도':'DSCL_CTPV', # !!! 수정(2023.09.01)
     'DPF_YN':'DPF_EXTRNS_YN', 
     '차종':'VHCTY_CD', 
     '차종유형':'VHCTY_TY', 
 }
-for one in limit_season_rename_dict.values():
-    cdict[one] = one.replace('계절제', 'SEASON').replace('차', 'ODR_CRDN_NOCS')
+for one in limit_season_rename_dict.keys():
+    cdict[one] = one.replace('계절제', 'SEASON').replace('차여부', 'ODR_CRDN_YN') # !!! 수정(2023.09.01)
+
 STD_BD_SEASON_CRDN_NOCS_CURSTT = season.rename(columns=cdict)
 
 # STD_BD_SEASON_CRDN_NOCS_CURSTT.columns
@@ -7988,9 +8033,38 @@ STD_BD_SEASON_DY_AVRG_CRDN_NOCS = season_tot.rename(columns=cdict)
 print('data export : STD_BD_SEASON_DY_AVRG_CRDN_NOCS')
 
 ## 지역별 상시운행제한 단속 현황
+# us_total2 = us_total.merge(limit_alw, on='차대번호', how='left')
+# us_total2.loc[(us_total2['시도'] == '서울특별시') | (us_total2['시도'] == '경기도') | (us_total2['시도'] == '인천광역시'), '지역'] = '수도권'
+# us_total2['지역'] = us_total2['지역'].fillna('수도권외')
+# us_total2['적발년월'] = us_total2['적발년월'].astype('str')
+# us_total2['적발년월_년'] = us_total2['적발년월'].str[:4]
+# us_total2 = us_total2.sort_values('적발년월_년', ascending=True).drop_duplicates('차대번호').reset_index(drop=True)
+# us_total2 = us_total2.drop(['적발건수'], axis=1)
+# us_total2 = us_total2.rename(columns={'적발년월_년':'적발년도', '상시':'적발건수'})
+
+# orditm = us_total2.loc[(us_total2['적발건수'] > 0)& (us_total2['적발년도'].isnull() == False), [
+#     '차대번호',
+#     '적발년도',
+#     '적발건수',
+#     '지역',
+#     '시도',
+# ]]
+
+# today_date = datetime.today().strftime("%Y%m%d")
+# orditm['테이블생성일자'] = today_date
+# cdict = {
+#     '테이블생성일자':'LOAD_DT', 
+#     '차대번호':'VIN', 
+#     '적발년도':'DSCL_YR', 
+#     '적발건수':'DSCL_NOCS', 
+#     '지역':'RGN',
+#     '시도':'CTPV', 
+# }
+# STD_BD_ORDITM_DSCL_CURSTT = orditm.rename(columns=cdict)
+
+# !!! 수정(2023.09.01)
+## 지역별 상시운행제한 단속 현황
 us_total2 = us_total.merge(limit_alw, on='차대번호', how='left')
-us_total2.loc[(us_total2['시도'] == '서울특별시') | (us_total2['시도'] == '경기도') | (us_total2['시도'] == '인천광역시'), '지역'] = '수도권'
-us_total2['지역'] = us_total2['지역'].fillna('수도권외')
 us_total2['적발년월'] = us_total2['적발년월'].astype('str')
 us_total2['적발년월_년'] = us_total2['적발년월'].str[:4]
 us_total2 = us_total2.sort_values('적발년월_년', ascending=True).drop_duplicates('차대번호').reset_index(drop=True)
@@ -8001,8 +8075,8 @@ orditm = us_total2.loc[(us_total2['적발건수'] > 0)& (us_total2['적발년도
     '차대번호',
     '적발년도',
     '적발건수',
-    '지역',
-    '시도',
+    '단속지역', # !!! 수정(2023.09.01)
+    '단속시도', # !!! 수정(2023.09.01)
 ]]
 
 today_date = datetime.today().strftime("%Y%m%d")
@@ -8012,8 +8086,8 @@ cdict = {
     '차대번호':'VIN', 
     '적발년도':'DSCL_YR', 
     '적발건수':'DSCL_NOCS', 
-    '지역':'RGN',
-    '시도':'CTPV', 
+    '단속지역':'DSCL_RGN', # !!! 수정(2023.09.01)
+    '단속시도':'DSCL_CTPV', # !!! 수정(2023.09.01)
 }
 STD_BD_ORDITM_DSCL_CURSTT = orditm.rename(columns=cdict)
 
@@ -8051,14 +8125,18 @@ print('data export : STD_BD_ORDITM_DSCL_CURSTT')
 ## 적발지역별 계절제 단속 현황 출력
 is_season2 = is_season.sort_values(['적발시도', '적발시군구']).drop_duplicates(['차대번호', '적발시도', '적발시군구']).reset_index(drop=True)
 is_lmt = is_season2.merge(limit_season, on='차대번호', how='left')
-is_lmt.loc[(is_lmt['적발시도'] == '서울특별시') | (is_lmt['적발시도'] == '경기도') | (is_lmt['적발시도'] == '인천광역시'), '적발지역'] = '수도권'
-is_lmt['적발지역'] = is_lmt['적발지역'].fillna('수도권외')
-is_lmt.loc[is_lmt['등록시도'] == '강원도', '등록시도'] = '강원특별자치도'
+# !!! 수정(2023.09.01)
+# is_lmt.loc[(is_lmt['적발시도'] == '서울특별시') | (is_lmt['적발시도'] == '경기도') | (is_lmt['적발시도'] == '인천광역시'), '적발지역'] = '수도권'
+# is_lmt['적발지역'] = is_lmt['적발지역'].fillna('수도권외')
+# is_lmt.loc[is_lmt['등록시도'] == '강원도', '등록시도'] = '강원특별자치도'
+
+is_lmt['적발시도코드'] = is_lmt['적발지역코드'].str[:2] # !!! 수정(2023.09.01)
 
 is_lmt2 = is_lmt[[
     '적발지역',
-    '적발시도', 
-    '등록시도', 
+    '적발시도',
+    '적발시도코드',  # !!! 수정(2023.09.01)
+    '등록시도',  # !!! 수정(2023.09.01)
     '차대번호', 
     '계절제_1차', 
     '계절제_2차', 
@@ -8085,6 +8163,7 @@ cdict = {
     '테이블생성일자':'LOAD_DT', 
     '적발지역':'DSCL_RGN', 
     '적발시도':'DSCL_CTPV', 
+    '적발시도코드':'DSCL_CTPV_CD', # !!! 수정(2023.09.01)
     '등록시도':'REG_CTPV', 
     '차대번호':'VIN', 
     '계절제_1차':'SEASON_1ODR_CRDN_NOCS', 
@@ -8148,8 +8227,8 @@ ere = errc.merge(elpm, on='차대번호', how='left')
 erea = ere.merge(attr, on='차대번호', how='left')
 
 # 연도 설정
-year = '2022'
-# year = today_date[:4]
+# year = '2022'
+year = today_date[:4] # !!! 수정(2023.09.01)
 
 dfe['연도'] = year
 
