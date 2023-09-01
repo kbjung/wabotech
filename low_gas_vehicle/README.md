@@ -2,9 +2,9 @@
 - 기간 : 2022.11.04 ~ stop
 + 활용 라이브러리 : pandas, numpy, tqdm
 
-- 01\. 데이터 전처리 및 분석 [ipynb](https://github.com/kbjung/wabotech/blob/main/low_gas_vehicle/analysis.ipynb)
-- 02\. 주소 전처리(오류 정리, 신주소/구주소 구분, 지역 구분) [ipynb](https://github.com/kbjung/wabotech/blob/main/low_gas_vehicle/address.ipynb)
-- 03\. 지역 구분 코드 정리 [ipynb](https://github.com/kbjung/wabotech/blob/main/low_gas_vehicle/address_code.ipynb)
+- 01\. 데이터 전처리 및 분석 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/low_gas_vehicle/analysis.ipynb)
+- 02\. 주소 전처리(오류 정리, 신주소/구주소 구분, 지역 구분) [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/low_gas_vehicle/address.ipynb)
+- 03\. 지역 구분 코드 정리 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/low_gas_vehicle/address_code.ipynb)
 
 ## [환경부] 내연기관 프리존(Free-zone) 시범사업 운행제한 확대방안 연구
 + 활용 라이브러리 : pandas, numpy, os, datetime
