@@ -684,9 +684,10 @@ df1 = df[df['배출가스등급'] == '4'].reset_index(drop=True)
 
 ### 테이블생성일자 컬럼 추가
 today_date = datetime.today().strftime("%Y%m%d")
-df1['기준연월'] = '2022.12'
-# df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
+# df1['기준연월'] = '2022.12'
+df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 df1['테이블생성일자'] = today_date
+
 # RH제공 법정동코드 타입 문자열로 수정
 df1['법정동코드_mod'] = df1['법정동코드_mod'].astype('str')
 
@@ -941,7 +942,6 @@ chc_dict = {
     '검사방법':'INSP_MTHD', 
     '주행거리':'DRVNG_DSTNC',
     '차령':'VHCAG',
-    
     # '차종':'VHCTY_CD', 
     # '연식':'YRIDNW', 
     # '차종유형':'VHCTY_TY', 
@@ -1153,9 +1153,9 @@ dfe = csec.merge(elpm, on='차대번호', how='left')
 df1 = dfe[dfe['연료'] == '경유'].reset_index(drop=True)
 
 # 기준연월 추가
-df1['기준연월'] = '2022.12'
+# df1['기준연월'] = '2022.12'
 today_date = datetime.today().strftime("%Y%m%d")
-# df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
+df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
 
 STD_BD_GRD4_ELPDSRC_CURSTT = df1[[
     '기준연월',
@@ -1400,9 +1400,9 @@ dat_mlsfc['시군구_수정'] = dat_mlsfc['시군구'].str.split(' ').str[0]
 grp1 = dat_mlsfc.groupby(['연료', '시도', '시군구_수정', '차종', '차종유형', '용도', 'Grade'])['차대번호'].count().unstack('Grade').reset_index()
 
 # 연도 설정
-grp1['연도'] = '2022'
+# grp1['연도'] = '2022'
 today_date = datetime.today().strftime("%Y%m%d")
-# grp1['연도'] = today_date[:4]
+grp1['연도'] = today_date[:4]
 grp1['테이블생성일자'] = today_date
 
 STD_BD_DAT_GRD4_MLSFC = grp1[[
@@ -1906,7 +1906,7 @@ erea['말소일자_년'] = erea['말소일자'].str[:4]
 erea['말소일자_월'] = erea['말소일자'].str[4:6]
 erea['말소일자_일'] = erea['말소일자'].str[6:8]
 
-# 2022년 차량 대수
+# 올해 차량 대수
 grp1 = dfe[dfe['차량말소YN'] == 'N'].groupby(['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도']).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index()
 grp1 = grp1.rename(columns={'차대번호':'차량대수', '저감장치부착유무':'저감대수'})
 
@@ -5214,8 +5214,8 @@ grp1 = df2.groupby(['시도', '시군구_수정'], as_index=False).agg({'E_CO_to
 
 # 연도 설정
 today_date = datetime.today().strftime("%Y%m%d")
-# grp1['연도'] = today_date[:4]
-grp1['연도'] = '2022' # 하드코딩
+grp1['연도'] = today_date[:4]
+# grp1['연도'] = '2022' # 하드코딩
 grp1 = grp1[['연도', '시도', '시군구_수정', 'E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2_5_total']]
 grp1['테이블생성일자'] = today_date
 
@@ -5430,9 +5430,9 @@ grp2 = df2.groupby(['시도', '시군구_수정', '연료', '차종', '차종유
 grp2 = grp2.rename(columns={'E_CO_total':'E_CO_total_sum', 'E_HC_total':'E_HC_total_sum', 'E_NOx_total':'E_NOx_total_sum', 'E_PM10_total':'E_PM10_total_sum', 'E_PM2_5_total':'E_PM2_5_total_sum'})
 
 # 연도 설정
-grp2['연도'] = '2022'
+# grp2['연도'] = '2022'
 today_date = datetime.today().strftime("%Y%m%d")
-# grp2['연도'] = today_date[:4]
+grp2['연도'] = today_date[:4]
 grp2['테이블생성일자'] = today_date
 
 STD_BD_DAT_GRD4_EXHST_MSS_CURSTT = grp2[[
@@ -5503,8 +5503,8 @@ grp3 = df2.groupby(['시도', '시군구_수정', '연료', '차종', '차종유
 grp3 = grp3.rename(columns={'E_CO_total':'E_CO_total_mean', 'E_HC_total':'E_HC_total_mean', 'E_NOx_total':'E_NOx_total_mean', 'E_PM10_total':'E_PM10_total_mean', 'E_PM2_5_total':'E_PM2_5_total_mean'})
 
 # 연도 설정
-grp3['연도'] = '2022'
-# grp3['연도'] = today_date[:4]
+# grp3['연도'] = '2022'
+grp3['연도'] = today_date[:4]
 grp3['테이블생성일자'] = today_date
 
 STD_BD_DAT_GRD4_MEVLU = grp3[[
@@ -5799,8 +5799,8 @@ errc2 = errc.loc[(errc['fuel'] == '경유') | (errc['fuel'] == '휘발유') | (e
 ## 등급, 지역별 차량현황
 # 연도 설정
 today_date = datetime.today().strftime("%Y%m%d")
-year = 2022
-# year = int(today_date[:4])
+# year = 2022
+year = int(today_date[:4])
 
 # 2022년 차량 대수
 grp1 = dfm.groupby(['지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
@@ -6944,7 +6944,7 @@ print('data export : STD_BD_FUEL_GRD_VHCL_CURSTT_PRET')
 dfm2bh = dfm2.loc[(dfm2['fuel'] == '전기') | (dfm2['fuel'] == '수소')].reset_index(drop=True)
 errc2bh = errc2.loc[(errc2['fuel'] == '전기') | (errc2['fuel'] == '수소')].reset_index(drop=True)
 
-# 2022년 차량 대수
+# 올해 차량 대수
 grp1 = dfm2bh.groupby('fuel', as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
@@ -6986,8 +6986,6 @@ fit1 = np.polyfit(bt['연도'], bt['차량대수'], 1)
 fit2 = np.polyfit(hy['연도'], hy['차량대수'], 1)
 a1, b1 = fit1
 a2, b2 = fit2
-
-
 
 # BSpline 예측
 spl1 = intp.BSpline(bt['연도'], bt['차량대수'], 1, extrapolate=True)
@@ -7202,11 +7200,11 @@ print('data export : STD_BD_ERSR_RSLT')
 df9 = dfm.copy()
 
 # 데이터 연도 설정
-year = 2022
-month = 12
+# year = 2022
+# month = 12
 today_date = datetime.today().strftime("%Y%m%d")
-# year = int(today_date[:4])
-# month = int(today_date[4:6])
+year = int(today_date[:4])
+month = int(today_date[4:6])
 
 # 차량 대수
 grp1 = df9.groupby(['시도', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
@@ -7215,8 +7213,8 @@ grp1['연도'] = f'{year}'
 grp1['월'] = f'{month}'
 
 # 날짜 설정
-date_date = '20221231'
-# date_date = datetime.today().strftime("%Y%m%d")
+# date_date = '20221231'
+date_date = datetime.today().strftime("%Y%m%d")
 # 37.5s
 
 y_plist = list(pd.date_range(end=date_date, periods=4, freq="MS").year)
@@ -7348,11 +7346,11 @@ print('data export : STD_BD_DAT_GRD_CURSTT')
 grp1 = dfm2dgl.groupby(['배출가스등급', '연료'])['차대번호'].count().reset_index()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 
-year = '2022'
-month = '12'
+# year = '2022'
+# month = '12'
 today_date = datetime.today().strftime("%Y%m%d")
-# year = today_date[:4]
-# month = today_date[4:6]
+year = today_date[:4]
+month = today_date[4:6]
 grp1[['연도', '월']] = [year, month]
 
 yr_list, month_list, grd_list, fuel_list = [], [], [], []
