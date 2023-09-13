@@ -1,7 +1,7 @@
 # Wabotech
 - 2022.11.01 ~
 
-## ⏳	[KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/multi_road#readme)
+## ⏳	[KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing#readme)
 - 라이브러리 : pandas, numpy, os, datetime, time, matplotlib.pyplot
 + 분석 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/multi_road/analysis.ipynb)
   - 원격 측정 전체 차량 통계
