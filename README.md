@@ -25,12 +25,12 @@
   - 과제3 : "무공해차 전환 가속화 및 내연기관차 퇴출시나리오 도출"
 
 ### [환경부] 내연기관 프리존(Free-zone) 시범사업 운행제한 확대방안 연구 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/low_gas_vehicle#readme)
-+ 활용 라이브러리 : pandas, numpy, os, datetime
++ 활용 라이브러리 : pandas, numpy, datetime
 + 내용
   - 자동차 현황(연료, 배출가스등급별)
 
 ### [한국환경공단] 저공해차 보급촉진을 위한 제도운영 지원 및 개선방안 마련 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/low_gas_vehicle#readme)
-+ 활용 라이브러리 : pandas, numpy, tqdm
++ 활용 라이브러리 : pandas, numpy
 + 내용
   - 자동차 주소 데이터 전처리
   - 자동차 지역별 현황
