@@ -24,16 +24,16 @@
 ### 전처리 & 분석
 #### 과제1 "4등급차 조기폐차 및 운행제한 확대 대비 정책자료 생성"
 - item 1 : 배출가스 인증번호 및 등급오류 검증
-  - 배출가스인증번호별 매연 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD1%5D%5Bitem1%5DGRD4_EXHST_GAS_CERT_NO.ipynb)
+  - 배출가스인증번호별 매연 [ipynb](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/github_code/%5BBD1%5D%5Bitem1%5DGRD4_EXHST_GAS_CERT_NO.ipynb)
 - item 2 : 4등급차 세분류
-  - 4등급 통계 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD1%5D%5Bitem2%5DGRD4_STATISTICS.ipynb)
+  - 4등급 통계 [ipynb](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/github_code/%5BBD1%5D%5Bitem2%5DGRD4_STATISTICS.ipynb)
 - item 3 : 운행제한 규제지역 설정에 유용한 데이터 발굴
-  - CAPSS [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD1%5D%5Bitem3%5DGRD4_CAPSS.ipynb)
+  - CAPSS [ipynb](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/github_code/%5BBD1%5D%5Bitem3%5DGRD4_CAPSS.ipynb)
 
 #### 과제3 "무공해차 전환 가속화 및 내연기관차 퇴출 시나리오 도출"
 - item 1 : 내연기관차 감축추이 및 감소량 예측 분석
-  - 내연차_현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD3%5D%5Bitem1%5DGAS_CAR_CURSTT.ipynb)
+  - 내연차_현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/github_code/%5BBD3%5D%5Bitem1%5DGAS_CAR_CURSTT.ipynb)
 - item 2 : 내연기관차 운행제한 현황 분석
-  - 내연기관차 운행제한 현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD3%5D%5Bitem2%5DGAS_CAR_RUN_LMT_CURSTT.ipynb)
+  - 내연기관차 운행제한 현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/github_code/%5BBD3%5D%5Bitem2%5DGAS_CAR_RUN_LMT_CURSTT.ipynb)
 - item 3 : 무공해차 전환 및 저공해조치 우선차량 선별
-  - 저공해조치 우선차량선별 [ipynb](https://github.com/kbjung/wabotech/blob/main/car2_exasol/github_code/%5BBD3%5D%5Bitem3%5DLEM_PRIO_CURSTT.ipynb)
+  - 저공해조치 우선차량선별 [ipynb](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/github_code/%5BBD3%5D%5Bitem3%5DLEM_PRIO_CURSTT.ipynb)
