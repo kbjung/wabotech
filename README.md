@@ -25,6 +25,9 @@
 + 내용
   - 과제1 : "4등급차 조기폐차 및 운행제한 확대 대비 정책자료 생성"
   - 과제3 : "무공해차 전환 가속화 및 내연기관차 퇴출시나리오 도출"
+  - 분류별 차량 현황 분석, 배출가스 계산, 지역별 차량 현황 분석
+  - 저공해 조치 우선지원 지표 개발 및 지원 차량 분석
+  - 차량 현황 예측
 
 ### [환경부] 내연기관 프리존(Free-zone) 시범사업 운행제한 확대방안 연구 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/low_gas_vehicle#readme)
 + 라이브러리 : pandas, numpy, datetime
