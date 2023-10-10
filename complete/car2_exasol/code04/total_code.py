@@ -1152,10 +1152,21 @@ csec = cse.merge(coder, on='법정동코드', how='left')
 dfe = csec.merge(elpm, on='차대번호', how='left')
 df1 = dfe[dfe['연료'] == '경유'].reset_index(drop=True)
 
+# !!! 수정 시작(2023.10.10)
+
+# 조기폐차최종승인된 차량만 추출
+idx = df1.loc[df1['조기폐차최종승인YN'] == 'Y', '말소일자'].index
+df1_ey = df1.loc[idx]
+df1_en = df1.loc[set(df1.index) - set(idx)]
+
 # 기준연월 추가
-# df1['기준연월'] = '2022.12'
-today_date = datetime.today().strftime("%Y%m%d")
-df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
+df1_ey['말소일자'] = df1_ey['말소일자'].astype('str')
+df1_ey['기준연월'] = df1_ey['말소일자'].str[:4] + '.' + df1_ey['말소일자'].str[4:6]
+
+# 다시 병합
+df1 = pd.concat([df1_ey, df1_en], ignore_index=True)
+
+# !!! 수정 끝(2023.10.10)
 
 STD_BD_GRD4_ELPDSRC_CURSTT = df1[[
     '기준연월',
