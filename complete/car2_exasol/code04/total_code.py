@@ -1168,6 +1168,11 @@ df1 = pd.concat([df1_ey, df1_en], ignore_index=True)
 
 # !!! 수정 끝(2023.10.10)
 
+# !!! 수정 시작(2023.10.23)
+# 조기폐차 이상치 말소일자 제거
+df1 = df1[(df1['말소일자'] >= '20230201') & (df1['말소일자'] <= today_date) | (df1['말소일자'].isnull())].reset_index(drop=True)
+# !!! 수정 끝(2023.10.23)
+
 STD_BD_GRD4_ELPDSRC_CURSTT = df1[[
     '기준연월',
     '차대번호', 
