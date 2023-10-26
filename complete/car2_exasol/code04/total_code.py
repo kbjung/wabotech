@@ -666,13 +666,24 @@ elp = pd.concat([aear, lgvr], ignore_index=True)
 
 # elp.shape
 
-elp.shape, len(elp['차대번호'].unique())
+# elp.shape, len(elp['차대번호'].unique())
 
 elpm = elp.sort_values('조기폐차최종승인YN', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
 # elpm.shape
 
 elpm = elpm[elpm['조기폐차최종승인YN'] == 'Y'].reset_index(drop=True)
+
+# !!! 수정 시작(2023.10.26)
+
+# 최신 조기폐차 현황 
+today_date = datetime.today().strftime('%Y%m%d')
+date_list = pd.date_range(end=today_date, periods=1, freq='M')
+before_amonth = int(str(date_list[0]).split(' ')[0].replace('-', ''))
+# 조기폐차(현재 월-1까지만) 최신 말소일자기준 추출
+elp_rct = elp[elp['말소일자'] <= before_amonth].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+
+# !!! 수정 끝(2023.10.26)
 
 # elpm.shape
 
@@ -1159,6 +1170,7 @@ csec = cse.merge(coder, on='법정동코드', how='left')
 # csec.loc[csec['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
 # csec.loc[csec['법정동코드'] == 5180031033, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 경기도 양주시 회천3동
 
+
 # 조기폐차 추가
 dfe = csec.merge(elpm, on='차대번호', how='left')
 df1 = dfe[dfe['연료'] == '경유'].reset_index(drop=True)
@@ -1229,6 +1241,63 @@ STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT.rename(columns=chc_dict)
 ### [출력] STD_BD_GRD4_ELPDSRC_CURSTT
 create_table(STD_BD_GRD4_ELPDSRC_CURSTT,'STD_BD_GRD4_ELPDSRC_CURSTT')
 print('data export : STD_BD_GRD4_ELPDSRC_CURSTT 종료 %d초' % (time.time() - start_time))
+
+start_time = time.time()
+print('data export : STD_BD_GRD4_NOW_ELPDSRC_CURSTT 시작')
+
+# !!! 수정 시작(2023.10.26)
+# 4등급 경유차 현재 조기폐차 현황 시작
+# 최신 조기폐차 현황(elp_rct)
+csece_rct = csec.merge(elp_rct, on='차대번호', how='left')
+csece_rct_dgl = csece_rct[csece_rct['연료'] == '경유'].reset_index(drop=True)
+
+STD_BD_GRD4_NOW_ELPDSRC_CURSTT = csece_rct_dgl[[
+    '차대번호', 
+    '법정동코드', 
+    # '차종', 
+    # '용도', 
+    '연료', 
+    # '차종유형', 
+    '시도',
+    '시군구', 
+    '조기폐차상태코드', 
+    '조기폐차최종승인YN',
+]]
+STD_BD_GRD4_NOW_ELPDSRC_CURSTT['테이블생성일자'] = today_date
+STD_BD_GRD4_NOW_ELPDSRC_CURSTT = STD_BD_GRD4_NOW_ELPDSRC_CURSTT[[
+    '차대번호', 
+    '법정동코드', 
+    # '차종', 
+    # '용도', 
+    '연료', 
+    # '차종유형', 
+    '시도', 
+    '시군구', 
+    '조기폐차상태코드', 
+    '조기폐차최종승인YN', 
+    '테이블생성일자', 
+]]
+chc_dict = {
+    # '기준연월':'CRTR_YM', 
+    '차대번호':'VIN', 
+    '법정동코드':'STDG_CD', 
+    # '차종':'VHCTY_CD', 
+    # '용도':'PURPS_CD2', 
+    '연료':'FUEL_CD', 
+    # '차종유형':'VHCTY_TY', 
+    '시도':'CTPV', 
+    '시군구':'SGG', 
+    '조기폐차상태코드':'ELPDSRC_STTS_CD', 
+    '조기폐차최종승인YN':'ELPDSRC_LAST_APRV_YN', 
+    '테이블생성일자':'LOAD_DT', 
+}
+STD_BD_GRD4_NOW_ELPDSRC_CURSTT = STD_BD_GRD4_NOW_ELPDSRC_CURSTT.rename(columns=chc_dict)
+
+### [출력] STD_BD_GRD4_NOW_ELPDSRC_CURSTT
+create_table(STD_BD_GRD4_NOW_ELPDSRC_CURSTT,'STD_BD_GRD4_NOW_ELPDSRC_CURSTT')
+print('data export : STD_BD_GRD4_NOW_ELPDSRC_CURSTT 종료 %d초' % (time.time() - start_time))
+
+# !!! 수정 끝(2023.10.26)
 
 start_time = time.time()
 print('data export : STD_BD_GRD4_MLSFC_RSLT 시작')
