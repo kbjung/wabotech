@@ -680,8 +680,10 @@ elpm = elpm[elpm['조기폐차최종승인YN'] == 'Y'].reset_index(drop=True)
 today_date = datetime.today().strftime('%Y%m%d')
 date_list = pd.date_range(end=today_date, periods=1, freq='M')
 before_amonth = int(str(date_list[0]).split(' ')[0].replace('-', ''))
+# # 조기폐차(현재 월-1까지만) 최신 말소일자기준 추출(수동)
+# elp_rct = elp[elp['말소일자'] <= before_amonth].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 # 조기폐차(현재 월-1까지만) 최신 말소일자기준 추출
-elp_rct = elp[elp['말소일자'] <= before_amonth].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+elp_rct = elp[elp['말소일자'] < today_date].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
 # !!! 수정 끝(2023.10.26)
 
@@ -1699,8 +1701,8 @@ today_date = datetime.today().strftime("%Y%m%d")
 base3['테이블생성일자'] = today_date
 base3['기준연월'] = base3['연도'] + '.' + base3['월']
 
-# 현재 월 -1 까지만 추출
-base3 = base3[(base3['연도'] != today_date[:4]) | (base3['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.10.26)
+# # 현재 월 -1 까지만 추출(수동)
+# base3 = base3[(base3['연도'] != today_date[:4]) | (base3['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.10.26)
 
 base4 = base3[[
     '테이블생성일자', 
