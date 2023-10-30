@@ -666,7 +666,7 @@ elp = pd.concat([aear, lgvr], ignore_index=True)
 
 # elp.shape
 
-# elp.shape, len(elp['차대번호'].unique())
+elp.shape, len(elp['차대번호'].unique())
 
 elpm = elp.sort_values('조기폐차최종승인YN', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
@@ -674,20 +674,17 @@ elpm = elp.sort_values('조기폐차최종승인YN', ascending=False).drop_dupli
 
 elpm = elpm[elpm['조기폐차최종승인YN'] == 'Y'].reset_index(drop=True)
 
-# !!! 수정 시작(2023.10.26)
+# elpm.shape
 
-# 최신 조기폐차 현황 
-today_date = datetime.today().strftime('%Y%m%d')
+# !!! 수정 시작(2023.10.27)
+today_date = datetime.today().strftime("%Y%m%d")
 date_list = pd.date_range(end=today_date, periods=1, freq='M')
 before_amonth = int(str(date_list[0]).split(' ')[0].replace('-', ''))
-# # 조기폐차(현재 월-1까지만) 최신 말소일자기준 추출(수동)
-# elp_rct = elp[elp['말소일자'] <= before_amonth].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
-# 조기폐차(현재 월-1까지만) 최신 말소일자기준 추출
-elp_rct = elp[elp['말소일자'] < today_date].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
-
-# !!! 수정 끝(2023.10.26)
-
-# elpm.shape
+# # 조기폐차 최신 말소일자기준 추출(수동)
+# elp_rct = elp[elp['말소일자'] <= int(before_amonth)].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+# 조기폐차 최신 말소일자기준 추출
+elp_rct = elp[elp['말소일자'] < int(today_date)].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+# !!! 수정 끝(2023.10.27)
 
 ## kosis 시도명 수정
 
@@ -847,7 +844,7 @@ create_table(STD_BD_GRD4_CAR_CURSTT,'STD_BD_GRD4_CAR_CURSTT')
 print('data export : STD_BD_GRD4_CAR_CURSTT 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
-print('data export : STD_BD_GRD4_SI 시작')
+print('data export : STD_BD_GRD4_CAR_CURSTT_TOT 시작')
 
 ## 경유차만 추출
 df2 = df1[df1['연료'] == '경유'].reset_index(drop=True)
@@ -868,35 +865,73 @@ df2n = df2.loc[df2['차대번호'].str.len() != 17].reset_index(drop=True)
 df3y = df2y.loc[df2y['vin10_year'] == df2y['차량연식']].reset_index(drop=True)
 df3n = df2y.loc[df2y['vin10_year'] != df2y['차량연식']].reset_index(drop=True)
 
-# 배인번호별 분석
-def flat_cols(df):
-    df.columns = ['/'.join(x) for x in df.columns.to_flat_index()]
-    return df
-# about 31.3s
-# 최적화 24m 51s -> 30.0s
-total_g_df = pd.DataFrame()
-groupby_col1 = ['제작사명', '배출가스인증번호', '제원관리번호', '자동차형식', '엔진형식', '검사종류', '검사방법', '검사판정']
-groupby_col2 = ['제작사명', '배출가스인증번호', '제원관리번호', '자동차형식', '엔진형식', '검사종류', '검사방법']
-for one in df3y['배출가스인증번호'].unique():
-    # 배인번호별 df
-    gas_df = df3y.loc[df3y['배출가스인증번호'] == str(one)].reset_index(drop=True)
+# !!! 수정 시작(2023.10.27)
 
-    if gas_df.shape[0] != 0:
-        # 제번별, 차형식별, 엔진형식별, 검사판정별 무부하매연측정치1 통계
-        g = gas_df.groupby(groupby_col1).agg({'차대번호':'count', '무부하매연측정치1':['mean', 'min', 'max']}).pipe(flat_cols).round(2).reset_index()
-        g = g.rename(columns={'배출가스인증번호':'배출가스인증번호', '차대번호/count':'대수', '무부하매연측정치1/mean':'mean', '무부하매연측정치1/min':'min', '무부하매연측정치1/max':'max'})
-        # 하나의 배인번호에서 제번별 엔진형식별 비율 계산
-        g['합격률(%)'] = round(g['대수'] / g.groupby(groupby_col2)['대수'].transform('sum') * 100, 2)
-        # 종합 - 통계
-        total_g_df = pd.concat([total_g_df, g], ignore_index=True)
-    else:
-        print(f'오류 배인번호 : {one}')
-        pass
+grp4 = df3y[df3y['검사판정'] == 'Y'].groupby(['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호']).agg({'차대번호':'count'}).reset_index()
+grp4 = grp4.rename(columns={'차대번호':'차량대수'})
+grp4 = grp4[grp4['배출가스인증번호'] != 'nan'].reset_index(drop=True)
+# 100대 초과 샘플만 활용
+df4 = grp4[grp4['차량대수'] > 100].reset_index(drop=True)
+# 7m 43s
+df5 = pd.DataFrame()
+for one, two, three, four, five in df4[['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법']].values:
+    temp = df3y[(df3y['검사판정'] == 'Y') & (df3y['배출가스인증번호'] == one) & (df3y['제원관리번호'] == two) & (df3y['제작사명'] == three) & (df3y['차명'] == four) & (df3y['검사방법'] == five)].reset_index(drop=True)
+    df5 = pd.concat([df5, temp], ignore_index=True)
 
-# 분석
-## 열화계수(SI) 지수 계산
-# - SI = 측정치 / 허용치
-sidf = df3y[[
+grp6 = df5.groupby(['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호']).agg({'무부하매연측정치1':[lambda x:x.describe()['25%'], lambda x:x.describe()['50%'], lambda x:x.describe()['75%']], '차대번호':'count'}).reset_index()
+grp6.columns = ['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호', 'q1', 'q2', 'q3', '차량대수']
+
+today_date = datetime.today().strftime("%Y%m%d")
+grp6['테이블생성일자'] = today_date
+STD_BD_GRD4_CAR_CURSTT_TOT = grp6[[
+    '테이블생성일자',
+    '차명',
+    '제작사명', 
+    '제원관리번호', 
+    '배출가스인증번호', 
+    '검사방법', 
+    'q1', 
+    'q2', 
+    'q3',
+    '차량대수',
+    ]]
+
+chc_dict = {
+                '테이블생성일자':'LOAD_DT', 
+                '차대번호':'VIN', 
+                '제원관리번호':'MANG_MNG_NO', 
+                '차명':'VHCNM',
+                '제작사명':'MNFCTR_NM', 
+                '차종':'VHCTY_CD', 
+                '용도':'PURPS_CD2', 
+                '차종유형':'CHCTY_TY', 
+                '법정동코드':'STDG_CD', 
+                '배출가스인증번호':'EXHST_GAS_CERT_NO_MOD', 
+                '검사방법':'INSP_MTHD', 
+                '검사종류':'INSP_KND', 
+                '검사판정':'INSP_JGMT', 
+                '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
+                '무부하매연판정1':'NOLOD_SMO_JGMT_YN1',
+                'q1':'LOWR_QRT',
+                'q2':'MID_QRT',
+                'q3':'UP_QRT',
+                '차량대수':'VHCL_MKCNT',
+                }
+# '등급_수정':'EXHST_GAS_GRD_CD_MOD', 
+# 'DPF유무_수정':'DPF_MNTNG_YN', 
+# '시도명':'CTPV_NM', 
+# '시군구명':'SGG_NM', 
+# '차종분류':'VHCTY_CL_CD', 
+STD_BD_GRD4_CAR_CURSTT_TOT = STD_BD_GRD4_CAR_CURSTT_TOT.rename(columns=chc_dict)
+
+### [출력] STD_BD_GRD4_CAR_CURSTT_TOT
+create_table(STD_BD_GRD4_CAR_CURSTT_TOT,'STD_BD_GRD4_CAR_CURSTT_TOT')
+print('data export : STD_BD_GRD4_CAR_CURSTT_TOT 종료 %d초' % (time.time() - start_time))
+
+start_time = time.time()
+print('data export : STD_BD_GRD4_SI 시작')
+
+sidf = df5[[
     '차대번호', 
     '제원관리번호', 
     '차종', 
@@ -914,13 +949,10 @@ sidf = df3y[[
     '무부하매연판정1', 
     '무부하매연허용치1', 
     '무부하매연측정치1'
-    ]]
-
+]]
 current_yr = int(datetime.today().strftime("%Y"))
 sidf['차령'] = current_yr - sidf['차량연식']
 sidf['SI'] = sidf['무부하매연측정치1'] / sidf['무부하매연허용치1']
-
-### 경유만 추출
 today_date = datetime.today().strftime("%Y%m%d")
 sidf['테이블생성일자'] = today_date
 sidf1 = sidf[[
@@ -958,141 +990,39 @@ chc_dict = {
     }
 STD_BD_GRD4_SI = sidf1.rename(columns=chc_dict)
 
-# STD_BD_GRD4_SI.columns
-
-### [출력] SI 지수 정보(STD_BD_GRD4_SI)
+### [출력] STD_BD_GRD4_SI
 create_table(STD_BD_GRD4_SI,'STD_BD_GRD4_SI')
 print('data export : STD_BD_GRD4_SI 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
-print('data export : STD_BD_GRD4_CAR_CURSTT_TOT 시작')
-
-## 동일 배번에서 제번별 매연 boxplot
-total_g_df1 = total_g_df.loc[(total_g_df['배출가스인증번호'] != '확인불가') | (total_g_df['배출가스인증번호'] != 'nan')]
-sample01 = total_g_df1.loc[total_g_df1['대수'] > 100].reset_index(drop=True)
-
-### quantile
-# 4m 11.2s
-boxplot_df = pd.DataFrame()
-quantile_df = pd.DataFrame()
-for one in sample01['배출가스인증번호'].unique(): # 통계에서 100대 초과인 배인번호만 추출
-    temp_one = df3y.loc[(df3y['배출가스인증번호'] == one) & (df3y['검사판정'] == 'Y')].reset_index(drop=True) # 해당 배인번호 중 검사판정이 'Y'인 샘플만 추출
-    if temp_one.shape[0] > 100: # 100대 초과면 진행
-        for two in temp_one['검사종류'].unique(): # 검사종류별 샘플 추출
-            temp_two = temp_one.loc[temp_one['검사종류'] == two].reset_index(drop=True)
-            if temp_two.shape[0] > 100:
-                for three in temp_two['검사방법'].unique(): # 검사방법별 샘플 추출
-                    temp_three = temp_two.loc[temp_two['검사방법'] == three].reset_index(drop=True)
-                    boxplot_df = pd.concat([boxplot_df, temp_three], ignore_index=True) # 해당 샘플만 추출하여 쌓기
-                    if temp_three.shape[0] > 100:
-                        xticks_list= []
-                        data_list = []
-                        for four in temp_three['제원관리번호'].unique():
-                            temp_four = temp_three.loc[temp_three['제원관리번호'] == four].reset_index(drop=True).dropna(subset=['무부하매연측정치1'])
-                            if temp_four.shape[0] > 100:
-                                xticks_list.append(four)
-                                data_list.append(temp_four['무부하매연측정치1'])
-                                temp_four['q1'] = temp_four['무부하매연측정치1'].describe()['25%']
-                                temp_four['q2'] = temp_four['무부하매연측정치1'].describe()['50%']
-                                temp_four['q3'] = temp_four['무부하매연측정치1'].describe()['75%']
-                                temp_four['차량대수'] = temp_four.shape[0]
-                                quantile_df = pd.concat([quantile_df, temp_four], ignore_index=True) # 제번별 4분위 값 df형태로 저장
-quantile_df1 = quantile_df.drop_duplicates(['배출가스인증번호', '제원관리번호', '검사방법', '검사종류'])
-today_date = datetime.today().strftime("%Y%m%d")
-quantile_df1['테이블생성일자'] = today_date
-
-STD_BD_GRD4_CAR_CURSTT_TOT = quantile_df1[[
-    '테이블생성일자',
-    '차명',
-    '제작사명', 
-    '제원관리번호', 
-    '배출가스인증번호', 
-    '검사방법', 
-    'q1', 
-    'q2', 
-    'q3',
-    '차량대수',
-    ]]
-chc_dict = {
-                '테이블생성일자':'LOAD_DT', 
-                '차대번호':'VIN', 
-                '제원관리번호':'MANG_MNG_NO', 
-                '차명':'VHCNM',
-                '제작사명':'MNFCTR_NM', 
-                '차종':'VHCTY_CD', 
-                '용도':'PURPS_CD2', 
-                '차종유형':'CHCTY_TY', 
-                '법정동코드':'STDG_CD', 
-                '배출가스인증번호':'EXHST_GAS_CERT_NO_MOD', 
-                '검사방법':'INSP_MTHD', 
-                '검사종류':'INSP_KND', 
-                '검사판정':'INSP_JGMT', 
-                '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
-                '무부하매연판정1':'NOLOD_SMO_JGMT_YN1',
-                'q1':'LOWR_QRT',
-                'q2':'MID_QRT',
-                'q3':'UP_QRT',
-                '차량대수':'VHCL_MKCNT',
-                }
-# '등급_수정':'EXHST_GAS_GRD_CD_MOD', 
-# 'DPF유무_수정':'DPF_MNTNG_YN', 
-# '시도명':'CTPV_NM', 
-# '시군구명':'SGG_NM', 
-# '차종분류':'VHCTY_CL_CD', 
-STD_BD_GRD4_CAR_CURSTT_TOT = STD_BD_GRD4_CAR_CURSTT_TOT.rename(columns=chc_dict)
-
-# STD_BD_GRD4_CAR_CURSTT_TOT.columns
-
-### [출력] 제번별 4분위 값 df(STD_BD_GRD4_CAR_CURSTT_TOT)
-create_table(STD_BD_GRD4_CAR_CURSTT_TOT,'STD_BD_GRD4_CAR_CURSTT_TOT')
-print('data export : STD_BD_GRD4_CAR_CURSTT_TOT 종료 %d초' % (time.time() - start_time))
-
-start_time = time.time()
 print('data export : STD_BD_DAT_GRD4_CERT_NO_RVW 시작')
 
-## 인증번호검토
-cert_df1 = quantile_df1[[
-    '테이블생성일자',
-    '차명',
-    '제작사명', 
-    '제원관리번호', 
-    '배출가스인증번호', 
-    '검사방법', 
-    'q1', 
-    'q2', 
-    'q3',
-    '차량대수',
-    ]].reset_index(drop=True)
-cert_df1['q2_mean'] = cert_df1.groupby(['배출가스인증번호', '검사방법'])['q2'].transform('mean')
-cert_df1.loc[(cert_df1['q2'] >= cert_df1['q2_mean']*5) | (cert_df1['q2'] <= cert_df1['q2_mean']/5), '검토구분'] = '주의'
-cert_df1['검토구분'] = cert_df1['검토구분'].fillna('양호')
+# 5번 데이터 셋에서 DAT용 (검토구분 계산) 테이블 생성
+# grp6 : df5.groupby(['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호'])
+grp7 = grp6.copy()
+grp7['q2_mean'] = grp7.groupby(['배출가스인증번호', '제작사명', '차명', '검사방법'])['q2'].transform('mean')
+grp7.loc[(grp7['q2'] > grp7['q2_mean']*5) | (grp7['q2'] < grp7['q2_mean']/5), '검토구분'] = '주의'
+grp7['검토구분'] = grp7['검토구분'].fillna('양호')
 
-grp1 = cert_df1.groupby(['배출가스인증번호', '검사방법', '검토구분', '제작사명', '차명', '제원관리번호'])['차량대수'].sum().reset_index().sort_values('차량대수', ascending=False)
-grp1 = grp1.drop_duplicates(['배출가스인증번호', '검사방법', '검토구분', '제원관리번호']).reset_index(drop=True)
-grp1 = grp1.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명'})
-grp1 = grp1.drop('차량대수', axis=1)
-
-cg1 = cert_df1.merge(grp1, on=['배출가스인증번호', '검사방법', '검토구분', '제원관리번호'], how='left')
-cg2 = cg1.drop_duplicates(['배출가스인증번호', '검사방법', '검토구분', '대표제작사명', '대표차명', '제원관리번호']).reset_index(drop=True)
-
-STD_BD_DAT_GRD4_CERT_NO_RVW = cg2[[
+STD_BD_DAT_GRD4_CERT_NO_RVW = grp7[[
     '배출가스인증번호',
     '검사방법',
     '검토구분',
-    '대표제작사명',
-    '대표차명',
+    '제작사명',
+    '차명',
     '제원관리번호',
     'q1',
     'q2',
     'q3',
     '테이블생성일자',
 ]]
+
 cdict = {
     '배출가스인증번호':'EXHST_GAS_CERT_NO',
     '검사방법':'INSP_MTHD',
     '검토구분':'RVW_SE',
-    '대표제작사명':'RPRS_MNFCTR_NM',
-    '대표차명':'RPRS_VHCNM', 
+    '제작사명':'RPRS_MNFCTR_NM',
+    '차명':'RPRS_VHCNM', 
     '제원관리번호':'MANG_MNG_NO',
     'q1':'LOWR_QRT',
     'q2':'MID_QRT',
@@ -1108,31 +1038,305 @@ print('data export : STD_BD_DAT_GRD4_CERT_NO_RVW 종료 %d초' % (time.time() - 
 start_time = time.time()
 print('data export : STD_BD_DAT_GRD4_SI 시작')
 
-## 열화도 테이블
-sidf.groupby(['배출가스인증번호', '검사방법']).agg({'차량연식':lambda x : x.nsmallest(1)}).reset_index()
-grp2 = sidf.groupby(['배출가스인증번호', '검사방법']).agg({'제작사명':lambda x:x.value_counts().index[0], '차명':lambda x:x.value_counts().index[0], '차종':lambda x:x.value_counts().index[0], '연료':lambda x:x.value_counts().index[0], '차량연식':lambda x : x.nsmallest(1), 'SI':'mean'}).reset_index()
-grp2 = grp2.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명', '차종':'대표차종', '연료':'대표차연료', '차량연식':'최초연식', 'SI':'열화도'})
-today_date = datetime.today().strftime("%Y%m%d")
-grp2['테이블생성일자'] = today_date
-
+df71 = grp_sidf.merge(grp7[['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법', '검토구분']], on=['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법'],how='left')
+df71['테이블생성일자'] = today_date
+STD_BD_DAT_GRD4_SI = df71[[
+    '배출가스인증번호', 
+    '검사방법', 
+    '검토구분', 
+    '제작사명', 
+    '차명', 
+    '차종', 
+    '연료', 
+    '최초연식', 
+    '열화도', 
+    '테이블생성일자', 
+]]
 cdict = {
     '배출가스인증번호':'EXHST_GAS_CERT_NO', 
     '검사방법':'INSP_MTHD', 
-    '대표제작사명':'RPRS_MNFCTR_NM', 
-    '대표차명':'RPRS_VHCNM', 
-    '대표차종':'RPRS_VHCTY_CD', 
-    '대표차연료':'RPRS_FUEL', 
+    '검토구분':'RVW_SE', 
+    '제작사명':'RPRS_MNFCTR_NM', 
+    '차명':'RPRS_VHCNM', 
+    '차종':'RPRS_VHCTY_CD', 
+    '연료':'RPRS_FUEL', 
     '최초연식':'FRST_YRIDNW', 
     '열화도':'SI', 
     '테이블생성일자':'LOAD_DT', 
 }
-STD_BD_DAT_GRD4_SI = grp2.rename(columns=cdict)
-
-# STD_BD_DAT_GRD4_SI.columns
+STD_BD_DAT_GRD4_SI = STD_BD_DAT_GRD4_SI.rename(columns=cdict)
 
 ### [출력] STD_BD_DAT_GRD4_SI
 create_table(STD_BD_DAT_GRD4_SI,'STD_BD_DAT_GRD4_SI')
 print('data export : STD_BD_DAT_GRD4_SI 종료 %d초' % (time.time() - start_time))
+
+# !!! 수정 끝(2023.10.27)
+
+# # 배인번호별 분석
+# def flat_cols(df):
+#     df.columns = ['/'.join(x) for x in df.columns.to_flat_index()]
+#     return df
+# # about 31.3s
+# # 최적화 24m 51s -> 30.0s
+# total_g_df = pd.DataFrame()
+# groupby_col1 = ['제작사명', '배출가스인증번호', '제원관리번호', '자동차형식', '엔진형식', '검사종류', '검사방법', '검사판정']
+# groupby_col2 = ['제작사명', '배출가스인증번호', '제원관리번호', '자동차형식', '엔진형식', '검사종류', '검사방법']
+# for one in df3y['배출가스인증번호'].unique():
+#     # 배인번호별 df
+#     gas_df = df3y.loc[df3y['배출가스인증번호'] == str(one)].reset_index(drop=True)
+
+#     if gas_df.shape[0] != 0:
+#         # 제번별, 차형식별, 엔진형식별, 검사판정별 무부하매연측정치1 통계
+#         g = gas_df.groupby(groupby_col1).agg({'차대번호':'count', '무부하매연측정치1':['mean', 'min', 'max']}).pipe(flat_cols).round(2).reset_index()
+#         g = g.rename(columns={'배출가스인증번호':'배출가스인증번호', '차대번호/count':'대수', '무부하매연측정치1/mean':'mean', '무부하매연측정치1/min':'min', '무부하매연측정치1/max':'max'})
+#         # 하나의 배인번호에서 제번별 엔진형식별 비율 계산
+#         g['합격률(%)'] = round(g['대수'] / g.groupby(groupby_col2)['대수'].transform('sum') * 100, 2)
+#         # 종합 - 통계
+#         total_g_df = pd.concat([total_g_df, g], ignore_index=True)
+#     else:
+#         print(f'오류 배인번호 : {one}')
+#         pass
+
+# # 분석
+# ## 열화계수(SI) 지수 계산
+# # - SI = 측정치 / 허용치
+# sidf = df3y[[
+#     '차대번호', 
+#     '제원관리번호', 
+#     '차종', 
+#     '차량연식', 
+#     '차명', 
+#     '차종유형', 
+#     '제작사명', 
+#     '연료', 
+#     '법정동코드', 
+#     '배출가스인증번호', 
+#     '검사방법', 
+#     '검사종류', 
+#     '검사판정', 
+#     '주행거리', 
+#     '무부하매연판정1', 
+#     '무부하매연허용치1', 
+#     '무부하매연측정치1'
+#     ]]
+
+# current_yr = int(datetime.today().strftime("%Y"))
+# sidf['차령'] = current_yr - sidf['차량연식']
+# sidf['SI'] = sidf['무부하매연측정치1'] / sidf['무부하매연허용치1']
+
+# ### 경유만 추출
+# today_date = datetime.today().strftime("%Y%m%d")
+# sidf['테이블생성일자'] = today_date
+# sidf1 = sidf[[
+#     '테이블생성일자',
+#     '차대번호', 
+#     '제원관리번호', 
+#     '차명', 
+#     '제작사명', 
+#     '배출가스인증번호', 
+#     '검사방법',
+#     '주행거리', 
+#     '차령',
+#     'SI', 
+#     ]]
+# chc_dict = {
+#     '테이블생성일자':'LOAD_DT',
+#     '차대번호':'VIN', 
+#     '제원관리번호':'MANG_MNG_NO', 
+#     '차종':'VHCTY_CD', 
+#     '연식':'YRIDNW', 
+#     '차명':'VHCNM',
+#     '제작사명':'MNFCTR_NM', 
+#     '차종유형':'VHCTY_TY', 
+#     '연료':'FUEL_CD',
+#     '법정동코드':'STDG_CD', 
+#     '배출가스인증번호':'EXHST_GAS_CERT_NO_MOD', 
+#     '검사방법':'INSP_MTHD', 
+#     '검사종류':'INSP_KND', 
+#     '검사판정':'INSP_JGMT', 
+#     '주행거리':'DRVNG_DSTNC',
+#     '무부하매연판정1':'NOLOD_SMO_JGMT_YN1',
+#     '무부하매연허용치1':'NOLOD_SMO_PRMT_VAL1',
+#     '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
+#     '차령':'VHCAG',
+#     }
+# STD_BD_GRD4_SI = sidf1.rename(columns=chc_dict)
+
+# # STD_BD_GRD4_SI.columns
+
+# ### [출력] SI 지수 정보(STD_BD_GRD4_SI)
+# create_table(STD_BD_GRD4_SI,'STD_BD_GRD4_SI')
+# print('data export : STD_BD_GRD4_SI 종료 %d초' % (time.time() - start_time))
+
+# start_time = time.time()
+# print('data export : STD_BD_GRD4_CAR_CURSTT_TOT 시작')
+
+# ## 동일 배번에서 제번별 매연 boxplot
+# total_g_df1 = total_g_df.loc[(total_g_df['배출가스인증번호'] != '확인불가') | (total_g_df['배출가스인증번호'] != 'nan')]
+# sample01 = total_g_df1.loc[total_g_df1['대수'] > 100].reset_index(drop=True)
+
+# ### quantile
+# # 4m 11.2s
+# boxplot_df = pd.DataFrame()
+# quantile_df = pd.DataFrame()
+# for one in sample01['배출가스인증번호'].unique(): # 통계에서 100대 초과인 배인번호만 추출
+#     temp_one = df3y.loc[(df3y['배출가스인증번호'] == one) & (df3y['검사판정'] == 'Y')].reset_index(drop=True) # 해당 배인번호 중 검사판정이 'Y'인 샘플만 추출
+#     if temp_one.shape[0] > 100: # 100대 초과면 진행
+#         for two in temp_one['검사종류'].unique(): # 검사종류별 샘플 추출
+#             temp_two = temp_one.loc[temp_one['검사종류'] == two].reset_index(drop=True)
+#             if temp_two.shape[0] > 100:
+#                 for three in temp_two['검사방법'].unique(): # 검사방법별 샘플 추출
+#                     temp_three = temp_two.loc[temp_two['검사방법'] == three].reset_index(drop=True)
+#                     boxplot_df = pd.concat([boxplot_df, temp_three], ignore_index=True) # 해당 샘플만 추출하여 쌓기
+#                     if temp_three.shape[0] > 100:
+#                         xticks_list= []
+#                         data_list = []
+#                         for four in temp_three['제원관리번호'].unique():
+#                             temp_four = temp_three.loc[temp_three['제원관리번호'] == four].reset_index(drop=True).dropna(subset=['무부하매연측정치1'])
+#                             if temp_four.shape[0] > 100:
+#                                 xticks_list.append(four)
+#                                 data_list.append(temp_four['무부하매연측정치1'])
+#                                 temp_four['q1'] = temp_four['무부하매연측정치1'].describe()['25%']
+#                                 temp_four['q2'] = temp_four['무부하매연측정치1'].describe()['50%']
+#                                 temp_four['q3'] = temp_four['무부하매연측정치1'].describe()['75%']
+#                                 temp_four['차량대수'] = temp_four.shape[0]
+#                                 quantile_df = pd.concat([quantile_df, temp_four], ignore_index=True) # 제번별 4분위 값 df형태로 저장
+# quantile_df1 = quantile_df.drop_duplicates(['배출가스인증번호', '제원관리번호', '검사방법', '검사종류'])
+# today_date = datetime.today().strftime("%Y%m%d")
+# quantile_df1['테이블생성일자'] = today_date
+
+# STD_BD_GRD4_CAR_CURSTT_TOT = quantile_df1[[
+#     '테이블생성일자',
+#     '차명',
+#     '제작사명', 
+#     '제원관리번호', 
+#     '배출가스인증번호', 
+#     '검사방법', 
+#     'q1', 
+#     'q2', 
+#     'q3',
+#     '차량대수',
+#     ]]
+# chc_dict = {
+#                 '테이블생성일자':'LOAD_DT', 
+#                 '차대번호':'VIN', 
+#                 '제원관리번호':'MANG_MNG_NO', 
+#                 '차명':'VHCNM',b
+#                 '제작사명':'MNFCTR_NM', 
+#                 '차종':'VHCTY_CD', 
+#                 '용도':'PURPS_CD2', 
+#                 '차종유형':'CHCTY_TY', 
+#                 '법정동코드':'STDG_CD', 
+#                 '배출가스인증번호':'EXHST_GAS_CERT_NO_MOD', 
+#                 '검사방법':'INSP_MTHD', 
+#                 '검사종류':'INSP_KND', 
+#                 '검사판정':'INSP_JGMT', 
+#                 '무부하매연측정치1':'NOLOD_SMO_MEVLU1', 
+#                 '무부하매연판정1':'NOLOD_SMO_JGMT_YN1',
+#                 'q1':'LOWR_QRT',
+#                 'q2':'MID_QRT',
+#                 'q3':'UP_QRT',
+#                 '차량대수':'VHCL_MKCNT',
+#                 }
+# # '등급_수정':'EXHST_GAS_GRD_CD_MOD', 
+# # 'DPF유무_수정':'DPF_MNTNG_YN', 
+# # '시도명':'CTPV_NM', 
+# # '시군구명':'SGG_NM', 
+# # '차종분류':'VHCTY_CL_CD', 
+# STD_BD_GRD4_CAR_CURSTT_TOT = STD_BD_GRD4_CAR_CURSTT_TOT.rename(columns=chc_dict)
+
+# # STD_BD_GRD4_CAR_CURSTT_TOT.columns
+
+# ### [출력] 제번별 4분위 값 df(STD_BD_GRD4_CAR_CURSTT_TOT)
+# create_table(STD_BD_GRD4_CAR_CURSTT_TOT,'STD_BD_GRD4_CAR_CURSTT_TOT')
+# print('data export : STD_BD_GRD4_CAR_CURSTT_TOT 종료 %d초' % (time.time() - start_time))
+
+# start_time = time.time()
+# print('data export : STD_BD_DAT_GRD4_CERT_NO_RVW 시작')
+
+# ## 인증번호검토
+# cert_df1 = quantile_df1[[
+#     '테이블생성일자',
+#     '차명',
+#     '제작사명', 
+#     '제원관리번호', 
+#     '배출가스인증번호', 
+#     '검사방법', 
+#     'q1', 
+#     'q2', 
+#     'q3',
+#     '차량대수',
+#     ]].reset_index(drop=True)
+# cert_df1['q2_mean'] = cert_df1.groupby(['배출가스인증번호', '검사방법'])['q2'].transform('mean')
+# cert_df1.loc[(cert_df1['q2'] > cert_df1['q2_mean']*5) | (cert_df1['q2'] < cert_df1['q2_mean']/5), '검토구분'] = '주의'
+# cert_df1['검토구분'] = cert_df1['검토구분'].fillna('양호')
+
+# grp1 = cert_df1.groupby(['배출가스인증번호', '검사방법', '검토구분', '제작사명', '차명', '제원관리번호'])['차량대수'].sum().reset_index().sort_values('차량대수', ascending=False)
+# grp1 = grp1.drop_duplicates(['배출가스인증번호', '검사방법', '검토구분', '제원관리번호']).reset_index(drop=True)
+# grp1 = grp1.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명'})
+# grp1 = grp1.drop('차량대수', axis=1)
+
+# cg1 = cert_df1.merge(grp1, on=['배출가스인증번호', '검사방법', '검토구분', '제원관리번호'], how='left')
+# cg2 = cg1.drop_duplicates(['배출가스인증번호', '검사방법', '검토구분', '대표제작사명', '대표차명', '제원관리번호']).reset_index(drop=True)
+
+# STD_BD_DAT_GRD4_CERT_NO_RVW = cg2[[
+#     '배출가스인증번호',
+#     '검사방법',
+#     '검토구분',
+#     '대표제작사명',
+#     '대표차명',
+#     '제원관리번호',
+#     'q1',
+#     'q2',
+#     'q3',
+#     '테이블생성일자',
+# ]]
+# cdict = {
+#     '배출가스인증번호':'EXHST_GAS_CERT_NO',
+#     '검사방법':'INSP_MTHD',
+#     '검토구분':'RVW_SE',
+#     '대표제작사명':'RPRS_MNFCTR_NM',
+#     '대표차명':'RPRS_VHCNM', 
+#     '제원관리번호':'MANG_MNG_NO',
+#     'q1':'LOWR_QRT',
+#     'q2':'MID_QRT',
+#     'q3':'UP_QRT',
+#     '테이블생성일자':'LOAD_DT',
+# }
+# STD_BD_DAT_GRD4_CERT_NO_RVW = STD_BD_DAT_GRD4_CERT_NO_RVW.rename(columns=cdict)
+
+# ### [출력] STD_BD_DAT_GRD4_CERT_NO_RVW
+# create_table(STD_BD_DAT_GRD4_CERT_NO_RVW,'STD_BD_DAT_GRD4_CERT_NO_RVW')
+# print('data export : STD_BD_DAT_GRD4_CERT_NO_RVW 종료 %d초' % (time.time() - start_time))
+
+# start_time = time.time()
+# print('data export : STD_BD_DAT_GRD4_SI 시작')
+
+# ## 열화도 테이블
+# sidf.groupby(['배출가스인증번호', '검사방법']).agg({'차량연식':lambda x : x.nsmallest(1)}).reset_index()
+# grp2 = sidf.groupby(['배출가스인증번호', '검사방법']).agg({'제작사명':lambda x:x.value_counts().index[0], '차명':lambda x:x.value_counts().index[0], '차종':lambda x:x.value_counts().index[0], '연료':lambda x:x.value_counts().index[0], '차량연식':lambda x : x.nsmallest(1), 'SI':'mean'}).reset_index()
+# grp2 = grp2.rename(columns={'제작사명':'대표제작사명', '차명':'대표차명', '차종':'대표차종', '연료':'대표차연료', '차량연식':'최초연식', 'SI':'열화도'})
+# today_date = datetime.today().strftime("%Y%m%d")
+# grp2['테이블생성일자'] = today_date
+
+# cdict = {
+#     '배출가스인증번호':'EXHST_GAS_CERT_NO', 
+#     '검사방법':'INSP_MTHD', 
+#     '대표제작사명':'RPRS_MNFCTR_NM', 
+#     '대표차명':'RPRS_VHCNM', 
+#     '대표차종':'RPRS_VHCTY_CD', 
+#     '대표차연료':'RPRS_FUEL', 
+#     '최초연식':'FRST_YRIDNW', 
+#     '열화도':'SI', 
+#     '테이블생성일자':'LOAD_DT', 
+# }
+# STD_BD_DAT_GRD4_SI = grp2.rename(columns=cdict)
+
+# # STD_BD_DAT_GRD4_SI.columns
+
+# ### [출력] STD_BD_DAT_GRD4_SI
+# create_table(STD_BD_DAT_GRD4_SI,'STD_BD_DAT_GRD4_SI')
+# print('data export : STD_BD_DAT_GRD4_SI 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
 print('data export : STD_BD_GRD4_ELPDSRC_CURSTT 시작')
@@ -1172,7 +1376,6 @@ csec = cse.merge(coder, on='법정동코드', how='left')
 # csec.loc[csec['법정동코드'] == 4163055000, ['시도', '시군구']] = ['경기도', '양주시'] # 경기도 양주시 회천3동
 # csec.loc[csec['법정동코드'] == 5180031033, ['시도', '시군구']] = ['강원특별자치도', '양구군'] # 경기도 양주시 회천3동
 
-
 # 조기폐차 추가
 dfe = csec.merge(elpm, on='차대번호', how='left')
 df1 = dfe[dfe['연료'] == '경유'].reset_index(drop=True)
@@ -1192,6 +1395,13 @@ df1_ey['기준연월'] = df1_ey['말소일자'].str[:4] + '.' + df1_ey['말소�
 df1 = pd.concat([df1_ey, df1_en], ignore_index=True)
 
 # !!! 수정 끝(2023.10.12)
+
+# !!! 수정 시작(2023.10.24)
+
+# 조기폐차 이상치 말소일자 제거
+df1 = df1[(df1['말소일자'] >= '20230201') & (df1['말소일자'] <= today_date) | (df1['말소일자'].isnull())].reset_index(drop=True)
+
+# !!! 수정 끝(2023.10.24)
 
 STD_BD_GRD4_ELPDSRC_CURSTT = df1[[
     '기준연월',
@@ -1247,12 +1457,11 @@ print('data export : STD_BD_GRD4_ELPDSRC_CURSTT 종료 %d초' % (time.time() - s
 start_time = time.time()
 print('data export : STD_BD_GRD4_NOW_ELPDSRC_CURSTT 시작')
 
-# !!! 수정 시작(2023.10.26)
+# !!! 수정 시작(2023.10.27)
 # 4등급 경유차 현재 조기폐차 현황 시작
 # 최신 조기폐차 현황(elp_rct)
 csece_rct = csec.merge(elp_rct, on='차대번호', how='left')
 csece_rct_dgl = csece_rct[csece_rct['연료'] == '경유'].reset_index(drop=True)
-
 STD_BD_GRD4_NOW_ELPDSRC_CURSTT = csece_rct_dgl[[
     '차대번호', 
     '법정동코드', 
@@ -1260,10 +1469,10 @@ STD_BD_GRD4_NOW_ELPDSRC_CURSTT = csece_rct_dgl[[
     # '용도', 
     '연료', 
     # '차종유형', 
-    '시도',
+    '시도', 
     '시군구', 
     '조기폐차상태코드', 
-    '조기폐차최종승인YN',
+    '조기폐차최종승인YN', 
 ]]
 STD_BD_GRD4_NOW_ELPDSRC_CURSTT['테이블생성일자'] = today_date
 STD_BD_GRD4_NOW_ELPDSRC_CURSTT = STD_BD_GRD4_NOW_ELPDSRC_CURSTT[[
@@ -1276,7 +1485,7 @@ STD_BD_GRD4_NOW_ELPDSRC_CURSTT = STD_BD_GRD4_NOW_ELPDSRC_CURSTT[[
     '시도', 
     '시군구', 
     '조기폐차상태코드', 
-    '조기폐차최종승인YN', 
+    '조기폐차최종승인YN',
     '테이블생성일자', 
 ]]
 chc_dict = {
@@ -1289,7 +1498,7 @@ chc_dict = {
     # '차종유형':'VHCTY_TY', 
     '시도':'CTPV', 
     '시군구':'SGG', 
-    '조기폐차상태코드':'ELPDSRC_STTS_CD', 
+    '조기폐차상태코드':'ELPDSRC_STTS_CD',
     '조기폐차최종승인YN':'ELPDSRC_LAST_APRV_YN', 
     '테이블생성일자':'LOAD_DT', 
 }
@@ -1651,8 +1860,9 @@ max_month = today_date[4:6]
 
 num_car_by_local1[['연도', '월']] = [max_year, max_month]
 
+# !!! 수정(2023.10.24)
 ### 연료 지역별 등록차량대수
-num_car_by_local2 = dfm.groupby(['연료', '시도', '시군구_수정', '최초등록일자_년', '최초등록일자_월'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+num_car_by_local2 = dfm.groupby(['연료', '시도', '시군구_수정', '최초등록일자_년', '최초등록일자_월'], dropna=False)['차대번호'].count().reset_index()
 num_car_by_local2 = num_car_by_local2.rename(columns={'차대번호':'등록차량대수', '최초등록일자_년':'연도', '최초등록일자_월':'월'})
 
 ### 연료 지역별 말소 대수
@@ -1661,9 +1871,10 @@ errc['변경일자_년'] = errc['변경일자'].str[:4]
 errc['변경일자_월'] = errc['변경일자'].str[4:6]
 errc['변경일자_일'] = errc['변경일자'].str[6:8]
 
+# !!! 수정(2023.10.24)
 ### 시군구명 앞쪽 지역명만 남기기(errc)
 errc['시군구_수정'] = errc['시군구'].str.split(' ').str[0]
-grp_erase = errc.loc[errc['변경일자_년'] == max_year].groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp_erase = errc.loc[errc['변경일자_년'] == max_year].groupby(['변경일자_년', '변경일자_월', '연료', '시도', '시군구_수정'], dropna=False)['차대번호'].count().reset_index()
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도', '변경일자_월':'월'})
 grp_erase = grp_erase.sort_values(['시도', '시군구_수정'])
 
@@ -1701,8 +1912,8 @@ today_date = datetime.today().strftime("%Y%m%d")
 base3['테이블생성일자'] = today_date
 base3['기준연월'] = base3['연도'] + '.' + base3['월']
 
-# # 현재 월 -1 까지만 추출(수동)
-# base3 = base3[(base3['연도'] != today_date[:4]) | (base3['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.10.26)
+# 현재 월 -1 까지만 추출(수동)
+# base3 = base3[(base3['연도'] != today_date[:4]) | (base3['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.10.27)
 
 base4 = base3[[
     '테이블생성일자', 
@@ -1741,12 +1952,14 @@ num_car_by_local1 = dfm.groupby(['시도', '차종'], dropna=False)['차대번�
 num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수'})
 num_car_by_local1['연도'] = max_year
 
+# !!! 수정(2023.10.24)
 ### 등록 차량 대수
-num_car_by_local2 = dfm.groupby(['시도', '차종', '최초등록일자_년'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+num_car_by_local2 = dfm.groupby(['시도', '차종', '최초등록일자_년'], dropna=False)['차대번호'].count().reset_index()
 num_car_by_local2 = num_car_by_local2.rename(columns={'차대번호':'등록차량대수', '최초등록일자_년':'연도'})
 
+# !!! 수정(2023.10.24)
 ### 말소 차량 대수
-grp_erase = errc.groupby(['변경일자_년', '시도', '차종'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp_erase = errc.groupby(['변경일자_년', '시도', '차종'], dropna=False)['차대번호'].count().reset_index()
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도'})
 grp_erase = grp_erase.sort_values(['시도'])
 
@@ -1879,20 +2092,24 @@ erea['말소일자_년'] = erea['말소일자'].str[:4]
 erea['말소일자_월'] = erea['말소일자'].str[4:6]
 erea['말소일자_일'] = erea['말소일자'].str[6:8]
 
-# 현재 차량 대수
-grp1 = dfe[dfe['차량말소YN'] == 'N'].groupby(['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index() # !!! 수정(2023.10.24)
+# !!! 수정(2023.10.24)
+# 현재 연도 차량 대수
+grp1 = dfe[dfe['차량말소YN'] == 'N'].groupby(['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index()
 grp1 = grp1.rename(columns={'차대번호':'차량대수', '저감장치부착유무':'저감대수'})
 
+# !!! 수정(2023.10.24)
 # 연도별 등록대수
-grp2 = dfe[dfe['차량말소YN'] == 'N'].groupby(['최초등록일자_년', '최초등록일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index() # !!! 수정(2023.10.24)
+grp2 = dfe[dfe['차량말소YN'] == 'N'].groupby(['최초등록일자_년', '최초등록일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index()
 grp2 = grp2.rename(columns={'차대번호':'등록대수', '저감장치부착유무':'등록저감대수', '최초등록일자_년':'연도', '최초등록일자_월':'월'})
 
+# !!! 수정(2023.10.24)
 # 연도별 말소대수
-grp3 = erea.groupby(['변경일자_년', '변경일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index() # !!! 수정(2023.10.24)
+grp3 = erea.groupby(['변경일자_년', '변경일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'차대번호':'count', '저감장치부착유무':'count'}).reset_index()
 grp3 = grp3.rename(columns={'차대번호':'말소대수', '저감장치부착유무':'말소저감대수', '변경일자_년':'연도', '변경일자_월':'월'})
 
+# !!! 수정(2023.10.24)
 # 연도별 조기폐차 대수
-grp4 = dfe.groupby(['말소일자_년', '말소일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'조기폐차최종승인YN':'count'}).reset_index() # !!! 수정(2023.10.24)
+grp4 = dfe.groupby(['말소일자_년', '말소일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'조기폐차최종승인YN':'count'}).reset_index()
 grp4 = grp4.rename(columns={'말소일자_년':'연도', '말소일자_월':'월', '조기폐차최종승인YN':'조기폐차'})
 
 y_plist = list(pd.date_range(end=date, periods=4, freq="MS").year)
@@ -5345,9 +5562,9 @@ grp2 = df2.groupby(['시도', '시군구_수정', '연료', '차종', '차종유
 grp2 = grp2.rename(columns={'E_CO_total':'E_CO_total_sum', 'E_HC_total':'E_HC_total_sum', 'E_NOx_total':'E_NOx_total_sum', 'E_PM10_total':'E_PM10_total_sum', 'E_PM2_5_total':'E_PM2_5_total_sum'})
 
 # 연도 설정
-# grp2['연도'] = '2022'
+grp2['연도'] = '2022'
 today_date = datetime.today().strftime("%Y%m%d")
-grp2['연도'] = today_date[:4] # !!! 수정(2023.10.24)
+# grp2['연도'] = today_date[:4]
 grp2['테이블생성일자'] = today_date
 
 STD_BD_DAT_GRD4_EXHST_MSS_CURSTT = grp2[[
@@ -5396,8 +5613,8 @@ grp3 = df2.groupby(['시도', '시군구_수정', '연료', '차종', '차종유
 grp3 = grp3.rename(columns={'E_CO_total':'E_CO_total_mean', 'E_HC_total':'E_HC_total_mean', 'E_NOx_total':'E_NOx_total_mean', 'E_PM10_total':'E_PM10_total_mean', 'E_PM2_5_total':'E_PM2_5_total_mean'})
 
 # 연도 설정
-# grp3['연도'] = '2022'
-grp3['연도'] = today_date[:4] # !!! 수정(2023.10.24)
+grp3['연도'] = '2022'
+# grp3['연도'] = today_date[:4]
 grp3['테이블생성일자'] = today_date
 
 STD_BD_DAT_GRD4_MEVLU = grp3[[
@@ -5676,7 +5893,7 @@ year = int(today_date[:4])
 # !!! 수정 끝(2023.10.19)
 
 # 2022년 차량 대수
-grp1 = dfm.groupby(['지역', '시도', '배출가스등급'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp1 = dfm.groupby(['지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', '지역', '시도', '배출가스등급', '차량대수']]
@@ -5700,11 +5917,11 @@ for ctpv in grp1['시도'].unique():
 base = pd.DataFrame({'연도':yr_list, '지역':rgn_list, '시도':ctpv_list, '배출가스등급':grd_list})
 
 # 연도별 등록대수
-grp2 = dfm.groupby(['최초등록일자_년', '지역', '시도', '배출가스등급'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = dfm.groupby(['최초등록일자_년', '지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc.groupby(['변경일자_년', '지역', '시도', '배출가스등급'], dropna=False)['차대번호'].count() # !!! 수정(2023.10.24)
+grp3 = errc.groupby(['변경일자_년', '지역', '시도', '배출가스등급'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
 base1 = base.merge(grp1, on=['연도', '지역', '시도', '배출가스등급'], how='left')
 base2 = base1.merge(grp2, on=['연도', '지역', '시도', '배출가스등급'], how='left')
@@ -5746,7 +5963,7 @@ print('data export : STD_BD_CAR_CURSTT_MOD2 시작')
 
 ## 등급, 연료별 차량현황
 # 2022년 차량 대수
-grp1 = dfm.groupby(['fuel2', '배출가스등급'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp1 = dfm.groupby(['fuel2', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', 'fuel2', '배출가스등급', '차량대수']]
@@ -5764,11 +5981,11 @@ for fuel in grp1['fuel2'].unique():
 base = pd.DataFrame({'연도':yr_list, 'fuel2':fuel_list, '배출가스등급':grd_list})
 
 # 연도별 등록대수
-grp2 = dfm.groupby(['최초등록일자_년', 'fuel2', '배출가스등급'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = dfm.groupby(['최초등록일자_년', 'fuel2', '배출가스등급'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc.groupby(['변경일자_년', 'fuel2', '배출가스등급'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp3 = errc.groupby(['변경일자_년', 'fuel2', '배출가스등급'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
 base1 = base.merge(grp1, on=['연도', 'fuel2', '배출가스등급'], how='left')
 base2 = base1.merge(grp2, on=['연도', 'fuel2', '배출가스등급'], how='left')
@@ -5854,8 +6071,8 @@ start_time = time.time()
 print('data export : STD_BD_CAR_REG_MKCNT 시작')
 
 ## 지역, 연료, 연도별 차량 현황 분석
-# 현재 차량 대수
-grp1 = dfm2.groupby(['fuel', '시도'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+# 2022년 차량 대수
+grp1 = dfm2.groupby(['fuel', '시도'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', 'fuel', '시도', '차량대수']]
@@ -5873,11 +6090,11 @@ for fuel in grp1['fuel'].unique():
 base = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list, '시도':ctpv_list})
 
 # 연도별 등록대수
-grp2 = dfm2.groupby(['최초등록일자_년', 'fuel', '시도'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = dfm2.groupby(['최초등록일자_년', 'fuel', '시도'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc2.groupby(['변경일자_년', 'fuel', '시도'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp3 = errc2.groupby(['변경일자_년', 'fuel', '시도'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
 base1 = base.merge(grp1, on=['연도', 'fuel', '시도'], how='left')
 base2 = base1.merge(grp2, on=['연도', 'fuel', '시도'], how='left')
@@ -5920,8 +6137,8 @@ print('data export : STD_BD_CAR_PRET 시작')
 dfm2dgl = dfm2.loc[(dfm2['연료'] == '경유') | (dfm2['연료'] == '휘발유') | (dfm2['연료'] == 'LPG(액화석유가스)')].reset_index(drop=True)
 errc2dgl = errc2.loc[(errc2['연료'] == '경유') | (errc2['연료'] == '휘발유') | (errc2['연료'] == 'LPG(액화석유가스)')].reset_index(drop=True)
 
-# 현재 차량 대수
-grp1 = dfm2dgl.groupby('연료', dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+# 2022년 차량 대수
+grp1 = dfm2dgl.groupby('연료', as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', '연료', '차량대수']]
@@ -5936,11 +6153,11 @@ for fuel in grp1['연료'].unique():
 base = pd.DataFrame({'연도':yr_list, '연료':fuel_list})
 
 # 연도별 등록대수
-grp2 = dfm2dgl.groupby(['최초등록일자_년', '연료'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = dfm2dgl.groupby(['최초등록일자_년', '연료'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc2dgl.groupby(['변경일자_년', '연료'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp3 = errc2dgl.groupby(['변경일자_년', '연료'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
 base1 = base.merge(grp1, on=['연도', '연료'], how='left')
 base2 = base1.merge(grp2, on=['연도', '연료'], how='left')
@@ -6096,8 +6313,8 @@ print('data export : STD_BD_HYBRD_CAR_PRET 시작')
 dfm2h = dfm2.loc[(dfm2['연료'] == '경유 하이브리드') | (dfm2['연료'] == '휘발유 하이브리드') | (dfm2['연료'] == 'LPG 하이브리드')].reset_index(drop=True)
 errc2h = errc2.loc[(errc2['연료'] == '경유 하이브리드') | (errc2['연료'] == '휘발유 하이브리드') | (errc2['연료'] == 'LPG 하이브리드')].reset_index(drop=True)
 
-# 현재 차량 대수
-grp1 = dfm2h.groupby('연료', dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+# 2022년 차량 대수
+grp1 = dfm2h.groupby('연료', as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', '연료', '차량대수']]
@@ -6112,11 +6329,11 @@ for fuel in grp1['연료'].unique():
 base = pd.DataFrame({'연도':yr_list, '연료':fuel_list})
 
 # 연도별 등록대수
-grp2 = dfm2h.groupby(['최초등록일자_년', '연료'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = dfm2h.groupby(['최초등록일자_년', '연료'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc2h.groupby(['변경일자_년', '연료'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp3 = errc2h.groupby(['변경일자_년', '연료'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
 base1 = base.merge(grp1, on=['연도', '연료'], how='left')
 base2 = base1.merge(grp2, on=['연도', '연료'], how='left')
@@ -6322,8 +6539,8 @@ print('data export : STD_BD_FUEL_GRD_VHCL_CURSTT_PRET 시작')
 
 ## 내연차 연료, 등급, 연도별 차량 현황 예측
 # - 경유, 휘발유, LPG
-# 현재 차량 대수
-grp1 = dfm2dgl.groupby(['시도', 'fuel', '배출가스등급'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+# 2022년 차량 대수
+grp1 = dfm2dgl.groupby(['시도', 'fuel', '배출가스등급'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', '시도', 'fuel', '배출가스등급', '차량대수']]
@@ -6344,11 +6561,11 @@ for ctpv in grp1['시도'].unique():
 base = pd.DataFrame({'연도':yr_list, '시도':ctpv_list, 'fuel':fuel_list, '배출가스등급':grd_list})
 
 # 연도별 등록대수
-grp2 = dfm2dgl.groupby(['최초등록일자_년', '시도', 'fuel', '배출가스등급'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = dfm2dgl.groupby(['최초등록일자_년', '시도', 'fuel', '배출가스등급'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc2dgl.groupby(['변경일자_년', '시도', 'fuel', '배출가스등급'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp3 = errc2dgl.groupby(['변경일자_년', '시도', 'fuel', '배출가스등급'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
 base1 = base.merge(grp1, on=['연도', '시도', 'fuel', '배출가스등급'], how='left')
 base2 = base1.merge(grp2, on=['연도', '시도', 'fuel', '배출가스등급'], how='left')
@@ -6415,8 +6632,8 @@ print('data export : STD_BD_ECO_CAR_PRET 시작')
 dfm2bh = dfm2.loc[(dfm2['fuel'] == '전기') | (dfm2['fuel'] == '수소')].reset_index(drop=True)
 errc2bh = errc2.loc[(errc2['fuel'] == '전기') | (errc2['fuel'] == '수소')].reset_index(drop=True)
 
-# 현재 차량 대수
-grp1 = dfm2bh.groupby('fuel', dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+# 2022년 차량 대수
+grp1 = dfm2bh.groupby('fuel', as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1 = grp1[['연도', 'fuel', '차량대수']]
@@ -6431,11 +6648,11 @@ for fuel in grp1['fuel'].unique():
 base = pd.DataFrame({'연도':yr_list, 'fuel':fuel_list})
 
 # 연도별 등록대수
-grp2 = dfm2bh.groupby(['최초등록일자_년', 'fuel'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = dfm2bh.groupby(['최초등록일자_년', 'fuel'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '차대번호':'등록대수'})
 
 # 연도별 말소대수
-grp3 = errc2bh.groupby(['변경일자_년', 'fuel'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp3 = errc2bh.groupby(['변경일자_년', 'fuel'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '차대번호':'말소대수'})
 base1 = base.merge(grp1, on=['연도', 'fuel'], how='left')
 base2 = base1.merge(grp2, on=['연도', 'fuel'], how='left')
@@ -6644,7 +6861,7 @@ year = int(today_date[:4])
 month = int(today_date[4:6])
 
 # 차량 대수
-grp1 = df9.groupby(['시도', '배출가스등급', '연료', '차종', '차종유형', '용도'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp1 = df9.groupby(['시도', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1['월'] = f'{month}'
@@ -6690,12 +6907,12 @@ base = pd.DataFrame({
 
 # 13.6s
 # 연도별 등록대수
-grp2 = df9.groupby(['시도', '최초등록일자_년', '최초등록일자_월', '배출가스등급', '연료', '차종', '차종유형', '용도'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = df9.groupby(['시도', '최초등록일자_년', '최초등록일자_월', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '최초등록일자_월':'월', '차대번호':'등록대수'})
 
 #2.5s
 # 연도별 말소대수
-grp3 = errc.groupby(['시도', '변경일자_년', '변경일자_월', '배출가스등급', '연료', '차종', '차종유형', '용도'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp3 = errc.groupby(['시도', '변경일자_년', '변경일자_월', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '변경일자_월':'월', '차대번호':'말소대수'})
 
 base1 = base.merge(grp1, on=['시도', '연도', '월', '배출가스등급', '연료', '차종', '차종유형', '용도'], how='left')
@@ -6756,7 +6973,7 @@ start_time = time.time()
 print('data export : STD_BD_DAT_FUEL_CAR_DEC 시작')
 
 ## 내연기관차 감소추이
-grp1 = dfm2dgl.groupby(['배출가스등급', '연료'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp1 = dfm2dgl.groupby(['배출가스등급', '연료'])['차대번호'].count().reset_index()
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 
 # year = '2022'
@@ -6777,9 +6994,9 @@ for grd in ['1', '2', '3', '4', '5', 'X']:
                 fuel_list.append(fuel)
 base = pd.DataFrame({'연도':yr_list, '월':month_list, '배출가스등급':grd_list, '연료':fuel_list})
 
-grp2 = dfm2dgl.groupby(['최초등록일자_년', '최초등록일자_월', '배출가스등급', '연료'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp2 = dfm2dgl.groupby(['최초등록일자_년', '최초등록일자_월', '배출가스등급', '연료'])['차대번호'].count().reset_index()
 grp2 = grp2.rename(columns={'최초등록일자_년':'연도', '최초등록일자_월':'월', '차대번호':'등록대수'})
-grp3 = errc2dgl.groupby(['변경일자_년', '변경일자_월', '배출가스등급', '연료'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.10.24)
+grp3 = errc2dgl.groupby(['변경일자_년', '변경일자_월', '배출가스등급', '연료'])['차대번호'].count().reset_index()
 grp3 = grp3.rename(columns={'변경일자_년':'연도', '변경일자_월':'월', '차대번호':'말소대수'})
 
 base1 = base.merge(grp1, on=['연도', '월', '배출가스등급', '연료'], how='left')
