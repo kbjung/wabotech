@@ -1038,6 +1038,13 @@ print('data export : STD_BD_DAT_GRD4_CERT_NO_RVW 종료 %d초' % (time.time() - 
 start_time = time.time()
 print('data export : STD_BD_DAT_GRD4_SI 시작')
 
+# !!! 수정 시작(2023.11.02)
+
+grp_sidf = sidf.groupby(['배출가스인증번호', '제작사명', '차명', '검사방법', '제원관리번호']).agg({'차종':lambda x:x.value_counts().index[0], '연료':lambda x:x.value_counts().index[0], '차량연식':lambda x:x.nsmallest(1), 'SI':'mean'}).reset_index()
+grp_sidf = grp_sidf.rename(columns={'차량연식':'최초연식', 'SI':'열화도'})
+
+# !!! 수정 끝(2023.11.02)
+
 df71 = grp_sidf.merge(grp7[['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법', '검토구분']], on=['배출가스인증번호', '제원관리번호', '제작사명', '차명', '검사방법'],how='left')
 df71['테이블생성일자'] = today_date
 STD_BD_DAT_GRD4_SI = df71[[
