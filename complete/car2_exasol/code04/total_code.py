@@ -2106,8 +2106,9 @@ grp3 = grp3.rename(columns={'차대번호':'말소대수', '저감장치부착�
 grp4 = dfe.groupby(['말소일자_년', '말소일자_월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도'], dropna=False).agg({'조기폐차최종승인YN':'count'}).reset_index()
 grp4 = grp4.rename(columns={'말소일자_년':'연도', '말소일자_월':'월', '조기폐차최종승인YN':'조기폐차'})
 
-y_plist = list(pd.date_range(end=date, periods=4, freq="MS").year)
-mth_plist = list(pd.date_range(end=date, periods=4, freq="MS").month)
+div = 4
+y_plist = list(pd.date_range(end=date, periods=div, freq="MS").year)
+mth_plist = list(pd.date_range(end=date, periods=div, freq="MS").month)
 
 # y_plist, mth_plist
 
@@ -2165,8 +2166,8 @@ base5.loc[base5['저감장치미부착대수'] < 0, '저감장치미부착대수
 base5.loc[[x for x in range(0, base5.shape[0], 4)], '감소율'] = 0
 base5 = base5.rename(columns={'조기폐차':'조기폐차대수', '저감대수':'저감장치부착대수'})
 
-# 현재 월 -1 까지만 추출(수동)
-base5 = base5[(base5['연도'] != today_date[:4]) | (base5['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.11.03)
+# # 현재 월 -1 까지만 추출(수동)
+# base5 = base5[(base5['연도'] != today_date[:4]) | (base5['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.11.03)
 
 today_date = datetime.today().strftime("%Y%m%d")
 base5['테이블생성일자'] = today_date
