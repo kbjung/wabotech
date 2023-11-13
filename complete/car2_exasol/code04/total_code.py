@@ -1649,7 +1649,8 @@ print('data export : STD_BD_DAT_GRD4_MLSFC 시작')
 ## 4등급 등급세분류
 dat_mlsfc = df1.copy()
 dat_mlsfc['시군구_수정'] = dat_mlsfc['시군구'].str.split(' ').str[0]
-grp1 = dat_mlsfc.groupby(['연료', '시도', '시군구_수정', '차종', '차종유형', '용도', 'Grade'])['차대번호'].count().unstack('Grade').reset_index()
+dat_mlsfc.loc[dat_mlsfc['연료'].isnull(), '연료'] = '해당없음' # !!! 수정(2023.11.13)
+grp1 = dat_mlsfc.groupby(['연료', '시도', '시군구_수정', '차종', '차종유형', '용도', 'Grade'], dropna=False)['차대번호'].count().unstack('Grade').reset_index() # !!! 수정(2023.11.13)
 
 # 연도 설정
 # !!! 수정 시작(2023.10.18)
