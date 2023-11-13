@@ -8477,12 +8477,13 @@ print('data export : STD_BD_DAT_LEM_SELCT 종료 %d초' % (time.time() - start_t
 start_time = time.time()
 print('data export : STD_BD_DAT_SELCT_PNT_CURSTT 시작')
 
+# !!! 수정 시작(2023.11.10)
 ## 선별포인트현황
-for n in range(0, 350, 50):
-    if n <= 300:
-        lem.loc[(lem['선별포인트'] >= n) & (lem['선별포인트'] < n + 50), '선별포인트구간'] = f'{n} ~ {n+49}'
-    else:
-        lem.loc[lem['선별포인트'] >= n, '선별포인트구간'] = f'{n}이상'
+for n in range(0, 300, 50):
+    lem.loc[(lem['선별포인트'] >= n) & (lem['선별포인트'] < n + 50), '선별포인트구간'] = f'{n} ~ {n+49}'
+n += 50
+lem.loc[lem['선별포인트'] >= n, '선별포인트구간'] = f'{n} ~ {n+49}'
+# !!! 수정 끝(2023.11.10)
 
 stat = lem.groupby(['배출가스등급', '선별포인트구간', '차종', '차종유형']).agg({'차대번호':'count', '무부하매연측정치1':'mean', '일일평균주행거리':'mean', '최근검사경과일':'mean', '운행제한건수':'mean'}).reset_index()
 stat = stat.rename(columns={'차대번호':'차량대수', '무부하매연측정치1':'매연측정값'})
