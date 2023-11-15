@@ -5623,11 +5623,11 @@ print('data export : STD_BD_DAT_GRD4_MEVLU 시작')
 diesel = dgl[dgl['연료'] == '경유'].reset_index(drop=True)
 gas_lpg = dgl[(dgl['연료'] == '휘발유') | (dgl['연료'] == 'LPG(액화석유가스)')].reset_index(drop=True)
 
-grp_diesel = diesel.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '검사방법']).agg({'무부하매연측정치1':'mean'}).reset_index()
-grp_diesel = grp_diesel.rename(columns={'무부하매연측정치1':'매연(평균)'})
+grp_diesel = diesel.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '검사방법']).agg({'무부하매연측정치1':'mean', '차대번호':'count'}).reset_index() # !!! 수정(2023.11.15)
+grp_diesel = grp_diesel.rename(columns={'무부하매연측정치1':'매연(평균)', '차대번호':'차량대수'}) # !!! 수정(2023.11.15)
 
-grp_gas_lpg = gas_lpg.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '검사방법']).agg({'무부하매연측정치1':'mean', '무부하매연측정치2':'mean', '무부하매연측정치3':'mean'}).reset_index()
-grp_gas_lpg = grp_gas_lpg.rename(columns={'무부하매연측정치1':'CO(평균)', '무부하매연측정치2':'HC(평균)', '무부하매연측정치3':'NOx(평균)'})
+grp_gas_lpg = gas_lpg.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '검사방법']).agg({'무부하매연측정치1':'mean', '무부하매연측정치2':'mean', '무부하매연측정치3':'mean', '차대번호':'count'}).reset_index() # !!! 수정(2023.11.15)
+grp_gas_lpg = grp_gas_lpg.rename(columns={'무부하매연측정치1':'CO(평균)', '무부하매연측정치2':'HC(평균)', '무부하매연측정치3':'NOx(평균)', '차대번호':'차량대수'}) # !!! 수정(2023.11.15)
 
 grp3 = pd.concat([grp_diesel, grp_gas_lpg], ignore_index=False)
 
@@ -5649,6 +5649,7 @@ STD_BD_DAT_GRD4_MEVLU = grp3[[
     'CO(평균)',
     'HC(평균)',
     'NOx(평균)',
+    '차량대수', # !!! 수정(2023.11.15)
     '테이블생성일자', 
 ]]
 cdict = {
@@ -5664,6 +5665,7 @@ cdict = {
     'CO(평균)':'CO_MEVLU_AVRG',
     'HC(평균)':'HC_MEVLU_AVRG',
     'NOx(평균)':'NOx_MEVLU_AVRG',
+    '차량대수':'VHCL_MKCNT', # !!! 수정(2023.11.15)
     '테이블생성일자':'LOAD_DT',
 }
 STD_BD_DAT_GRD4_MEVLU = STD_BD_DAT_GRD4_MEVLU.rename(columns=cdict)
