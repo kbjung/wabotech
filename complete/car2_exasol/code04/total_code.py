@@ -1722,6 +1722,9 @@ csacit = csact.merge(insm[['차대번호', '무부하매연측정치1', '무부�
 dft = csacit.merge(elpm, on='차대번호', how='left')
 # !!! 수정 끝(2023.11.27)
 
+### 조기폐차 정보추가
+dft = csact.merge(elpm, on='차대번호', how='left')
+
 ### 4등급 result 파일 참고하여 DPF유무 수정
 rdf = dft.copy()
 rs = rs.drop_duplicates('차대번호').reset_index(drop=True)
@@ -2125,27 +2128,44 @@ mth_plist = list(pd.date_range(end=date, periods=div, freq="MS").month)
 
 # y_plist, mth_plist
 
-# 18s
+# !!! 수정 시작(2023.11.27)
+
 # 4개월 차량 통계 기본 데이터셋
-ctpv_list, sgg_list, fuel_list, vhcty_list, ty_list, purps_list, yr_list, month_list, car_year_list = [], [], [], [], [], [], [], [], [] # !!! 수정(2023.11.27)
-ctpv_sgg = grp1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
-for ctpv, sgg in ctpv_sgg[['시도', '시군구_수정']].values:
-    for fuel in grp1['연료'].unique():
-        for vhcty in grp1['차종'].unique():
-            for ty in grp1['차종유형'].unique():
-                for purps in grp1['용도'].unique():
-                    for car_year in grp1['차량연식'].unique(): # !!! 수정(2023.11.27)
-                        for yr, month in zip(y_plist, mth_plist):
-                            ctpv_list.append(ctpv)
-                            sgg_list.append(sgg)
-                            fuel_list.append(fuel)
-                            vhcty_list.append(vhcty)
-                            ty_list.append(ty)
-                            purps_list.append(purps)
-                            yr_list.append(str(yr))
-                            month_list.append(f'{month:0>2}')
-                            car_year_list.append(car_year)
-base = pd.DataFrame({'연도':yr_list, '월':month_list, '시도':ctpv_list, '시군구_수정':sgg_list, '연료':fuel_list, '차종':vhcty_list, '차종유형':ty_list, '용도':purps_list, '차량연식':car_year_list}) # !!! 수정(2023.11.27)
+# ctpv_list, sgg_list, fuel_list, vhcty_list, ty_list, purps_list, yr_list, month_list = [], [], [], [], [], [], [], []
+# ctpv_sgg = grp1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
+# for ctpv, sgg in ctpv_sgg[['시도', '시군구_수정']].values:
+#     for fuel in grp1['연료'].unique():
+#         for vhcty in grp1['차종'].unique():
+#             for ty in grp1['차종유형'].unique():
+#                 for purps in grp1['용도'].unique():
+#                     for yr, month in zip(y_plist, mth_plist):
+#                         ctpv_list.append(ctpv)
+#                         sgg_list.append(sgg)
+#                         fuel_list.append(fuel)
+#                         vhcty_list.append(vhcty)
+#                         ty_list.append(ty)
+#                         purps_list.append(purps)
+#                         yr_list.append(str(yr))
+#                         month_list.append(f'{month:0>2}')
+# base = pd.DataFrame({'연도':yr_list, '월':month_list, '시도':ctpv_list, '시군구_수정':sgg_list, '연료':fuel_list, '차종':vhcty_list, '차종유형':ty_list, '용도':purps_list})
+
+st1 = grp1[['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '차량연식']].drop_duplicates(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '차량연식']).reset_index(drop=True)
+temp = st1.copy()
+for _ in range(4):
+    st1 = pd.concat([st1, temp])
+st1 = st1.sort_values(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '차량연식'])
+st1 = st1.reset_index(drop=True)
+
+st2 = pd.DataFrame({'연도':y_plist, '월':mth_plist})
+st2[['연도', '월']] = st2[['연도', '월']].astype('str')
+temp = st2.copy()
+for _ in range(1, st1.shape[0] // div):
+    st2 = pd.concat([st2, temp])
+st2 = st2.reset_index(drop=True)
+
+base = pd.concat([st2, st1], axis=1)
+
+# !!! 수정 끝(2023.11.27)
 
 base1 = base.merge(grp1, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '차량연식'], how='left') # !!! 수정(2023.11.27)
 base2 = base1.merge(grp2, on=['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '차량연식'], how='left') # !!! 수정(2023.11.27)
@@ -2160,15 +2180,15 @@ base4[['차량대수', '조기폐차', '저감대수', '등록대수', '등록�
 # base4.loc[[x for x in range(3, base4.shape[0], 4)], ['등록대수_1', '말소대수_1', '등록저감대수_1', '말소저감대수_1']] = 0
 # base4['차량대수'] = base4['차량대수_1'] - base4['등록대수_1'] + base4['말소대수_1']
 
-# 1h 16m 23.3s
+# 98s
 n = len(base4['월'].unique())
 for i in range(base4.shape[0] // n):
     for j in range(2, n+1):
         base4.loc[(i+1)*n - j, '차량대수'] = base4.loc[(i+1)*n - (j-1), '차량대수'] + base4.loc[(i+1)*n - (j-1), '말소대수'] - base4.loc[(i+1)*n - (j-1), '등록대수']
         base4.loc[(i+1)*n - j, '저감대수'] = base4.loc[(i+1)*n - (j-1), '저감대수'] + base4.loc[(i+1)*n - (j-1), '말소저감대수'] - base4.loc[(i+1)*n - (j-1), '등록저감대수']
-
+        
 # !!! 수정 끝(2023.11.09)
-
+        
 base5 = base4[['연도', '월', '시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '차량연식', '차량대수', '조기폐차', '저감대수']] # !!! 수정(2023.11.27)
 base5['감소대수'] = base5['차량대수'].shift() - base5['차량대수']
 base5['감소율'] = base5['감소대수'] / base5['차량대수'].shift()
@@ -2178,8 +2198,11 @@ base5['저감장치미부착대수'] = base5['차량대수'] - base5['저감대�
 
 base5.loc[base5['차량대수'] < 0, '차량대수'] = 0
 base5.loc[base5['저감장치미부착대수'] < 0, '저감장치미부착대수'] = 0
-base5.loc[[x for x in range(0, base5.shape[0], 4)], '감소율'] = 0
+base5.loc[[x for x in range(0, base5.shape[0], div)], '감소율'] = 0 # !!! 수정(2023.11.09)
+base5.loc[[x for x in range(0, base5.shape[0], div)], '감소대수'] = 0 # !!! 수정(2023.11.09)
 base5 = base5.rename(columns={'조기폐차':'조기폐차대수', '저감대수':'저감장치부착대수'})
+
+base5['감소대수'] = base5['감소대수'].fillna(0) # !!! 수정 (2023.11.09)
 
 # # 현재 월 -1 까지만 추출(수동)
 # base5 = base5[(base5['연도'] != today_date[:4]) | (base5['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.11.03)
@@ -2196,7 +2219,7 @@ STD_BD_DAT_GRD4_CAR_CURSTT = base5[[
     '차종',
     '차종유형', 
     '용도',
-    '연식', # !!! 수정(2023.11.27)
+    '차량연식', # !!! 수정(2023.11.27)
     '차량대수',
     '감소율',
     '저감장치부착대수',
@@ -2213,7 +2236,7 @@ chc_col = {
     '차종':'VHCTY_CD',
     '차종유형':'VHCTY_TY', 
     '용도':'PURPS_CD2',
-    '연식':'YRIDNW', # !!! 수정(2023.11.27)
+    '차량연식':'YRIDNW', # !!! 수정(2023.11.27)
     '차량대수':'VHCL_MKCNT',
     '감소율':'DEC_RT',
     '저감장치부착대수':'RDCDVC_EXTRNS_MKCNT',
@@ -5407,7 +5430,7 @@ check_E_col = ['E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2
 # - 물질 : CO, HC, NOx, PM10, PM2.5
 
 ## 시도/시군구별 배출량 합계
-grp1 = df2.groupby(['시도', '시군구_수정'], as_index=False).agg({'E_CO_total':'sum', 'E_HC_total':'sum', 'E_NOx_total':'sum', 'E_PM10_total':'sum', 'E_PM2_5_total':'sum'})
+grp1 = df2.groupby(['시도', '시군구_수정']).agg({'E_CO_total':'sum', 'E_HC_total':'sum', 'E_NOx_total':'sum', 'E_PM10_total':'sum', 'E_PM2_5_total':'sum'}).reset_index() # !!! 수정(2023.11.13)
 
 # 연도 설정
 today_date = datetime.today().strftime("%Y%m%d")
@@ -5438,8 +5461,14 @@ STD_BD_GRD4_EXHST_GAS_MSS_TOT = grp1.rename(columns=chc_dict)
 
 # STD_BD_GRD4_EXHST_GAS_MSS_TOT.columns
 
-### [출력] STD_BD_GRD4_EXHST_GAS_MSS_TOT
-create_table(STD_BD_GRD4_EXHST_GAS_MSS_TOT,'STD_BD_GRD4_EXHST_GAS_MSS_TOT')
+### [출력] STD_BD_GRD4_EXHST_GAS_MSS_TOT # 테이블 누적
+# create_table(STD_BD_GRD4_EXHST_GAS_MSS_TOT,'STD_BD_GRD4_EXHST_GAS_MSS_TOT') # 테이블 덮어쓰기
+
+# expdf = STD_BD_GRD4_EXHST_GAS_MSS_TOT
+# table_nm = 'STD_BD_GRD4_EXHST_GAS_MSS_TOT'.upper()
+# # 데이터 추가
+# # 7s
+# we.import_from_pandas(expdf, table_nm)
 print('data export : STD_BD_GRD4_EXHST_GAS_MSS_TOT 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
@@ -5645,6 +5674,7 @@ grp_diesel = grp_diesel.rename(columns={'무부하매연측정치1':'매연(평�
 grp_gas_lpg = gas_lpg.groupby(['시도', '시군구_수정', '연료', '차종', '차종유형', '용도', '검사방법']).agg({'무부하매연측정치1':'mean', '무부하매연측정치2':'mean', '무부하매연측정치3':'mean', '차대번호':'count'}).reset_index() # !!! 수정(2023.11.15)
 grp_gas_lpg = grp_gas_lpg.rename(columns={'무부하매연측정치1':'CO(평균)', '무부하매연측정치2':'HC(평균)', '무부하매연측정치3':'NOx(평균)', '차대번호':'차량대수'}) # !!! 수정(2023.11.15)
 
+
 grp3 = pd.concat([grp_diesel, grp_gas_lpg], ignore_index=False)
 
 # 연도 설정
@@ -5669,20 +5699,20 @@ STD_BD_DAT_GRD4_MEVLU = grp3[[
     '테이블생성일자', 
 ]]
 cdict = {
-    '연도':'YR',
-    '시도':'CTPV',
-    '시군구_수정':'SGG',
-    '연료':'FUEL_CD',
-    '차종':'VHCTY_CD',
-    '차종유형':'VHCTY_TY',
-    '용도':'PURPS_CD2',
-    '검사방법':'INSP_MTHD',
-    '매연(평균)':'SMO_MEVLU_AVRG',
-    'CO(평균)':'CO_MEVLU_AVRG',
-    'HC(평균)':'HC_MEVLU_AVRG',
-    'NOx(평균)':'NOx_MEVLU_AVRG',
+    '연도':'YR', 
+    '시도':'CTPV', 
+    '시군구_수정':'SGG', 
+    '연료':'FUEL_CD', 
+    '차종':'VHCTY_CD', 
+    '차종유형':'VHCTY_TY', 
+    '용도':'PURPS_CD2', 
+    '검사방법':'INSP_MTHD', 
+    '매연(평균)':'SMO_MEVLU_AVRG', 
+    'CO(평균)':'CO_MEVLU_AVRG', 
+    'HC(평균)':'HC_MEVLU_AVRG', 
+    'NOx(평균)':'NOx_MEVLU_AVRG', 
     '차량대수':'VHCL_MKCNT', # !!! 수정(2023.11.15)
-    '테이블생성일자':'LOAD_DT',
+    '테이블생성일자':'LOAD_DT', 
 }
 STD_BD_DAT_GRD4_MEVLU = STD_BD_DAT_GRD4_MEVLU.rename(columns=cdict)
 # !!! 수정 끝(2023.11.03)
@@ -6901,7 +6931,7 @@ year = int(today_date[:4])
 month = int(today_date[4:6])
 
 # 차량 대수
-grp1 = df9.groupby(['시도', '배출가스등급', '연료', '차종', '차종유형', '용도'], as_index=False)['차대번호'].count()
+grp1 = df9.groupby(['시도', '배출가스등급', '연료', '차종', '차종유형', '용도'], dropna=False)['차대번호'].count().reset_index() # !!! 수정(2023.11.09)
 grp1 = grp1.rename(columns={'차대번호':'차량대수'})
 grp1['연도'] = f'{year}'
 grp1['월'] = f'{month}'
@@ -6911,8 +6941,9 @@ grp1['월'] = f'{month}'
 date_date = datetime.today().strftime("%Y%m%d")
 # 37.5s
 
-y_plist = list(pd.date_range(end=date_date, periods=4, freq="MS").year)
-mth_plist = list(pd.date_range(end=date_date, periods=4, freq="MS").month)
+div = 4 # !!! 수정(2023.11.09)
+y_plist = list(pd.date_range(end=date_date, periods=div, freq="MS").year) # !!! 수정(2023.11.09)
+mth_plist = list(pd.date_range(end=date_date, periods=div, freq="MS").month) # !!! 수정(2023.11.09)
 
 # y_plist, mth_plist
 
@@ -6968,13 +6999,14 @@ for i in range(base3.shape[0] // n):
         base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소대수'] - base3.loc[(i+1)*n - (j-1), '등록대수']
 
 base3.loc[[x for x in range(0, base3.shape[0], div)], '차량대수'] = 0 # !!! 수정(2023.11.09)
-
+        
 anl1 = base3[['시도', '연도', '월', '배출가스등급', '연료', '차종', '차종유형', '용도', '차량대수', '말소대수']]
 anl1['연도_월별_차량대수'] = anl1.groupby(['연도', '월'])['차량대수'].transform('sum') # !!! 수정(2023.11.09)
 anl1['연도_월_연료별_차량대수'] = anl1.groupby(['연도', '월', '연료'])['차량대수'].transform('sum') # !!! 수정(2023.11.09)
 anl1['연도_연료차량비율'] = anl1['연도_월_연료별_차량대수'] / anl1['연도_월별_차량대수'] # !!! 수정(2023.11.09)
 anl1['연도_연료차량비율'] = anl1['연도_연료차량비율'].round(2) # !!! 수정(2023.11.09)
 anl1['연도_연료차량비율'] = anl1['연도_연료차량비율'].fillna(0) # !!! 수정(2023.11.09)
+anl1 = anl1[(anl1['배출가스등급'].notnull()) & (anl1['연료'].notnull())] # !!! 수정(2023.11.09)
 anl1['연도_연료차량비율'] = anl1['연도_연료차량비율'].round(2) # !!! 수정(2023.11.10)
 anl1['테이블생성일자'] = today_date
 
@@ -7183,11 +7215,9 @@ STD_BD_DAT_FUEL_CAR_DEC = df6.rename(columns=cdict)
 create_table(STD_BD_DAT_FUEL_CAR_DEC,'STD_BD_DAT_FUEL_CAR_DEC')
 print('data export : STD_BD_DAT_FUEL_CAR_DEC 종료 %d초' % (time.time() - start_time))
 
-
+### !!! 수정 시작(2023.11.27)
 start_time = time.time()
 print('data export : STD_BD_CAR_CURSTT_MOD_4RD_INS 시작')
-
-### !!! 수정 시작(2023.11.27)
 ### [로드] STD_BD_CAR_CURSTT_MOD_4RD_INS
 ins_4rd = we.export_to_pandas("SELECT * FROM STD_BD_CAR_CURSTT_MOD_4RD_INS;")
 
@@ -7197,14 +7227,13 @@ ins_4rd['CRTR_YM'] = ins_4rd['CRTR_YM'].astype('int')
 
 ins_4rd = ins_4rd[['YR', 'MM', 'CRTR_YM', 'FUEL_CD', 'RGN', 'CTPV_NM', 'VHCL_MKCNT', 'LOAD_DT']]
 
-STD_BD_DAT_GRD4_INS_CURSTT = ins_4rd.copy()
-
 ### [출력] STD_BD_DAT_GRD4_INS_CURSTT
+STD_BD_DAT_GRD4_INS_CURSTT = ins_4rd.copy()
 create_table(STD_BD_DAT_GRD4_INS_CURSTT,'STD_BD_DAT_GRD4_INS_CURSTT')
 print('data export : STD_BD_DAT_GRD4_INS_CURSTT 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
-print('data export : STD_BD_CAR_CURSTT_MOD_4RD_INS 시작')
+print('data export : STD_BD_CAR_CURSTT_MOD2_4RD_INS 시작')
 ### [로드] STD_BD_CAR_CURSTT_MOD2_4RD_INS
 ins2_4rd = we.export_to_pandas("SELECT * FROM STD_BD_CAR_CURSTT_MOD2_4RD_INS;")
 
@@ -7212,11 +7241,10 @@ ins2_4rd['CRTR_YM'] = ins2_4rd['CRTR_YM'].astype('str')
 ins2_4rd['MM'] = ins2_4rd['CRTR_YM'].str[4:6]
 ins2_4rd['CRTR_YM'] = ins2_4rd['CRTR_YM'].astype('int')
 
-ins2_4rd = ins2_4rd[['YR', 'MM', 'CRTR_YM', 'VHCTY_CD_NM', 'FUEL_CD',  'VHCL_MKCNT', 'LOAD_DT']]
-
-STD_BD_DAT_GRD4_INS_CURSTT2 = ins2_4rd.copy()
+ins2_4rd = ins2_4rd[['YR', 'MM', 'CRTR_YM', 'VHCTY_CD_NM', 'FUEL_CD', 'VHCL_MKCNT', 'LOAD_DT']]
 
 ### [출력] STD_BD_DAT_GRD4_INS_CURSTT2
+STD_BD_DAT_GRD4_INS_CURSTT2 = ins2_4rd.copy()
 create_table(STD_BD_DAT_GRD4_INS_CURSTT2,'STD_BD_DAT_GRD4_INS_CURSTT2')
 print('data export : STD_BD_DAT_GRD4_INS_CURSTT2 종료 %d초' % (time.time() - start_time))
 
@@ -7732,6 +7760,7 @@ print('data export : STD_BD_RUN_LMT_CURSTT 종료 %d초' % (time.time() - start_
 ### !!! 수정 끝(2023.09.06)
 
 
+
 start_time = time.time()
 print('data export : STD_BD_ORDITM_DSCL_CURSTT 시작')
 
@@ -7832,37 +7861,36 @@ STD_BD_SEASON_DSCL_RGN_CURSTT = slimit.rename(columns=cdict)
 create_table(STD_BD_SEASON_DSCL_RGN_CURSTT,'STD_BD_SEASON_DSCL_RGN_CURSTT')
 print('data export : STD_BD_SEASON_DSCL_RGN_CURSTT 종료 %d초' % (time.time() - start_time))
 
+### !!! 수정 시작(2023.11.27)
 
 start_time = time.time()
 print('data export : STD_BD_DAT_ORDITM_RUN_LMT_CURSTT 시작')
 
-### !!! 수정 시작(2023.11.27)
-
-us_total2['적발년월_월'] = us_total2['적발년월'].str[4:6] # !!! 수정(2023.11.27)
-bd32_dat_orditm01 = us_total2.merge(carm[['차대번호', '제원관리번호', '차종']], on='차대번호', how='left')
-bd32_dat_orditm02 =  bd32_dat_orditm01.merge(srcr[['제원관리번호', '차종유형']], on='차대번호', how='left')
-bd31_dat_grp_orditm = bd32_dat_orditm02.groupby(['적발년월_년', '적발년월_월', '등록지역', '등록시도', '차종', '차종유형'], 
-dropna=False).agg({'적발건수':'sum', '차대번호':'count'}).reset_index()
-bd31_dat_grp_orditm['테이블생성일자'] = today_date
+ust = us_total2.loc[(us_total2['적발건수'] > 0) & (us_total2['적발년도'].isnull() == False)].reset_index(drop=True)
+ust['적발년월_월'] = ust['적발년월'].str[4:6]
+bd32_dat_orditm01 = ust.merge(carr[['차대번호', '제원관리번호', '차종']], on='차대번호', how='left')
+bd32_dat_orditm02 = bd32_dat_orditm01.merge(srcr[['제원관리번호', '차종유형']], on='제원관리번호', how='left')
+bd32_dat_orditm = bd32_dat_orditm02.groupby(['적발년도', '적발년월_월', '등록지역', '등록시도', '차종', '차종유형'], dropna=False).agg({'적발건수':'sum', '차대번호':'count'}).reset_index()
+bd32_dat_orditm = bd32_dat_orditm.rename(columns={'차대번호':'차량대수'})
+bd32_dat_orditm['테이블생성일자'] = today_date
 cdict = {
-    '적발년월_년':'DSCL_Y', # 적발년도
-    '적발년월_월':'DSCL_MM', #적발월
-    '등록지역':'REG_RGN', # !!! 수정
-    '등록시도':'REG_CTPV', # !!! 수정
-    '차종':'VHCTY_CD',
-    '차종유형':'VHCTY_TY', 
+    '적발년도':'DSCL_Y', 
+    '적발년월_월':'DSCL_MM', 
+    '등록지역':'REG_RGN', 
+    '등록시도':'REG_CTPV', 
+    '차종':'VHCTY_CD', 
+    '차종유형':'VHCTY_TY',    
     '적발건수':'DSCL_NOCS', 
     '차량대수':'VHCL_MKCNT', 
     '테이블생성일자':'LOAD_DT', 
 }
-STD_BD_DAT_ORDITM_RUN_LMT_CURSTT = bd31_dat_grp_orditm.rename(columns=cdict)
+STD_BD_DAT_ORDITM_RUN_LMT_CURSTT = bd32_dat_orditm.rename(columns=cdict)
 
 ### [출력] STD_BD_DAT_ORDITM_RUN_LMT_CURSTT
 create_table(STD_BD_DAT_ORDITM_RUN_LMT_CURSTT,'STD_BD_DAT_ORDITM_RUN_LMT_CURSTT')
 print('data export : STD_BD_DAT_ORDITM_RUN_LMT_CURSTT 종료 %d초' % (time.time() - start_time))
 
 ### !!! 수정 끝(2023.11.27)
-
 
 start_time = time.time()
 print('data export : STD_BD_DAT_GRD5_REDUC_BIZ 시작')
