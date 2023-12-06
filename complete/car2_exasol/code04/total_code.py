@@ -40,6 +40,7 @@ start = time.time()
 # insider db
 wd = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True)
 we = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='VSYSE')
+# ws = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='SYS')
 # Load ###################################################################################################################
 
 ## 등록정보(STD_CEG_CAR_MIG) 4등급만
@@ -5677,6 +5678,8 @@ grp_gas_lpg = grp_gas_lpg.rename(columns={'무부하매연측정치1':'CO(평균
 
 grp3 = pd.concat([grp_diesel, grp_gas_lpg], ignore_index=False)
 
+grp3[['매연(평균)', 'CO(평균)', 'HC(평균)', 'NOx(평균)']] = grp3[['매연(평균)', 'CO(평균)', 'HC(평균)', 'NOx(평균)']].round(2) # !!! 수정(2023.12.06)
+
 # 연도 설정
 # grp3['연도'] = '2022'
 grp3['연도'] = today_date[:4]
@@ -6071,7 +6074,7 @@ df2 = base3[['연도', 'fuel2', '배출가스등급', '차량대수']]
 df2 = df2.rename(columns={'fuel2':'연료'})
 
 df2['배출가스등급'] = df2['배출가스등급'].map({'1':'1', '2':'2', '3':'3', '4':'4', '5':'5', 'X':'미분류'})
-
+STD_BD_CAR_CURSTT_MOD
 df2['기준연월'] = df2['연도'] + '12'
 today_date = datetime.today().strftime("%Y%m%d")
 df2['테이블생성일자'] = today_date
