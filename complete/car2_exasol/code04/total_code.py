@@ -212,9 +212,9 @@ attr = att.rename(columns=att_ch_col)
 print('data load : STD_DLM_TB_ERP_ATT_HIS 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
-print('data load : CEG_CAR_HISTORY_MIG 시작')
+print('data load : ODS_CEG_CAR_HISTORY_MIG 시작')
 
-## 등록이력(CEG_CAR_HISTORY_MIG)
+## 등록이력(ODS_CEG_CAR_HISTORY_MIG)
 
 # 1.8s
 # edb_id = 'vsysd'
@@ -224,7 +224,7 @@ print('data load : CEG_CAR_HISTORY_MIG 시작')
 # edb_pwd = 'vsyswynn'
 # conn = psycopg2.connect(dbname=edb_database, user=edb_id, password=edb_pwd, host=edb_url, port=edb_port)
 # cur = conn.cursor()
-# sql = 'select VHCL_ERSR_YN, CHNG_DE, VHMNO FROM vsysd.vsysd.ceg_car_history_mig'
+# sql = 'select VHCL_ERSR_YN, CHNG_DE, VHMNO FROM vsysd.vsysd.ods_ceg_car_history_mig'
 # cur.execute(sql)
 # his = pd.DataFrame(cur.fetchall())
 # his.columns = [desc[0].upper() for desc in cur.description]
@@ -235,7 +235,7 @@ print('data load : CEG_CAR_HISTORY_MIG 시작')
 # }
 # hisr = his.rename(columns=his_ch_col)
 
-his = wd.export_to_pandas("SELECT VHCL_ERSR_YN, CHNG_DE, VHMNO FROM vsysd.CEG_CAR_HISTORY_MIG")
+his = wd.export_to_pandas("SELECT VHCL_ERSR_YN, CHNG_DE, VHMNO FROM vsysd.ODS_CEG_CAR_HISTORY_MIG")
 
 his_ch_col = {
     'VHCL_ERSR_YN':'차량말소YN', 
@@ -244,7 +244,7 @@ his_ch_col = {
 }
 hisr = his.rename(columns=his_ch_col)
 
-print('data load : CEG_CAR_HISTORY_MIG 종료 %d초' % (time.time() - start_time))
+print('data load : ODS_CEG_CAR_HISTORY_MIG 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
 print('data load : STD_N_IS_ISSUE_DISCLOSURE 시작')
