@@ -212,9 +212,9 @@ attr = att.rename(columns=att_ch_col)
 print('data load : STD_DLM_TB_ERP_ATT_HIS 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
-print('data load : CEG_CAR_HISTORY_MIG 시작')
+print('data load : ODS_CEG_CAR_HISTORY_MIG 시작')
 
-## 등록이력(CEG_CAR_HISTORY_MIG)
+## 등록이력(ODS_CEG_CAR_HISTORY_MIG)
 
 # 1.8s
 # edb_id = 'vsysd'
@@ -224,7 +224,7 @@ print('data load : CEG_CAR_HISTORY_MIG 시작')
 # edb_pwd = 'vsyswynn'
 # conn = psycopg2.connect(dbname=edb_database, user=edb_id, password=edb_pwd, host=edb_url, port=edb_port)
 # cur = conn.cursor()
-# sql = 'select VHCL_ERSR_YN, CHNG_DE, VHMNO FROM vsysd.vsysd.ceg_car_history_mig'
+# sql = 'select VHCL_ERSR_YN, CHNG_DE, VHMNO FROM vsysd.vsysd.ods_ceg_car_history_mig'
 # cur.execute(sql)
 # his = pd.DataFrame(cur.fetchall())
 # his.columns = [desc[0].upper() for desc in cur.description]
@@ -235,7 +235,7 @@ print('data load : CEG_CAR_HISTORY_MIG 시작')
 # }
 # hisr = his.rename(columns=his_ch_col)
 
-his = wd.export_to_pandas("SELECT VHCL_ERSR_YN, CHNG_DE, VHMNO FROM vsysd.CEG_CAR_HISTORY_MIG")
+his = wd.export_to_pandas("SELECT VHCL_ERSR_YN, CHNG_DE, VHMNO FROM vsysd.ODS_CEG_CAR_HISTORY_MIG")
 
 his_ch_col = {
     'VHCL_ERSR_YN':'차량말소YN', 
@@ -244,7 +244,7 @@ his_ch_col = {
 }
 hisr = his.rename(columns=his_ch_col)
 
-print('data load : CEG_CAR_HISTORY_MIG 종료 %d초' % (time.time() - start_time))
+print('data load : ODS_CEG_CAR_HISTORY_MIG 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
 print('data load : STD_N_IS_ISSUE_DISCLOSURE 시작')
@@ -1651,7 +1651,7 @@ print('data export : STD_BD_DAT_GRD4_MLSFC 시작')
 dat_mlsfc = df1.copy()
 dat_mlsfc['시군구_수정'] = dat_mlsfc['시군구'].str.split(' ').str[0]
 dat_mlsfc.loc[dat_mlsfc['연료'].isnull(), '연료'] = '해당없음' # !!! 수정(2023.11.13)
-grp1 = dat_mlsfc.groupby(['연료', '시도', '시군구_수정', '차종', '차종유형', '용도', 'Grade'], dropna=False)['차대번호'].count().unstack('Grade').reset_index() # !!! 수정(2023.11.13)
+grp1 = dat_mlsfc.groupby(['연료', '시도', '시군구_수정', '차종', '차종유형', '용도', '차량연식', 'Grade'], dropna=False)['차대번호'].count().unstack('Grade').reset_index() # !!! 수정(2023.11.13)
 
 # 연도 설정
 # !!! 수정 시작(2023.10.18)
@@ -1670,6 +1670,7 @@ STD_BD_DAT_GRD4_MLSFC = grp1[[
     '차종', 
     '차종유형', 
     '용도', 
+    '차량연식', # !!! 수정(2023.12.08)
     'A', 
     'B', 
     'C', 
@@ -1685,6 +1686,7 @@ cdict = {
     '차종':'VHCTY_CD', 
     '차종유형':'VHCTY_TY', 
     '용도':'PURPS_CD2', 
+    '차량연식':'YRIDNW', # !!! 수정(2023.12.08)
     'A':'A_MKCNT', 
     'B':'B_MKCNT', 
     'C':'C_MKCNT', 
@@ -1855,6 +1857,8 @@ dfm['시군구_수정'] = dfm['시군구'].str.split(' ').str[0]
 num_car_by_local1 = dfm.groupby(['연료', '시도', '시군구_수정'], dropna=False)['차대번호'].count().reset_index()
 num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대수'})
 
+# !!! 수정 시작(2023.12.11)
+        
 # max_date = str(dfm['최초등록일자'].max())
 # max_year = max_date[:4]
 # max_month = max_date[4:6]
@@ -1862,12 +1866,18 @@ num_car_by_local1 = num_car_by_local1.rename(columns={'차대번호':'차량대�
 # date = '20220601'
 # max_year = '2022'
 # max_month = '06'
-
-# !!! 수정시작(2023.10.18)
-today_date = datetime.today().strftime("%Y%m%d")
 date = today_date
-max_year = today_date[:4]
-max_month = today_date[4:6]
+# max_year = today_date[:4]
+# max_month = today_date[4:6]
+
+periods = 2 # !!! 수정(2023.08.23)
+y_plist = list(pd.date_range(end=date, periods=periods, freq="MS").year)
+mth_plist = list(pd.date_range(end=date, periods=periods, freq="MS").month)
+
+max_year = str(y_plist[0])
+max_month = str(mth_plist[0])
+
+# !!! 수정 끝(2023.12.11)
 
 num_car_by_local1[['연도', '월']] = [max_year, max_month]
 
@@ -1889,25 +1899,55 @@ grp_erase = errc.loc[errc['변경일자_년'] == max_year].groupby(['변경일�
 grp_erase = grp_erase.rename(columns={'차대번호':'말소차량대수', '변경일자_년':'연도', '변경일자_월':'월'})
 grp_erase = grp_erase.sort_values(['시도', '시군구_수정'])
 
-periods = 12 # !!! 수정(2023.08.23)
-y_plist = list(pd.date_range(end=date, periods=periods, freq="MS").year) # !!! 수정(2023.08.23)
-mth_plist = list(pd.date_range(end=date, periods=periods, freq="MS").month) # !!! 수정(2023.08.23)
-# y_plist, mth_plist
+ # !!! 수정 시작(2023.12.11)
+# y_plist = list(pd.date_range(end=date, periods=4, freq="MS").year)
+# mth_plist = list(pd.date_range(end=date, periods=4, freq="MS").month)
 
-yr_list, mth_list, fuel_list, ctpv_list, sgg_list = [], [], [], [], []
-sl = num_car_by_local1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
-for ctpv, sgg in sl[['시도', '시군구_수정']].values:
-    for fuel in sl['연료'].unique():
-        for yr, mth in zip(y_plist, mth_plist):
-            mthm = f'{mth:0>2}'
-            yr_list.append(str(yr))
-            mth_list.append(mthm)
-            fuel_list.append(fuel)
-            ctpv_list.append(ctpv)
-            sgg_list.append(sgg)
-base = pd.DataFrame({'연도':yr_list, '월':mth_list, '연료':fuel_list, '시도':ctpv_list, '시군구_수정':sgg_list})
+# # y_plist, mth_plist
 
-# !!! 수정 끝(2023.10.18)
+# yr_list, mth_list, fuel_list, ctpv_list, sgg_list = [], [], [], [], []
+# sl = num_car_by_local1.drop_duplicates(['시도', '시군구_수정']).reset_index(drop=True)
+# for ctpv, sgg in sl[['시도', '시군구_수정']].values:
+#     for fuel in sl['연료'].unique():
+#         for yr, mth in zip(y_plist, mth_plist):
+#             mthm = f'{mth:0>2}'
+#             yr_list.append(str(yr))
+#             mth_list.append(mthm)
+#             fuel_list.append(fuel)
+#             ctpv_list.append(ctpv)
+#             sgg_list.append(sgg)
+# base = pd.DataFrame({'연도':yr_list, '월':mth_list, '연료':fuel_list, '시도':ctpv_list, '시군구_수정':sgg_list})
+        
+sl = num_car_by_local1.drop_duplicates(['시도', '시군구_수정', '연료']).reset_index(drop=True)
+
+periods = 13 
+y_plist = list(pd.date_range(end=date, periods=periods, freq="MS").year)
+mth_plist = list(pd.date_range(end=date, periods=periods, freq="MS").month)
+y_plist = y_plist[:-1]
+mth_plist = mth_plist[:-1]
+
+slt = sl
+for _ in range(periods - 2):
+    slt = pd.concat([slt, sl], ignore_index=False)
+
+slt = slt.sort_values(['시도', '시군구_수정', '연료'])
+slt = slt[['시도', '시군구_수정', '연료']]
+
+y_plist01 = [str(x) for x in y_plist]
+mth_plist01 = [f'{x:0>2}' for x in mth_plist]
+
+ym = pd.DataFrame({'연도':y_plist01, '월':mth_plist01})
+
+ymt = ym
+for _ in range(slt.shape[0]//ym.shape[0] - 1):
+    ymt = pd.concat([ymt, ym], ignore_index=False)
+
+slt = slt.reset_index(drop=True)
+ymt = ymt.reset_index(drop=True)
+
+base = pd.concat([ymt, slt], axis=1)
+
+# !!! 수정 끝(2023.12.11)
 
 base1 = base.merge(num_car_by_local1, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
 base2 = base1.merge(num_car_by_local2, on=['연도', '월', '연료', '시도', '시군구_수정'], how='left')
@@ -6028,7 +6068,7 @@ STD_BD_CAR_CURSTT_MOD = df1.rename(columns=cdict)
 STD_BD_CAR_CURSTT_MOD = pd.read_csv(os.path.join(df1_fold, ))
 
 ### [출력] STD_BD_CAR_CURSTT_MOD
-create_table(STD_BD_CAR_CURSTT_MOD,'STD_BD_CAR_CURSTT_MOD')
+# create_table(STD_BD_CAR_CURSTT_MOD,'STD_BD_CAR_CURSTT_MOD') # !!! 수정(2023.12.11)
 print('data export : STD_BD_CAR_CURSTT_MOD 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
@@ -6092,7 +6132,7 @@ STD_BD_CAR_CURSTT_MOD2 = df2.rename(columns=cdict)
 # STD_BD_CAR_CURSTT_MOD2.columns
 
 ### [출력] STD_BD_CAR_CURSTT_MOD2
-create_table(STD_BD_CAR_CURSTT_MOD2,'STD_BD_CAR_CURSTT_MOD2')
+# create_table(STD_BD_CAR_CURSTT_MOD2,'STD_BD_CAR_CURSTT_MOD2') # !!! 수정(2023.12.11)
 print('data export : STD_BD_CAR_CURSTT_MOD2 종료 %d초' % (time.time() - start_time))
 
 start_time = time.time()
