@@ -53,14 +53,13 @@ class WabotchCode:
         we = pyexasol.connect(dsn='172.29.135.35/F99FAB2444F86051A9A467F6313FAAB48AF7C4760663430958E3B89A9DC53361:8563', user='sys', password='exasol', compression=True, schema='VSYSE') # !!! 수정(2023.12.06)
 
         # Load ###################################################################################################################
-
-        ## 등록정보(STD_CEG_CAR_MIG) 4등급만
         
+        ## 등록정보(STD_CEG_GRD_LST_BSC) 4등급만
         start_time = time.time()
-        self.logUtil.logger.info('data load : STD_CEG_CAR_MIG 시작')
+        self.logUtil.logger.info('data load : STD_CEG_GRD_LST_BSC 시작')
         # 8.6s
-        car = wd.export_to_pandas("SELECT VIN, BSPL_STDG_CD, EXHST_GAS_GRD_CD, EXHST_GAS_CERT_NO, VHCL_ERSR_YN, MANP_MNG_NO, YRIDNW, VHCTY_CD, PURPS_CD2, FRST_REG_YMD, VHCL_FBCTN_YMD, VHCL_MNG_NO, VHRNO, EXTGAS_INSP_VLD_YMD, VHCL_OWNR_CL_CD FROM vsysd.STD_CEG_CAR_MIG WHERE EXHST_GAS_GRD_CD = 'A0504' OR EXHST_GAS_GRD_CD = 'A05T4';")
-        car_ch_col = {
+        cs_raw = wd.export_to_pandas("SELECT VIN, BSPL_STDG_CD, EXHST_GAS_GRD_CD, EXHST_GAS_CERT_NO, VHCL_ERSR_YN, MANP_MNG_NO, YRIDNW, VHCTY_CD, PURPS_CD2, FRST_REG_YMD, VHCL_FBCTN_YMD, VHCL_MNG_NO, VHRNO, EXTGAS_INSP_VLD_YMD, VHCL_OWNR_CL_CD , FUEL_CD, VHCTY_TY_CD2, MNFCTR_NM, VHCNM, VHCL_FRM, EGIN_TY, VHCTY_CL_CD, TOTL_WGHT, CRYNG_WGHT, DSPLVL, EGIN_OTPT FROM STD_CEG_GRD_LST_BSC WHERE EXHST_GAS_GRD_CD = 'A0504';")
+        cs_raw_dict = {
             'VIN':'차대번호', 
             'BSPL_STDG_CD':'법정동코드', 
             'EXHST_GAS_GRD_CD':'배출가스등급', 
@@ -75,15 +74,58 @@ class WabotchCode:
             'VHCL_MNG_NO':'차량관리번호', 
             'VHRNO':'자동차등록번호',
             'EXTGAS_INSP_VLD_YMD':'검사유효일',
-            'VHCL_OWNR_CL_CD':'소유자구분',  
-        }
-        carr = car.rename(columns=car_ch_col)
+            'VHCL_OWNR_CL_CD':'소유자구분',
 
-        self.logUtil.logger.info('data load : STD_CEG_CAR_MIG 종료 %d초' % (time.time() - start_time))
+            'FUEL_CD':'연료',
+            'VHCTY_TY_CD2':'차종유형', 
+            'MNFCTR_NM':'제작사명', 
+            'VHCNM':'차명', 
+            'VHCL_FRM':'자동차형식', 
+            'EGIN_TY':'엔진형식', 
+            'VHCTY_CL_CD':'차종분류',
+            'TOTL_WGHT':'총중량',
+            'CRYNG_WGHT':'적재중량',
+            'DSPLVL':'배기량', 
+            'EGIN_OTPT':'엔진출력',
+        }
+        cs = cs_raw.rename(columns=cs_raw_dict)
+
+        self.logUtil.logger.info('data load : STD_CEG_GRD_LST_BSC 종료 %d초' % (time.time() - start_time))
+        
+        start_time = time.time()
+        self.logUtil.logger.info('data load : STD_CEG_GRD_LST_BSC 시작')
+        
+        
+#         ## 등록정보(STD_CEG_CAR_MIG) 4등급만
+        
+#         start_time = time.time()
+#         self.logUtil.logger.info('data load : STD_CEG_CAR_MIG 시작')
+#         # 8.6s
+#         car = wd.export_to_pandas("SELECT VIN, BSPL_STDG_CD, EXHST_GAS_GRD_CD, EXHST_GAS_CERT_NO, VHCL_ERSR_YN, MANP_MNG_NO, YRIDNW, VHCTY_CD, PURPS_CD2, FRST_REG_YMD, VHCL_FBCTN_YMD, VHCL_MNG_NO, VHRNO, EXTGAS_INSP_VLD_YMD, VHCL_OWNR_CL_CD FROM vsysd.STD_CEG_CAR_MIG WHERE EXHST_GAS_GRD_CD = 'A0504' OR EXHST_GAS_GRD_CD = 'A05T4';")
+#         car_ch_col = {
+#             'VIN':'차대번호', 
+#             'BSPL_STDG_CD':'법정동코드', 
+#             'EXHST_GAS_GRD_CD':'배출가스등급', 
+#             'EXHST_GAS_CERT_NO':'배출가스인증번호',
+#             'VHCL_ERSR_YN':'차량말소YN',
+#             'MANP_MNG_NO':'제원관리번호', 
+#             'YRIDNW':'차량연식', 
+#             'VHCTY_CD':'차종', 
+#             'PURPS_CD2':'용도', 
+#             'FRST_REG_YMD':'최초등록일자',
+#             'VHCL_FBCTN_YMD':'제작일자', 
+#             'VHCL_MNG_NO':'차량관리번호', 
+#             'VHRNO':'자동차등록번호',
+#             'EXTGAS_INSP_VLD_YMD':'검사유효일',
+#             'VHCL_OWNR_CL_CD':'소유자구분',  
+#         }
+#         carr = car.rename(columns=car_ch_col)
+
+#         self.logUtil.logger.info('data load : STD_CEG_CAR_MIG 종료 %d초' % (time.time() - start_time))
         
         start_time = time.time()
         self.logUtil.logger.info('data load : STD_CEG_CAR_SRC_MIG 시작')
-        ## 제원정보(STD_CEG_CAR_SRC_MIG)
+        # 제원정보(STD_CEG_CAR_SRC_MIG)
 
         # 3.8s
         src = wd.export_to_pandas("SELECT MANP_MNG_NO, FUEL_CD, VHCTY_TY_CD2, MNFCTR_NM, VHCNM, VHCL_FRM, EGIN_TY, VHCTY_CL_CD, TOTL_WGHT, CRYNG_WGHT, DSPLVL, EGIN_OTPT FROM vsysd.STD_CEG_CAR_SRC_MIG;")
@@ -458,7 +500,8 @@ class WabotchCode:
         ## 등록정보
 
         ## 중복 차대번호 제거
-        carr = carr.sort_values('최초등록일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+        # carr = carr.sort_values('최초등록일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+        # cs = cs.sort_values(['최초등록일자', '차량말소YN'], ascending=[False, False]).drop_duplicates('차대번호').reset_index(drop=True) # !!! 수정(2023.12.22)
 
         ## 배출가스등급 코드 변환
         grd_dict = {
@@ -473,7 +516,7 @@ class WabotchCode:
             'A05T5':'5', 
             'A05X':'X', 
         }
-        carr['배출가스등급'] = carr['배출가스등급'].replace(grd_dict)
+        cs['배출가스등급'] = cs['배출가스등급'].replace(grd_dict)
 
         # carr['배출가스등급'].unique()
 
@@ -485,7 +528,7 @@ class WabotchCode:
             'A31T':'화물', 
             'A31V':'승합'
         }
-        carr['차종'] = carr['차종'].replace(cd_dict)
+        cs['차종'] = cs['차종'].replace(cd_dict)
 
         ## 용도 코드 변환
         purps_dict = {
@@ -493,7 +536,7 @@ class WabotchCode:
             'A08B':'영업용', 
             'A08O':'관용',
         }
-        carr['용도'] = carr['용도'].replace(purps_dict)
+        cs['용도'] = cs['용도'].replace(purps_dict)
 
         ## 소유자구분 코드 변환
         ownr_dict = {
@@ -503,13 +546,8 @@ class WabotchCode:
             'A27O':'기타', 
             'A27R':'주민', 
         }
-        carr['소유자구분'] = carr['소유자구분'].replace(ownr_dict)
-
-        ## 등록정보 말소 제거
-        carm = carr[carr['차량말소YN'] == 'N'].reset_index(drop=True)
-
-        ## 제원정보
-
+        cs['소유자구분'] = cs['소유자구분'].replace(ownr_dict)
+        
         ## 연료 코드 변환
         fuel_dict = {
             'A90GS':'휘발유', 
@@ -529,7 +567,7 @@ class WabotchCode:
             'A92LN':'LNG(액화천연가스)', 
             'A90PH':'플러그인 하이브리드', 
         }
-        srcr['연료'] = srcr['연료'].replace(fuel_dict)
+        cs['연료'] = cs['연료'].replace(fuel_dict)
 
         ## 차종유형 코드 변환
         ty_dict = {
@@ -538,12 +576,47 @@ class WabotchCode:
             'A30M':'중형', 
             'A30S':'소형',
         }
-        srcr['차종유형'] = srcr['차종유형'].replace(ty_dict)
+        cs['차종유형'] = cs['차종유형'].replace(ty_dict)
 
-        ## 등록&제원 병합
+        ## 등록정보 말소 제거
+        csm = cs[cs['차량말소YN'] == 'N'].reset_index(drop=True)
 
-        # 0.7s
-        cs = carm.merge(srcr, on='제원관리번호', how='left')
+#         ## 제원정보
+
+#         ## 연료 코드 변환
+#         fuel_dict = {
+#             'A90GS':'휘발유', 
+#             'A91DS':'경유',
+#             'A92LP':'LPG(액화석유가스)', 
+#             'A90GH':'휘발유 하이브리드', 
+#             'A93EV':'전기', 
+#             'A91DH':'경유 하이브리드', 
+#             'A92CN':'CNG(압축천연가스)', 
+#             'A93HD':'수소', 
+#             'A92LH':'LPG 하이브리드', 
+#             'A94OT':'기타연료', 
+#             'A92CH':'CNG 하이브리드',
+#             'A90AC':'알코올', 
+#             'A93SH':'태양열', 
+#             'A91KS':'등유', 
+#             'A92LN':'LNG(액화천연가스)', 
+#             'A90PH':'플러그인 하이브리드', 
+#         }
+#         srcr['연료'] = srcr['연료'].replace(fuel_dict)
+
+#         ## 차종유형 코드 변환
+#         ty_dict = {
+#             'A30C':'경형', 
+#             'A30L':'대형', 
+#             'A30M':'중형', 
+#             'A30S':'소형',
+#         }
+#         srcr['차종유형'] = srcr['차종유형'].replace(ty_dict)
+
+#         ## 등록&제원 병합
+
+#         # 0.7s
+#         cs = carm.merge(srcr, on='제원관리번호', how='left')
 
         ## 정기&정밀 병합
 
@@ -688,22 +761,43 @@ class WabotchCode:
 
         # elpm.shape
 
+        # !!! 수정 시작(2023.12.22)
+        # 최신 조기폐차 현황
+        today_date = datetime.today().strftime("%Y%m%d")
+        date_list = pd.date_range(end=today_date, periods=1, freq='M')
+        before_amonth = int(str(date_list[0]).split(' ')[0].replace('-', ''))
+        # 조기폐차 최신 말소일자기준 추출(수동)
+        elp_rct = elp[elp['말소일자'] <= int(before_amonth)].sort_values('말소일자', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
+        # !!! 수정 끝(2023.12.22)
+        
         ## kosis 시도명 수정
 
         kosisr.loc[kosisr['시도'] == '강원도', '시도'] = '강원특별자치도'
 
+        ## 등록(말소유지)&제원
+        cse = cs.copy()
+        ## 등록(말소유지)&제원&법정동
+        cse['법정동코드'] = cse['법정동코드'].astype('str')
+        cse['법정동코드'] = cse['법정동코드'].str[:5] + '00000'
+        cse['법정동코드'] = pd.to_numeric(cse['법정동코드'], errors='coerce')
+        csec = cse.merge(coder, on='법정동코드', how='left')
+        ##등록(말소유지)&제원&법정동&조기폐차
+        csece = csec.merge(elpm, on='차대번호', how='left')
+        csece_rct = csec.merge(elp_rct, on='차대번호', how='left') # !!! 수정(2023.10.27)
+        ##등록(말소유지)&제원&법정동&조기폐차&저감
+        dfe = csece.merge(attr, on='차대번호', how='left')
+        
         ## 등록&제원&정기&정밀 병합
-
         # 2m 0.5s
-        csi = cs.merge(insm, on='차대번호', how='left')
-
+        csi = csm.merge(insm, on='차대번호', how='left')
+        
         ## 등록&제원&정기&정밀&법정동코드 병합
 
         # csi['법정동코드'].isnull().sum()
 
         csi['법정동코드'] = csi['법정동코드'].astype('str')
         csi['법정동코드'] = csi['법정동코드'].str[:5] + '00000'
-        csi['법정동코드'] = pd.to_numeric(csi['법정동코드'])
+        csi['법정동코드'] = pd.to_numeric(csi['법정동코드'], errors='coerce')
 
         # csi['법정동코드'].isnull().sum()
 
@@ -1342,7 +1436,8 @@ class WabotchCode:
         ## 1-2 start
 
         # 전체 4등급 등록&제원 병합
-        cse = carr.merge(srcr, on='제원관리번호', how='left')
+        # cse = carr.merge(srcr, on='제원관리번호', how='left')
+        cse = cs.copy()
 
         cse['법정동코드'] = cse['법정동코드'].astype('str')
         cse['법정동코드'] = cse['법정동코드'].str[:5] + '00000'
@@ -1375,7 +1470,6 @@ class WabotchCode:
         # 조기폐차 추가
         dfe = csec.merge(elpm, on='차대번호', how='left')
         df1 = dfe[dfe['연료'] == '경유'].reset_index(drop=True)
-
 
         # !!! 수정 시작(2023.10.12)
 
@@ -1512,7 +1606,7 @@ class WabotchCode:
 
         ## 등록&제원&저감이력 병합
         # 1.7s
-        csa = cs.merge(attr[['차대번호', 'DPF_YN']], on='차대번호', how='left')
+        csa = csm.merge(attr[['차대번호', 'DPF_YN']], on='차대번호', how='left')
 
         csa['법정동코드'] = csa['법정동코드'].astype('str')
         csa['법정동코드'] = csa['법정동코드'].str[:5] + '00000'
@@ -1652,7 +1746,7 @@ class WabotchCode:
         ## 4등급 등급세분류
         dat_mlsfc = df1.copy()
         dat_mlsfc['시군구_수정'] = dat_mlsfc['시군구'].str.split(' ').str[0]
-        dat_mlsfc.loc[dat_mlsfc['연료'].isnull(), '연료'] = '해당없음' # !!! 수정(2023.11.13)
+        dat_mlsfc.loc[dat_mlsfc['연료'].isnull(), '연료'] = '결측' # !!! 수정(2023.11.13)
         grp1 = dat_mlsfc.groupby(['연료', '시도', '시군구_수정', '차종', '차종유형', '용도', '차량연식', 'Grade'], dropna=False)['차대번호'].count().unstack('Grade').reset_index() # !!! 수정(2023.11.13)
 
         # 연도 설정
@@ -1703,7 +1797,8 @@ class WabotchCode:
         self.logUtil.logger.info('data export : STD_BD_DAT_GRD4_DTL_INFO 시작')
 
         ## 4등급차량 상세정보
-        cst = carr.merge(srcr, on='제원관리번호', how='left')
+        # cst = carr.merge(srcr, on='제원관리번호', how='left')
+        cst = cs.copy()
         csat = cst.merge(attr, on='차대번호', how='left')
 
         csat['법정동코드'] = csat['법정동코드'].astype('str')
@@ -1735,8 +1830,9 @@ class WabotchCode:
 
         # 4등급 연월, 시도, 시군구별 차량대수
         ## 등록 & 제원 정보 병합(말소 유지)
-        csersr = carr.merge(srcr, on='제원관리번호', how='left')
-
+        # csersr = carr.merge(srcr, on='제원관리번호', how='left')
+        csersr = csm.copy()
+        
         ## 1\. 차량관리번호 기준 병합
         # 58.3s
         ersr = csersr.merge(hisr, on='차량관리번호', how='left')
@@ -1762,7 +1858,9 @@ class WabotchCode:
         dftem = dfte.merge(df1[['차대번호', 'Grade']], on='차대번호', how='left')
 
         # dftem.columns
-
+        
+        dftem.loc[dftem['연료'].isnull(), '연료'] = '결측' # !!! 수정(2023.12.22)
+        
         today_date = datetime.today().strftime("%Y%m%d")
         dftem['테이블생성일자'] = today_date
         STD_BD_DAT_GRD4_DTL_INFO = dftem[[
@@ -2037,7 +2135,7 @@ class WabotchCode:
         for i in range(base3.shape[0] // n):
             for j in range(2, n+1):
                 base3.loc[(i+1)*n - j, '차량대수'] = base3.loc[(i+1)*n - (j-1), '차량대수'] + base3.loc[(i+1)*n - (j-1), '말소차량대수'] - base3.loc[(i+1)*n - (j-1), '등록차량대수']
-
+                
         today_date = datetime.today().strftime("%Y%m%d")
         base3['테이블생성일자'] = today_date
         base4 = base3[[
@@ -2089,13 +2187,14 @@ class WabotchCode:
         # today_date = datetime.today().strftime("%Y%m%d")
         # num_car_by_local1['테이블생성일자'] = today_date
 
-        cse = carr.merge(srcr, on='제원관리번호', how='left')
+        # cse = carr.merge(srcr, on='제원관리번호', how='left')
+        cse = cs.copy()
         ce = cse.merge(elpm, on='차대번호', how='left')
         cea = ce.merge(attr, on='차대번호', how='left')
 
         cea['법정동코드'] = cea['법정동코드'].astype('str')
         cea['법정동코드'] = cea['법정동코드'].str[:5] + '00000'
-        cea['법정동코드'] = pd.to_numeric(cea['법정동코드'])
+        cea['법정동코드'] = pd.to_numeric(cea['법정동코드'], errors='coerce')
 
         dfe = cea.merge(coder, on='법정동코드', how='left')
 
@@ -2244,7 +2343,7 @@ class WabotchCode:
         base5['감소대수'] = base5['감소대수'].fillna(0) # !!! 수정 (2023.11.09)
         
         # # 현재 월 -1 까지만 추출(수동)
-        # base5 = base5[(base5['연도'] != today_date[:4]) | (base5['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.11.03)
+        base5 = base5[(base5['연도'] != today_date[:4]) | (base5['월'] != today_date[4:6])].reset_index(drop=True) # !!! 수정(2023.11.03)
         
         today_date = datetime.today().strftime("%Y%m%d")
         base5['테이블생성일자'] = today_date
@@ -6005,7 +6104,7 @@ class WabotchCode:
                 rgn = '수도권'
             else:
                 rgn = '비수도권'
-            for grd in ['1', '2', '3', '4', '5', 'X']:
+            for grd in ['1', '2', '3', '4', '5', '미분류']: # !!! 수정(2023.12.22)
                 for yr in range(2019, year + 1):
                     yr_list.append(str(yr))
                     rgn_list.append(rgn)
@@ -6033,7 +6132,7 @@ class WabotchCode:
         df1 = base3[['연도', '지역', '시도', '배출가스등급', '차량대수']]
         df1['기준연월'] = df1['연도'] + '12'
 
-        df1['배출가스등급'] = df1['배출가스등급'].map({'1':'1', '2':'2', '3':'3', '4':'4', '5':'5', 'X':'미분류'})
+        # df1['배출가스등급'] = df1['배출가스등급'].map({'1':'1', '2':'2', '3':'3', '4':'4', '5':'5', 'X':'미분류'}) # !!! 수정(2023.12.22)
 
         today_date = datetime.today().strftime("%Y%m%d")
         df1['테이블생성일자'] = today_date
@@ -6073,7 +6172,7 @@ class WabotchCode:
         fuel_list = []
         grd_list = []
         for fuel in grp1['fuel2'].unique():
-            for grd in ['1', '2', '3', '4', '5', 'X']:
+            for grd in ['1', '2', '3', '4', '5', '미분류']: # !!! 수정(2023.12.22)
                 for yr in range(2019, year + 1):
                     yr_list.append(str(yr))
                     fuel_list.append(fuel)
@@ -6100,7 +6199,7 @@ class WabotchCode:
         df2 = base3[['연도', 'fuel2', '배출가스등급', '차량대수']]
         df2 = df2.rename(columns={'fuel2':'연료'})
 
-        df2['배출가스등급'] = df2['배출가스등급'].map({'1':'1', '2':'2', '3':'3', '4':'4', '5':'5', 'X':'미분류'})
+        # df2['배출가스등급'] = df2['배출가스등급'].map({'1':'1', '2':'2', '3':'3', '4':'4', '5':'5', 'X':'미분류'}) # !!! 수정(2023.12.22)
 
         df2['기준연월'] = df2['연도'] + '12'
         today_date = datetime.today().strftime("%Y%m%d")
