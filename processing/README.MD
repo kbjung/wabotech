@@ -16,4 +16,15 @@
 - 데이터 : 약 23개 테이블(테이블 당 약 6백 ~ 1억 행)
 - 분석 내용
   - 건설기계 검사, 인증 데이터 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/processing/car_big_data3/an/big3_BD02.ipynb)
+    - 건설기계 인증 현황 분석
+    - 건설기계 인증관련 검사 분석
+    - (진행 중)건설기계 등록제원 현황 분석
+    - (예정)노후 건설기계 우선 조치 선별
   - 전문정비 내역, 검사 데이터 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/processing/car_big_data3/an/big3_BD04.ipynb)
+    - 전문정비 내역 현황 분석
+    - 전문정비 전후 개선사항 비교 분석
+    - 고장 항목별 주요 정비내용, 정비부품 분석
+    - 동일 항목 고장 비율 분석
+    - (진행 중)연료별 고장내역 현황을 이용한 적정정비 예측
+    - (진행 중)연식, 주행거리별 고장내역 현황을 이용한 예방정비 분석
+    - (예정)노후화 주기 분석
