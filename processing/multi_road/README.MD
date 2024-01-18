@@ -7,7 +7,7 @@
   - 차량 제원정보 데이터 : 약 19만 행
   - 차량 정기검사 데이터 : 약 14만 행
   - 차량 정밀검사 데이터 : 약 14만 행
-+ 분석 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/multi_road/analysis.ipynb)
++ 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/complete/multi_road/analysis2_1_3.ipynb)
   - 원격 측정 전체 차량 통계
   - 원격 측정 경유차량의 매연 및 정밀검사 분석
   - 원격 측정 경유차량의 등록정보, 제원정보 활용 분석
@@ -17,7 +17,7 @@
   - 통합측정기 측정 데이터 : 약 49만 행
   - 차량 제원정보 데이터 : 약 14만 행
   - 차량 정밀검사 데이터 : 약 11만 행
-+ 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/processing/multi_road/analysis2_2_2_.ipynb)
++ 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/processing/multi_road/analysis2_2_2.ipynb)
   - 통합 측정 전체 차량 통계
   - 통합 측정 경유차량 매연, NOx 및 정밀검사 분석
   - 통합 측정 경유차량의 등록, 제원정보 활용 분석
