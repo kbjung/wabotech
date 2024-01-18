@@ -1,4 +1,7 @@
 ## ⏳	[KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing/multi_road#readme)
+- 역할
+  - 데이터 전처리, 분석
+  - 컨소사 커뮤니케이션, 이슈 대응
 - python 주요 라이브러리 : pandas, numpy, os, datetime, matplotlib.pyplot
 - 데이터 : 총 6개 테이블(테이블 당 약 14만 ~ 49만 행)
 + 분석 내용
@@ -12,6 +15,11 @@
     - 통합 측정 경유차량의 등록, 제원정보 활용 분석
 
 ## ⏳ [한국환경공단] 자동차 환경 빅데이터 구축 3차 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing/car_big_data3)
+- 역할
+  - 데이터 전처리, 분석
+  - 보고서 작성
+  - 컨소사 커뮤니케이션, 팀 커뮤니케이션
+  - 이슈 대응, 2차 A/S
 - python 주요 라이브러리 : pandas, numpy, os, datetime
 - 데이터 : 약 23개 테이블(테이블 당 약 6백 ~ 1억 행)
 - 분석 내용
