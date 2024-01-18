@@ -1,4 +1,4 @@
-## ⏳	[KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing#readme)
+## ⏳	[KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing/multi_road#readme)
 - python 주요 라이브러리 : pandas, numpy, os, datetime, matplotlib.pyplot
 - 데이터 : 총 6ㅐ 테이블(테이블 당 약 14만 ~ 49만 행)
 + 분석 내용
