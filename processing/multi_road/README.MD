@@ -1,4 +1,9 @@
 ## 	[KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발
+- 역할
+  - 데이터 전처리, 분석
+  - 보고서 작성
+  - 컨소사 커뮤니케이션, 팀 커뮤니케이션
+  - 이슈 대응, 2차 A/S
 - 라이브러리 : pandas, numpy, os, datetime, time, matplotlib.pyplot
 
 ### 매연RSD 측정 데이터 분석
