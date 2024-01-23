@@ -1817,7 +1817,8 @@ class WabotchCode:
         df1_g5 = pd.concat([df1_g5_ey, df1_g5_en], ignore_index=True)
 
         # 조기폐차 이상치 말소일자 제거
-        df1_g5 = df1_g5[(df1_g5['말소일자'] >= '20230201') & (df1_g5['말소일자'] <= today_date) | (df1_g5['말소일자'].isnull())].reset_index(drop=True)
+        # df1_g5 = df1_g5[(df1_g5['말소일자'] >= '20230201') & (df1_g5['말소일자'] <= today_date) | (df1_g5['말소일자'].isnull())].reset_index(drop=True)
+        df1_g5 = df1_g5[(df1_g5['말소일자'] <= today_date) | (df1_g5['말소일자'].isnull())].reset_index(drop=True)
 
         STD_BD_GRD5_ELPDSRC_CURSTT = df1_g5[[
             '기준연월',
