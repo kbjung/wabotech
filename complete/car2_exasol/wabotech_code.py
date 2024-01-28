@@ -619,7 +619,13 @@ class WabotchCode:
             'A30S':'소형',
         }
         cs['차종유형'] = cs['차종유형'].replace(ty_dict)
-
+        
+        ## 최초제작일자 타입 변경
+        cs['최초등록일자'] = cs['최초등록일자'].astype('str')
+        cs['최초등록일자'] = cs['최초등록일자'].str.split(' ').str[0]
+        cs['최초등록일자'] = cs['최초등록일자'].str.replace('-', '')
+        cs['최초등록일자'] = pd.to_numeric(cs['최초등록일자'], errors='coerce')
+        
         # 제작일자 타입 변경
         cs['제작일자'] = pd.to_datetime(cs['제작일자'], errors='coerce')
         cs['제작일자'] = cs['제작일자'].astype('str')
@@ -703,6 +709,12 @@ class WabotchCode:
         }
         cs5['차종유형'] = cs5['차종유형'].replace(ty_dict)
 
+        ## 최초제작일자 타입 변경
+        cs5['최초등록일자'] = cs5['최초등록일자'].astype('str')
+        cs5['최초등록일자'] = cs5['최초등록일자'].str.split(' ').str[0]
+        cs5['최초등록일자'] = cs5['최초등록일자'].str.replace('-', '')
+        cs5['최초등록일자'] = pd.to_numeric(cs5['최초등록일자'], errors='coerce')
+        
         # 제작일자 타입 변경
         cs5['제작일자'] = pd.to_datetime(cs5['제작일자'], errors='coerce')
         cs5['제작일자'] = cs5['제작일자'].astype('str')
@@ -872,10 +884,10 @@ class WabotchCode:
         elp = pd.concat([aear, lgvr], ignore_index=True)
 
         # 말소일자 타입 변경
-        elp['말소일자'] = pd.to_datetime(elp['말소일자'], errors='coerce')
-        elp['말소일자'] = elp['말소일자'].astype('str')
-        elp['말소일자'] = elp['말소일자'].str.replace('-', '')
-        elp['말소일자'] = pd.to_numeric(elp['말소일자'], errors='coerce')
+        # elp['말소일자'] = pd.to_datetime(elp['말소일자'], errors='coerce')
+        # elp['말소일자'] = elp['말소일자'].astype('str')
+        # elp['말소일자'] = elp['말소일자'].str.replace('-', '')
+        # elp['말소일자'] = pd.to_numeric(elp['말소일자'], errors='coerce')
         
         elpm = elp.sort_values('조기폐차최종승인YN', ascending=False).drop_duplicates('차대번호').reset_index(drop=True)
 
@@ -950,6 +962,10 @@ class WabotchCode:
         df_g5.loc[df_g5['연료'] == '경유', 'fuel'] = '경유'
         df_g5.loc[(df_g5['연료'] == '휘발유') | (df_g5['연료'] == 'LPG(액화석유가스)'), 'fuel'] = '휘발유_가스'
 
+        ## 차량연식 타입변환
+        df['차량연식'] = pd.to_numeric(df['차량연식'], errors='coerce')
+        df_g5['차량연식'] = pd.to_numeric(df_g5['차량연식'], errors='coerce')
+        
         # !!! 수정 끝(2024.01.23)
 
 
@@ -985,10 +1001,19 @@ class WabotchCode:
 
         # df1.shape
 
+        date = datetime.today().strftime("%Y%m%d")
+        periods = 2
+        y_plist = list(pd.date_range(end=date, periods=periods, freq="MS").year)
+        mth_plist = list(pd.date_range(end=date, periods=periods, freq="MS").month)
+
+        crtr_year = str(y_plist[0])
+        tp_crtr_month = mth_plist[0]
+        crtr_month = f'{tp_crtr_month:0>2}'
+        
         ### 테이블생성일자 컬럼 추가
         today_date = datetime.today().strftime("%Y%m%d")
         # df1['기준연월'] = '2022.12'
-        df1['기준연월'] = today_date[:4] + '.' + today_date[4:6]
+        df1['기준연월'] = crtr_year + '.' + crtr_month
         df1['테이블생성일자'] = today_date
         # RH제공 법정동코드 타입 문자열로 수정
         df1['법정동코드_mod'] = df1['법정동코드_mod'].astype('str')
@@ -6158,13 +6183,6 @@ class WabotchCode:
         ## 시도/시군구별 배출량 합계
         grp1 = df2.groupby(['시도', '시군구_수정']).agg({'E_CO_total':'sum', 'E_HC_total':'sum', 'E_NOx_total':'sum', 'E_PM10_total':'sum', 'E_PM2_5_total':'sum'}).reset_index() # !!! 수정(2023.11.13)
 
-        # 연도 설정
-        today_date = datetime.today().strftime("%Y%m%d")
-        grp1['연도'] = today_date[:4]
-        # grp1['연도'] = '2022' # 하드코딩
-        grp1 = grp1[['연도', '시도', '시군구_수정', 'E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2_5_total']]
-        grp1['테이블생성일자'] = today_date
-
         # !!! 수정 시작(2024.01.23)
         
         periods = 2
@@ -6174,6 +6192,13 @@ class WabotchCode:
         crtr_year = str(y_plist[0])
         tp_crtr_month = mth_plist[0] 
         crtr_month = f'{tp_crtr_month:0>2}'
+        
+        # 연도 설정
+        today_date = datetime.today().strftime("%Y%m%d")
+        grp1['연도'] = crtr_year
+        # grp1['연도'] = '2022' # 하드코딩
+        grp1 = grp1[['연도', '시도', '시군구_수정', 'E_CO_total', 'E_HC_total', 'E_NOx_total', 'E_PM10_total', 'E_PM2_5_total']]
+        grp1['테이블생성일자'] = today_date
 
         # 기준연월 추가
         # grp1['기준연월'] = '2022.12'
@@ -6250,7 +6275,7 @@ class WabotchCode:
         # 날짜 설정
         # STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = '2022.12'
         today_date = datetime.today().strftime("%Y%m%d")
-        STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = today_date[:4] + '.' + today_date[4:6]
+        STD_BD_GRD4_EXHST_GAS_MSS['기준연월'] = crtr_year + '.' + crtr_month # !!! 수정(2024.01.23)
 
         STD_BD_GRD4_EXHST_GAS_MSS['테이블생성일자'] = today_date
         # RH법정동코드 문자열타입으로 변경
@@ -6338,8 +6363,12 @@ class WabotchCode:
 
         # STD_BD_GRD4_EXHST_GAS_MSS.columns
 
-        ### [출력] STD_BD_GRD4_EXHST_GAS_MSS
-        self.create_table(STD_BD_GRD4_EXHST_GAS_MSS,'STD_BD_GRD4_EXHST_GAS_MSS')
+        ### [출력] STD_BD_GRD4_EXHST_GAS_MSS 누적
+        conn = self.dbUtil.make_db_connection()
+        table_nm = 'STD_BD_GRD4_EXHST_GAS_MSS'
+        data = STD_BD_GRD4_EXHST_GAS_MSS
+        conn.import_from_pandas(data, ("VSYSE",table_nm), import_params={'columns': data.columns})
+        conn.close()
         self.logUtil.logger.info('data export : STD_BD_GRD4_EXHST_GAS_MSS 종료 %d초' % (time.time() - start_time))
         
         start_time = time.time()
