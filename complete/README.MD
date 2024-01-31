@@ -3,7 +3,7 @@
 + 계산 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/seoul_lab/CAPSS.ipynb)
   - 전 등급 차량 배출가스 배출량 계산(CAPSS식 적용)
 
-## [한국환경공단] 자동차 환경 빅데이터 구축 2차 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/car_big_data2#readme)
+## [한국환경공단] 자동차 환경 빅데이터 구축 2차 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/car2_exasol#readme)
 - 기간 : 2022.11.18 ~ 2023.08.17(총 9개월)
 + 활용 라이브러리 : pandas, numpy, os, glob, re, datetime, tqdm
  
