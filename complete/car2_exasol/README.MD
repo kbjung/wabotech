@@ -37,3 +37,7 @@
   - 내연기관차 운행제한 현황 [ipynb](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/github_code/%5BBD3%5D%5Bitem2%5DGAS_CAR_RUN_LMT_CURSTT.ipynb)
 - item 3 : 무공해차 전환 및 저공해조치 우선차량 선별
   - 저공해조치 우선차량선별 [ipynb](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/github_code/%5BBD3%5D%5Bitem3%5DLEM_PRIO_CURSTT.ipynb)
+
+#### 종합 코드
+- 테스트 코드 [[total_code.ipynb]](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/total_code.ipynb)
+- 배치 코드 [[wabotech_code.py]](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/wabotech_code.py)
