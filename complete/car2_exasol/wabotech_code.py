@@ -1126,7 +1126,15 @@ class WabotchCode:
         df1_g5['테이블생성일자'] = today_date
         # RH제공 법정동코드 타입 문자열로 수정
         df1_g5['법정동코드_mod'] = df1_g5['법정동코드_mod'].astype('str')
+        
+        # !!! 수정 시작(2024.01.30)
+        
+        df_g5['차량연식'] = df_g5['차량연식'].astype('str')
+        df_g5['차량연식'] = df_g5['차량연식'].str[:4]
+        df_g5['차량연식'] = pd.to_numeric(df_g5['차량연식'], errors='coerce')
 
+        # !!! 수정 끝(2024.01.30)
+        
         STD_BD_GRD5_CAR_CURSTT = df1_g5[[
             '테이블생성일자', 
             '기준연월',
@@ -1800,34 +1808,36 @@ class WabotchCode:
             '테이블생성일자':'LOAD_DT', 
         }
         STD_BD_GRD4_ELPDSRC_CURSTT = STD_BD_GRD4_ELPDSRC_CURSTT.rename(columns=chc_dict)
-
+        
         # !!! 수정 시작(2024.01.30)
-
-        STD_BD_GRD4_ELPDSRC_CURSTT['CTPV'] = STD_BD_GRD4_ELPDSRC_CURSTT['CTPV'].replace({'강원도':'강원특별자치도'})
+        elpd_dict = {'강원도':'강원특별자치도'}
+        STD_BD_GRD4_ELPDSRC_CURSTT['CTPV'] = STD_BD_GRD4_ELPDSRC_CURSTT['CTPV'].replace(elpd_dict)
         STD_BD_GRD4_ELPDSRC_CURSTT['RGN'] = STD_BD_GRD4_ELPDSRC_CURSTT['CTPV'].copy()
         ctpv_dict = {
-            '서울특별시':'서울',
-            '경기도':'경기',
-            '인천광역시':'인천',
-            '충청북도':'충북',
-            '충청남도':'충남',
-            '전라북도':'전북',
-            '전라남도':'전남',
             '경상북도':'경북',
-            '경상남도':'경남',
-            '대구광역시':'대구',
-            '대전광역시':'대전',
-            '광주광역시':'광주',
+            '충청남도':'충북',
+            '경기도':'경기', 
+            '강원도':'강원',
+            '강원특별자치도':'강원', 
+            '경상남도':'경남', 
+            '서울특별시':'서울',
+            '전라북도':'전북',
             '부산광역시':'부산',
-            '강원특별자치도':'강원',
-            '제주특별자치도':'제주',
-            '세종특별자치시':'세종',
+            '전라남도':'전남',
+            '대전광역시':'대전',
+            '충청북도':'충북',
+            '인천광역시':'인천',
             '울산광역시':'울산',
-        }
+            '대구광역시':'대구',
+            '제주특별자치도':'제주',
+            '광주광역시':'광주',
+            '세종특별자치시':'세종',
+                    }
         STD_BD_GRD4_ELPDSRC_CURSTT['RGN'] = STD_BD_GRD4_ELPDSRC_CURSTT['RGN'].replace(ctpv_dict)
-
+        STD_BD_GRD4_ELPDSRC_CURSTT['RGN'].unique()
+        
         # !!! 수정 끝(2024.01.30)
-
+        
         # STD_BD_GRD4_ELPDSRC_CURSTT.columns
 
         ### [출력] STD_BD_GRD4_ELPDSRC_CURSTT
