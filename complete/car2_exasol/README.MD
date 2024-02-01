@@ -41,4 +41,4 @@
 #### 종합 코드
 - 테스트 코드 [[total_code.ipynb]](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/total_code.ipynb)
 - 배치 코드 [[wabotech_code.py]](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/wabotech_code.py)
-- 테이블 수정 및 조회[[script]](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/Script.sql)
+- 테이블 수정 및 조회 [[script]](https://github.com/kbjung/wabotech/blob/main/complete/car2_exasol/Script.sql)
