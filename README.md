@@ -16,10 +16,6 @@
   - 건설기계 검사, 인증 데이터 분석
   - 전문정비 내역, 검사 데이터 분석
 
----
-
-## ✔ 완료 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete)
-
 ### ⏳ [KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing#readme)
 - 기간 : 2023.11 ~ 2024.01(총 3개월)
 - 역할
@@ -31,6 +27,10 @@
   - 원격/통합 측정 전체 차량 통계
   - 원격/통합 측정 경유차량의 매연 및 정밀검사 분석
   - 원격/통합 측정 경유차량의 등록정보, 제원정보 활용 분석
+
+---
+
+## ✔ 완료 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete)
 
 ### [한국환경공단] 자동차 환경 빅데이터 구축 2차 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/car2_exasol#readme)
 - 기간 : 2022.11.18 ~ 2023.08.17(총 9개월)

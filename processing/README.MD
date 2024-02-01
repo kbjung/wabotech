@@ -22,8 +22,8 @@
     - (진행 중)연식, 주행거리별 고장내역 현황을 이용한 예방정비 분석
     - (예정)노후화 주기 분석
 
-## [KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing/multi_road#readme)
-- 기간 : 2023.11 ~ 2024.01(총 3개월)
+## ⏳ [KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing/multi_road#readme)
+- 기간 : 2023.11 ~ 2024.02(총 4개월)
 - 역할
   - 데이터 전처리, 분석
   - 컨소사 커뮤니케이션, 이슈 대응
