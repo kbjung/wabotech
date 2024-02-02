@@ -1845,6 +1845,124 @@ class WabotchCode:
         self.logUtil.logger.info('data export : STD_BD_GRD4_ELPDSRC_CURSTT 종료 %d초' % (time.time() - start_time))
         
 
+
+        # !!! 수정 시작(2024.02.02)
+
+        start_time = time.time()
+        self.logUtil.logger.info('data export : STD_BD_GRD5_ELPDSRC_CURSTT_MOD 시작')
+
+        # 전체 5등급 등록&제원 병합
+        # cse = carr.merge(srcr, on='제원관리번호', how='left')
+        cs5e = cs5.copy()
+        cs5e['법정동코드'] = cs5e['법정동코드'].astype('str')
+        cs5e['법정동코드'] = cs5e['법정동코드'].str[:5] + '00000'
+        cs5e['법정동코드'] = pd.to_numeric(cs5e['법정동코드'])  
+
+        # 시도, 시군구 추가
+        cs5ec = cs5e.merge(coder, on='법정동코드', how='left')
+
+        # 조기폐차 추가
+        df5e = cs5ec.merge(elpm, on='차대번호', how='left')
+        df51 = df5e[df5e['연료'] == '경유'].reset_index(drop=True)
+
+        # 조기폐차 해당 차량 추출
+        idx = df51.loc[df51['조기폐차최종승인YN'] == 'Y'].index
+        df51_ey = df51.loc[idx]
+        df51_en = df51.loc[list(set(df51.index) - set(idx))]
+
+        # 기준연월 추가
+        df51_ey['말소일자'] = df51_ey['말소일자'].astype('str')
+        df51_ey['기준연월'] = df51_ey['말소일자'].str[:4] + '.' + df51_ey['말소일자'].str[4:6]
+        df51_ey[['말소일자', '기준연월']].head()
+
+        # 다시 병합
+        df51 = pd.concat([df51_ey, df51_en], ignore_index=True)
+
+        today_date = datetime.today().strftime("%Y%m%d")
+
+        # 조기폐차 이상치 말소일자 제거
+        df51 = df51[(df51['말소일자'] <= today_date) | (df51['말소일자'].isnull())].reset_index(drop=True)
+
+        STD_BD_GRD5_ELPDSRC_CURSTT_MOD = df51[[
+            '기준연월',
+            '차대번호', 
+            '법정동코드', 
+            '차종', 
+            '용도', 
+            '연료', 
+            '차종유형', 
+            '시도',
+            '시군구', 
+            '조기폐차상태코드', 
+            '조기폐차최종승인YN',
+        ]]
+        today_date = datetime.today().strftime("%Y%m%d")
+        STD_BD_GRD5_ELPDSRC_CURSTT_MOD['테이블생성일자'] = today_date
+        STD_BD_GRD5_ELPDSRC_CURSTT_MOD = STD_BD_GRD5_ELPDSRC_CURSTT_MOD[[
+            '기준연월',
+            '차대번호', 
+            '법정동코드', 
+            '차종', 
+            '용도', 
+            '연료', 
+            '차종유형', 
+            '시도', 
+            '시군구', 
+            '조기폐차상태코드', 
+            '조기폐차최종승인YN', 
+            '테이블생성일자', 
+        ]]
+        chc_dict = {
+            '기준연월':'CRTR_YM', 
+            '차대번호':'VIN', 
+            '법정동코드':'STDG_CD', 
+            '차종':'VHCTY_CD', 
+            '용도':'PURPS_CD2', 
+            '연료':'FUEL_CD', 
+            '차종유형':'VHCTY_TY', 
+            '시도':'CTPV', 
+            '시군구':'SGG', 
+            '조기폐차상태코드':'ELPDSRC_STTS_CD',
+            '조기폐차최종승인YN':'ELPDSRC_LAST_APRV_YN', # !!! 수정
+            '테이블생성일자':'LOAD_DT', 
+        }
+        STD_BD_GRD5_ELPDSRC_CURSTT_MOD = STD_BD_GRD5_ELPDSRC_CURSTT_MOD.rename(columns=chc_dict)
+
+        # 지역명 수정
+        elpd_dict = {'강원도':'강원특별자치도'}
+        STD_BD_GRD5_ELPDSRC_CURSTT_MOD['CTPV'] = STD_BD_GRD5_ELPDSRC_CURSTT_MOD['CTPV'].replace(elpd_dict)
+
+        # 지역 단축명 추가
+        elpd_dict = {'강원도':'강원특별자치도'}
+        STD_BD_GRD5_ELPDSRC_CURSTT_MOD['CTPV'] = STD_BD_GRD5_ELPDSRC_CURSTT_MOD['CTPV'].replace(elpd_dict)
+        ctpv_dict = {
+                '경상북도':'경북',
+            '충청남도':'충북',
+            '경기도':'경기', 
+            '강원도':'강원',
+            '강원특별자치도':'강원', 
+            '경상남도':'경남', 
+            '서울특별시':'서울',
+            '전라북도':'전북',
+            '부산광역시':'부산',
+            '전라남도':'전남',
+            '대전광역시':'대전',
+            '충청북도':'충북',
+            '인천광역시':'인천',
+            '울산광역시':'울산',
+            '대구광역시':'대구',
+            '제주특별자치도':'제주',
+            '광주광역시':'광주',
+            '세종특별자치시':'세종',
+                    }
+        STD_BD_GRD5_ELPDSRC_CURSTT_MOD['RGN'] = STD_BD_GRD5_ELPDSRC_CURSTT_MOD['RGN'].replace(ctpv_dict)
+        
+        ### [출력] STD_BD_GRD5_ELPDSRC_CURSTT_MOD
+        self.create_table(STD_BD_GRD5_ELPDSRC_CURSTT_MOD,'STD_BD_GRD5_ELPDSRC_CURSTT_MOD')
+        self.logUtil.logger.info('data export : STD_BD_GRD5_ELPDSRC_CURSTT_MOD 종료 %d초' % (time.time() - start_time)) 
+        
+        # !!! 수정 끝(2024.02.02)
+
         # !!! 수정 시작(2023.10.27)
         start_time = time.time()
         self.logUtil.logger.info('data export : STD_BD_GRD4_NOW_ELPDSRC_CURSTT 시작')
