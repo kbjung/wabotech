@@ -1,5 +1,5 @@
 # Wabotech
-- 2022.11.01 ~
+- 2022.11.01 ~ 20234.02.29 (약 1년 4개월)
 
 ## ⏳ 진행 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing)
 
