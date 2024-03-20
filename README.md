@@ -16,7 +16,7 @@
   - 건설기계 검사, 인증 데이터 분석
   - 전문정비 내역, 검사 데이터 분석
 
-### ⏳ [KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing#readme)
+### [KEITI] 운행 자동차 배출가스 측정장비 현장실증 기술개발 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/processing#readme)
 - 기간 : 2023.11 ~ 2024.01(총 3개월)
 - 역할
   - 데이터 전처리, 분석
