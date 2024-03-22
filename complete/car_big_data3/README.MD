@@ -15,7 +15,7 @@
   - 건설기계 검사, 인증 데이터 : 총 13개 테이블(테이블 당 약 6백 ~ 9천 행)
   - 건설기계 등록정보 데이터 : 굴착기, 덤프트럭 등 총 5개(테이블 당 약 4만 ~ 20만 행)
   - 건설기계 제원정보 데이터 : 약 3만 행
-- 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/processing/car_big_data3/an/big3_BD02.ipynb)
+- 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/complete/car_big_data3/an/big3_BD02.ipynb)
   - 건설기계 인증 현황 분석
   - 건설기계 인증관련 검사 분석
   - (진행 중)건설기계 등록제원 현황 분석
@@ -29,7 +29,7 @@
   - 전문정비 데이터 : 약 5만 행
   - 전문정비상세 데이터 : 약 10만 행
   - 전문정비 관련 테이블 : 총 10개 테이블(테이블 당 약 6백 ~ 67만 행)
-- 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/processing/car_big_data3/an/big3_BD04.ipynb)
+- 분석 [[코드(ipynb)]](https://github.com/kbjung/wabotech/blob/main/complete/car_big_data3/an/big3_BD04.ipynb)
   - 전문정비 내역 현황 분석
   - 전문정비 전후 개선사항 비교 분석
   - 고장 항목별 주요 정비내용, 정비부품 분석
