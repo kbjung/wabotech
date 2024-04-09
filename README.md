@@ -48,7 +48,7 @@
 - 분석 내용
   - 전 등급 차량 배출가스 배출량 계산(CAPSS식 적용)
 
-### [환경부] 내연기관 프리존(Free-zone) 시범사업 운행제한 확대방안 연구 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/low_gas_vehicle#readme)
+### [환경부] 내연기관 프리존(Free-zone) 시범사업 운행제한 확대방안 연구 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/free_zone#readme)
 - 역할 : 데이터 전처리 및 분석, 아이디어 논의
 - python 주요 라이브러리 : pandas, numpy, os, datetime
 - 분석 내용
