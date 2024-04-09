@@ -51,12 +51,18 @@
 ### [환경부] 내연기관 프리존(Free-zone) 시범사업 운행제한 확대방안 연구 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/free_zone#readme)
 - 역할 : 데이터 전처리 및 분석, 아이디어 논의
 - python 주요 라이브러리 : pandas, numpy, os, datetime
+- 데이터
+  - 자동차 등록정보 데이터 : 약 3천만 행
+  - 자동차 제원정보 데이터 : 약 50만 행
+  - 법정동코드 데이터 : 약 4만 행
 - 분석 내용
   - 자동차 현황(연료, 지역, 배출가스등급별)
 
 ### [한국환경공단] 저공해차 보급촉진을 위한 제도운영 지원 및 개선방안 마련 [[상세내용]](https://github.com/kbjung/wabotech/tree/main/complete/low_gas_vehicle#readme)
 - 역할 : 데이터 전처리 및 분석
 - python 주요 라이브러리 : pandas, numpy, os
+- 데이터
+  - 전기차 충전기 데이터 : 약 1천만 행
 - 분석 내용
   - 법정동코드, 주소 데이터 전처리
   - 자동차 지역별 현황
