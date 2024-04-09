@@ -8,6 +8,6 @@
   - 자동차 지역별 현황
   - 충전소 대수, 충전량 현황
 + 주요 코드
-- 01\. 데이터 전처리 및 분석 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/low_gas_vehicle/analysis.ipynb)
-- 02\. 주소 전처리(오류 정리, 신주소/구주소 구분, 지역 구분) [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/low_gas_vehicle/address.ipynb)
-- 03\. 지역 구분 코드 정리 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/low_gas_vehicle/address_code.ipynb)
+  - 01\. 데이터 전처리 및 분석 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/low_gas_vehicle/analysis.ipynb)
+  - 02\. 주소 전처리(오류 정리, 신주소/구주소 구분, 지역 구분) [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/low_gas_vehicle/address.ipynb)
+  - 03\. 지역 구분 코드 정리 [코드(ipynb)](https://github.com/kbjung/wabotech/blob/main/complete/low_gas_vehicle/address_code.ipynb)
